@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { TradesService } from './trades.service';
 import { PlaceTradeDto } from './dto/place-trade.dto';
 import { CancelTradeDto } from './dto/cancel-trade.dto';

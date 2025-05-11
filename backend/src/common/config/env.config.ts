@@ -4,7 +4,9 @@ import Joi from 'joi';
 export const envConfig = ConfigModule.forRoot({
   isGlobal: true,
   validationSchema: Joi.object({
-    NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+    NODE_ENV: Joi.string()
+      .valid('development', 'production', 'test')
+      .default('development'),
     PORT: Joi.number().default(3000),
     POSTGRES_URL: Joi.string().required(),
     REDIS_URL: Joi.string().required(),

@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Trade } from '../../entities/trade.entity';
@@ -9,6 +14,7 @@ import { MarketService } from '../market/market.service';
 import { TokensService } from '../tokens/tokens.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class TradesService {
@@ -22,7 +28,7 @@ export class TradesService {
     private readonly userRepository: Repository<User>,
     private readonly marketService: MarketService,
     private readonly tokensService: TokensService,
-    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis() private readonly redis: Redis
   ) {}
 
   async placeTrade(placeTradeDto: PlaceTradeDto) {
@@ -43,7 +49,9 @@ export class TradesService {
     const tonPriceUsd = await this.getTonPrice();
     const amountUsd = amount * tonPriceUsd;
     if (amountUsd > this.maxAmountUsd) {
-      throw new BadRequestException(`Trade exceeds $${this.maxAmountUsd} limit`);
+      throw new BadRequestException(
+        `Trade exceeds $${this.maxAmountUsd} limit`
+      );
     }
 
     // Получение текущей рыночной цены
@@ -71,7 +79,9 @@ export class TradesService {
     user.balance -= amount;
     await this.userRepository.save(user);
 
-    this.logger.log(`Trade placed: ${type} ${amount} TON on ${instrument} for user ${user.id}, accrued ${tokensAccrued} RUBLE`);
+    this.logger.log(
+      `Trade placed: ${type} ${amount} TON on ${instrument} for user ${user.id}, accrued ${tokensAccrued} RUBLE`
+    );
     return { trade, user, tokensAccrued };
   }
 
@@ -111,7 +121,9 @@ export class TradesService {
     user.balance += trade.amount + profitLoss;
     await this.userRepository.save(user);
 
-    this.logger.log(`Trade canceled: ${trade.id} for user ${user.id}, P/L: ${profitLoss} TON`);
+    this.logger.log(
+      `Trade canceled: ${trade.id} for user ${user.id}, P/L: ${profitLoss} TON`
+    );
     return { trade, user };
   }
 
@@ -129,7 +141,9 @@ export class TradesService {
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch TON price: ${(error as any).message}`);
+      this.logger.error(
+        `Failed to fetch TON price: ${(error as AxiosError).message}`
+      );
       return 5.0;
     }
   }
@@ -139,7 +153,9 @@ export class TradesService {
       const response = await this.marketService.getCurrentPrice(instrument);
       return response;
     } catch (error) {
-      this.logger.error(`Failed to fetch price for ${instrument}: ${(error as any).message}`);
+      this.logger.error(
+        `Failed to fetch price for ${instrument}: ${(error as AxiosError).message}`
+      );
       return 0;
     }
   }

@@ -1,15 +1,16 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsObject } from 'class-validator';
+import { TonProof, Account } from 'src/types/ton.types';
 
 export class AuthDto {
   @IsString()
   @IsNotEmpty()
   ton_address!: string;
 
-  @IsString()
+  @IsObject()
   @IsNotEmpty()
-  signature!: string;
+  tonProof!: TonProof; // Объект TON Proof с proof { timestamp, domain, signature, payload }
 
-  @IsString()
+  @IsObject()
   @IsNotEmpty()
-  message!: string;
+  account!: Account; // Объект аккаунта с address, publicKey, chain
 }

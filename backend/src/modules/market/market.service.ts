@@ -6,11 +6,11 @@ import axios, { AxiosError } from 'axios';
 import { CandlesDto } from './dto/candles.dto';
 
 interface Candle {
-    timestamp: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
 @Injectable()
@@ -20,7 +20,7 @@ export class MarketService {
 
   constructor(
     private readonly configService: ConfigService,
-    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis() private readonly redis: Redis
   ) {}
 
   async getCandles(candlesDto: CandlesDto) {
@@ -45,13 +45,20 @@ export class MarketService {
       });
 
       const candles: Candle[] = response.data.data.map(
-        ([ts, open, high, low, close]: [string, string, string, string, string]) => ({
-        timestamp: parseInt(ts),
-        open: parseFloat(open),
-        high: parseFloat(high),
-        low: parseFloat(low),
-        close: parseFloat(close),
-      }));
+        ([ts, open, high, low, close]: [
+          string,
+          string,
+          string,
+          string,
+          string,
+        ]) => ({
+          timestamp: parseInt(ts),
+          open: parseFloat(open),
+          high: parseFloat(high),
+          low: parseFloat(low),
+          close: parseFloat(close),
+        })
+      );
 
       // Кэшируем на 5 минут
       await this.redis.set(cacheKey, JSON.stringify(candles), 'EX', 300);
@@ -59,7 +66,9 @@ export class MarketService {
 
       return candles;
     } catch (error) {
-      this.logger.error(`Failed to fetch candles: ${(error as AxiosError).message}`);
+      this.logger.error(
+        `Failed to fetch candles: ${(error as AxiosError).message}`
+      );
       throw error;
     }
   }
@@ -87,7 +96,9 @@ export class MarketService {
       this.logger.log(`Fetched and cached price for ${instrument}: ${price}`);
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch price for ${instrument}: ${(error as AxiosError).message}`);
+      this.logger.error(
+        `Failed to fetch price for ${instrument}: ${(error as AxiosError).message}`
+      );
       throw new BadRequestException(`Failed to fetch price for ${instrument}`);
     }
   }

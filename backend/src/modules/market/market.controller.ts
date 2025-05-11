@@ -1,12 +1,12 @@
-import { 
-    Controller, 
-    Get, 
-    Query, 
-    UseGuards, 
-    HttpCode, 
-    HttpStatus,
-    BadRequestException
-  } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+} from '@nestjs/common';
 import { MarketService } from './market.service';
 import { CandlesDto } from './dto/candles.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';

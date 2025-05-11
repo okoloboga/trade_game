@@ -1,138 +1,144 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Transaction } from '../../entities/transaction.entity';
 import { User } from '../../entities/user.entity';
 import { DepositDto } from './dto/deposit.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
-import axios, { AxiosError } from 'axios';
+import { ChallengeService } from '../challenge/challenge.service';
+import { Address, toNano } from '@ton/core';
+import { TonClient4 } from 'ton';
 import { ConfigService } from '@nestjs/config';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
-  private readonly maxAmountUsd = 10; // Максимум $10
-  private readonly okxApiUrl = 'https://www.okx.com/api/v5';
+  private client: TonClient4;
 
   constructor(
-    @InjectRepository(Transaction)
-    private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRedis() private readonly redis: Redis,
-    private readonly configService: ConfigService,
-  ) {}
+    private readonly challengeService: ChallengeService,
+    private readonly configService: ConfigService
+  ) {
+    const tonEndpoint =
+      this.configService.get<string>('TON_ENDPOINT') ||
+      'https://mainnet-v4.tonhubapi.com';
+    this.client = new TonClient4({ endpoint: tonEndpoint });
+  }
 
   async processDeposit(depositDto: DepositDto) {
-    const { ton_tx_hash, amount } = depositDto;
+    const { userId, amount, txHash, tonProof, account } = depositDto;
 
-    // Проверка транзакции TON (заглушка, нужно адаптировать)
-    const isValidTx = await this.verifyTonTransaction(ton_tx_hash, amount);
-    if (!isValidTx) {
-      throw new BadRequestException('Invalid TON transaction');
+    if (amount <= 0) {
+      throw new BadRequestException('Invalid amount');
     }
 
-    // Конвертация TON в USD
-    const tonPriceUsd = await this.getTonPrice();
-    const amountUsd = amount * tonPriceUsd;
-    if (amountUsd > this.maxAmountUsd) {
-      throw new BadRequestException(`Deposit exceeds $${this.maxAmountUsd} limit`);
-    }
-
-    // Получение пользователя из JWT
-    const user = await this.userRepository.findOne({ where: { id: depositDto.userId } });
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
-    // Создание транзакции
-    const transaction = this.transactionRepository.create({
-      user,
-      type: 'deposit',
-      amount,
-      ton_tx_hash,
-      status: 'completed',
-    });
-    await this.transactionRepository.save(transaction);
+    // Verify TON proof
+    const isProofValid = await this.challengeService.verifyTonProof(
+      account,
+      tonProof
+    );
+    if (!isProofValid) {
+      throw new BadRequestException('Invalid TON proof');
+    }
 
-    // Обновление баланса
+    // Verify transaction
+    const isTransactionValid = await this.verifyTonTransaction(
+      user.ton_address,
+      amount,
+      txHash
+    );
+    if (!isTransactionValid) {
+      throw new BadRequestException('Invalid transaction');
+    }
+
+    // Update user balance
     user.balance += amount;
     await this.userRepository.save(user);
 
-    this.logger.log(`Deposit processed: ${amount} TON for user ${user.id}`);
-    return { transaction, user };
+    this.logger.log(`Processed deposit of ${amount} TON for user ${userId}`);
+    return { user, status: 'confirmed' };
   }
 
   async processWithdraw(withdrawDto: WithdrawDto) {
-    const { amount, ton_address } = withdrawDto;
+    const { userId, amount } = withdrawDto;
 
-    // Конвертация TON в USD
-    const tonPriceUsd = await this.getTonPrice();
-    const amountUsd = amount * tonPriceUsd;
-    if (amountUsd > this.maxAmountUsd) {
-      throw new BadRequestException(`Withdrawal exceeds $${this.maxAmountUsd} limit`);
+    if (amount <= 0) {
+      throw new BadRequestException('Invalid amount');
     }
 
-    // Получение пользователя
-    const user = await this.userRepository.findOne({ where: { id: withdrawDto.userId } });
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
-    // Проверка баланса
     if (user.balance < amount) {
       throw new BadRequestException('Insufficient balance');
     }
 
-    // Создание транзакции
-    const transaction = this.transactionRepository.create({
-      user,
-      type: 'withdraw',
-      amount,
-      ton_tx_hash: 'pending',
-      status: 'pending',
-    });
-    await this.transactionRepository.save(transaction);
-
-    // Обновление баланса
+    // Placeholder for TON withdrawal
     user.balance -= amount;
     await this.userRepository.save(user);
 
-    this.logger.log(`Withdrawal initiated: ${amount} TON for user ${user.id}`);
-    return { transaction, user };
+    this.logger.log(`Processed withdrawal of ${amount} TON for user ${userId}`);
+    return { user, status: 'pending' };
   }
 
-  private async verifyTonTransaction(txHash: string, amount: number): Promise<boolean> {
-    this.logger.log(`Verifying TON transaction: ${txHash}, amount: ${amount}`);
-    return true; // Заменить на реальную проверку
-  }
-
-  private async getTonPrice(): Promise<number> {
-    const cacheKey = 'ton_price_usd';
-    const cached = await this.redis.get(cacheKey);
-
-    if (cached) {
-      return parseFloat(cached);
-    }
-
+  private async verifyTonTransaction(
+    tonAddress: string,
+    amount: number,
+    txHash: string
+  ): Promise<boolean> {
     try {
-      const response = await axios.get(`${this.okxApiUrl}/market/ticker`, {
-        params: {
-          instId: 'TON-USDT',
-        },
-        headers: {
-          'OK-ACCESS-KEY': this.configService.get<string>('OKX_API_KEY'),
-        },
-      });
+      // Fetch account state
+      const address = Address.parse(tonAddress);
+      const lastBlock = await this.client.getLastBlock();
+      const accountLite = await this.client.getAccountLite(
+        lastBlock.last.seqno,
+        address
+      );
 
-      const price = parseFloat(response.data.data[0].last);
-      await this.redis.set(cacheKey, price, 'EX', 300); // Кэш на 5 минут
-      return price;
+      // Simplified check: verify if last transaction hash matches
+      if (
+        !accountLite.account.last ||
+        accountLite.account.last.hash !== txHash
+      ) {
+        this.logger.error(
+          `Transaction ${txHash} not found for address ${tonAddress}`
+        );
+        return false;
+      }
+
+      // Verify amount (approximate, as we don't have full tx details)
+      const expectedAmount = toNano(amount.toString());
+      const accountBalance = BigInt(accountLite.account.balance.coins);
+      if (accountBalance < expectedAmount) {
+        this.logger.error(
+          `Account balance ${accountBalance} less than expected ${expectedAmount}`
+        );
+        return false;
+      }
+
+      this.logger.log(
+        `Verified transaction ${txHash} for address ${tonAddress}`
+      );
+      return true;
     } catch (error) {
-      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).message}`);
-      return 5.0; // Fallback-цена
+      this.logger.error(
+        `Error verifying transaction ${txHash}: ${(error as AxiosError).message}`
+      );
+      return false;
     }
   }
 }

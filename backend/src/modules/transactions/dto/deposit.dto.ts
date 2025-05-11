@@ -1,9 +1,10 @@
-import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsString, IsNumber, IsNotEmpty, Min } from 'class-validator';
+import { TonProof, Account } from 'src/types/ton.types';
 
 export class DepositDto {
   @IsString()
   @IsNotEmpty()
-  ton_tx_hash!: string;
+  userId!: string;
 
   @IsNumber()
   @Min(0.01)
@@ -11,5 +12,11 @@ export class DepositDto {
 
   @IsString()
   @IsNotEmpty()
-  userId!: string; // Добавлено для передачи ID из JWT
+  txHash!: string;
+
+  @IsNotEmpty()
+  tonProof!: TonProof;
+
+  @IsNotEmpty()
+  account!: Account;
 }

@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { AuthDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
-import { verifyMessage } from '@ton/ton';
+import { ChallengeService } from '../challenge/challenge.service';
 
 @Injectable()
 export class AuthService {
@@ -12,24 +12,28 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly challengeService: ChallengeService
   ) {}
 
   async login(authDto: AuthDto) {
-    const { ton_address, signature, message } = authDto;
+    const { ton_address, tonProof, account } = authDto;
 
-    // Проверка подписи через Ton Connect
-    const isValid = await this.verifyTonSignature(ton_address, signature, message);
+    // Проверка подписи через TON Proof
+    const isValid = await this.challengeService.verifyTonProof(
+      account,
+      tonProof
+    );
     if (!isValid) {
-      throw new UnauthorizedException('Invalid signature');
+      throw new UnauthorizedException('Invalid TON Proof');
     }
 
     // Поиск или создание пользователя
     let user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
       const newUser: Partial<User> = {
-      ton_address, 
-      balance: 0.00, 
-      token_balance: 0.00 
+        ton_address,
+        balance: 0.0,
+        token_balance: 0.0,
       };
       user = this.userRepository.create(newUser);
       await this.userRepository.save(user);
@@ -40,14 +44,5 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
 
     return { access_token: token, user };
-  }
-
-  async verifyTonSignature(ton_address: string, signature: string, message: string): Promise<boolean> {
-    try {
-      // Проверка подписи с использованием библиотеки @ton/ton
-      return verifyMessage(message, signature, ton_address);
-    } catch (error) {
-      return false;
-    }
   }
 }

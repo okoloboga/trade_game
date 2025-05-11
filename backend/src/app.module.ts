@@ -10,6 +10,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { TradesModule } from './modules/trades/trades.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { ChallengeModule } from './modules/challenge/challenge.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { StatsModule } from './modules/stats/stats.module';
     TradesModule,
     TokensModule,
     StatsModule,
+    ChallengeModule,
   ],
 })
 export class AppModule {}

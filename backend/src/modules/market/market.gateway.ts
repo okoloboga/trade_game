@@ -1,4 +1,10 @@
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
 import { Logger, BadRequestException } from '@nestjs/common';
 import WebSocket from 'ws';
 
@@ -62,7 +68,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       JSON.stringify({
         op: 'subscribe',
         args: [{ channel: `candle${bar}`, instId }],
-      }),
+      })
     );
     this.logger.log(`Subscribed to OKX ${channel}`);
   }
@@ -74,7 +80,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       JSON.stringify({
         op: 'unsubscribe',
         args: [{ channel: `candle${bar}`, instId }],
-      }),
+      })
     );
     this.logger.log(`Unsubscribed from OKX ${channel}`);
   }
@@ -113,11 +119,13 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           }
         }
       } catch (error) {
-        this.logger.error(`Failed to process OKX message: ${(error as Error).message}`);
+        this.logger.error(
+          `Failed to process OKX message: ${(error as Error).message}`
+        );
       }
     });
 
-    this.okxWs.on('error', (error) => {
+    this.okxWs.on('error', error => {
       this.logger.error(`OKX WebSocket error: ${error.message}`);
     });
 

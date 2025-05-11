@@ -1,11 +1,12 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
-import { Trade } from '../../entities/trade.entity';
+import { Trade } from 'src/entities/trade.entity';
 import { StatsDto } from './dto/stats.dto';
 import { MarketService } from '../market/market.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class StatsService {
@@ -15,7 +16,7 @@ export class StatsService {
     @InjectRepository(Trade)
     private readonly tradeRepository: Repository<Trade>,
     private readonly marketService: MarketService,
-    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis() private readonly redis: Redis
   ) {}
 
   async getTradeHistory(statsDto: StatsDto) {
@@ -51,7 +52,9 @@ export class StatsService {
       return { trades: [] };
     }
 
-    this.logger.log(`Fetched ${trades.length} trades for user ${userId} in period ${period}`);
+    this.logger.log(
+      `Fetched ${trades.length} trades for user ${userId} in period ${period}`
+    );
     return { trades };
   }
 
@@ -128,7 +131,9 @@ export class StatsService {
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch TON price: ${(error as any).message}`);
+      this.logger.error(
+        `Failed to fetch TON price: ${(error as AxiosError).message}`
+      );
       return 5.0; // Fallback
     }
   }
