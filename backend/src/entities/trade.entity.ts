@@ -29,7 +29,7 @@ export class Trade {
   entry_price!: number; // Цена входа
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  exit_price!: number; // Цена выхода (null, если сделка активна)
+  exit_price!: number | null; // Цена выхода (null, если сделка активна)
 
   @Column({ type: 'varchar' })
   status!: 'open' | 'closed' | 'canceled';
@@ -38,7 +38,7 @@ export class Trade {
   created_at!: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  closed_at!: Date;
+  closed_at!: Date | null;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   profit_loss!: number; // Прибыль/убыток в TON
