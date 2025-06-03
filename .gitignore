@@ -30,6 +30,9 @@ backend/.eslintcache
 backend/.prettiercache
 backend/tsconfig.tsbuildinfo
 backend/*.tsbuildinfo
+backend/.env
+backend/.end.*
+!backend/.env.example
 
 frontend/node_modules/
 frontend/dist/
