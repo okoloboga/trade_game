@@ -26,54 +26,61 @@ services:
       - backend
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - ./backend/.env
     environment:
       - NODE_ENV=development
       - PORT=3000
+    ports:
+      - "3000:3000" # Для прямого доступа к бэкенду при отладке
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
     volumes:
       - backend_logs:/var/log/app
+    command: sh -c "sleep 5 && node dist/main.js"
 
   postgres:
     image: postgres:16-alpine
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=ruble_trade_db
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "user", "-d", "ruble_trade_db"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     networks:
       - app-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
 
 volumes:
   frontend_dist:

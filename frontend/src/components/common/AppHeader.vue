@@ -32,9 +32,9 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWalletStore } from '@/stores/wallet'
 
-import WalletConnect from '@/components/wallet/WalletConnect.vue'
-import DepositDialog from '@/components/wallet/DepositDialog.vue'
-import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue'
+const WalletConnect = defineAsyncComponent(() => import('@/components/wallet/WalletConnect.vue'))
+const DepositDialog = defineAsyncComponent(() => import('@/components/wallet/DepositDialog.vue'))
+const WithdrawDialog= defineAsyncComponent(() => import('@/components/wallet/WithdrawDialog.vue'))
 
 const authStore = useAuthStore()
 const walletStore = useWalletStore()

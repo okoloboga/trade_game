@@ -58,9 +58,10 @@ import { useMarketStore } from '@/stores/market'
 import { useTradingStore } from '@/stores/trading'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
-import ActiveTrades from './ActiveTrades.vue'
 import { useDebounceFn } from '@vueuse/core'
-import { validateAmount } from '@/utils/validator'
+import { validateAmount } from '@/utils/validators'
+
+const ActiveTrades = defineAsyncComponent(() => import('./ActiveTrades.vue'))
 
 const amount = ref(0.1)
 const marketStore = useMarketStore()

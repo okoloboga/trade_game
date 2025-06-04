@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '@/services/api'
 import { useErrorStore } from '@/stores/error'
-import { validateWalletAddress } from '@/utils/validator'
+import { validateWalletAddress } from '@/utils/validators'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({

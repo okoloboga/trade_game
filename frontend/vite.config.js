@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
+import { resolve } from 'path'
 
 export default defineConfig({
   base: '/trading-mini-app/', // PATH TO APP ON SERVER!!
@@ -26,4 +27,9 @@ export default defineConfig({
   build: {
     sourcemap: true, // Для анализа размера бандла
   },
+  resolve: {
+  alias: {
+    '@': resolve(__dirname, 'src'),
+  },
+  }
 })

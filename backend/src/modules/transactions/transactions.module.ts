@@ -7,17 +7,24 @@ import { User } from '../../entities/user.entity';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ChallengeModule } from '../challenge/challenge.module';
+import { TonModule } from '../ton/ton.module';
 
 @Module({
   imports: [
     ConfigModule,
-    RedisModule,
+    RedisModule.forRoot({
+      type: 'single',
+      url: process.env.REDIS_URL,
+    }),
     TypeOrmModule.forFeature([Transaction, User]),
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET,
       }),
     }),
+    ChallengeModule,
+    TonModule,
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService],

@@ -17,6 +17,11 @@ interface VerifyTonProofDto {
   account: Account;
 }
 
+interface ChallengeResponse {
+  challenge: string;
+  validUntil: number;
+}
+
 @Controller('challenge')
 export class ChallengeController {
   private readonly logger = new Logger(ChallengeController.name);
@@ -24,15 +29,13 @@ export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
   @Get('generate')
-  generateChallenge(@Query('walletAddress') walletAddress: string): {
-    challenge: string;
-  } {
+  async generateChallenge(@Query('walletAddress') walletAddress: string): Promise<ChallengeResponse> {
     if (!walletAddress) {
       throw new BadRequestException('Wallet address is required');
     }
 
-    const challenge = this.challengeService.generateChallenge(walletAddress);
-    return { challenge };
+    const { challenge, validUntil } = await this.challengeService.generateChallenge(walletAddress);
+    return { challenge, validUntil };
   }
 
   @Post('verify')

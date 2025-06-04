@@ -9,7 +9,10 @@ import { JwtModule } from '@nestjs/jwt';
 @Module({
   imports: [
     ConfigModule,
-    RedisModule,
+    RedisModule.forRoot({
+      type: 'single',
+      url: process.env.REDIS_URL,
+    }),
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET,

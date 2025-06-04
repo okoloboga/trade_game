@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npm run build || { cat /app/npm-debug.log; exit 1; }
 
 # Final stage
 FROM node:18-alpine

@@ -60,10 +60,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
-import { formatAddress } from '@/utils/formatter'
+import { formatAddress } from '@/utils/formatters'
 import { TonConnectService } from '@/services/tonConnect'
-import WithdrawDialog from './WithdrawDialog.vue'
-import WithdrawTokensDialog from './WithdrawTokensDialog.vue'
+
+const WithdrawDialog = defineAsyncComponent(() => import('./WithdrawDialog.vue'))
+const WithdrawTokensDialog = defineAsyncComponent(() => import('./WithdrawTokensDialog.vue'))
 
 const authStore = useAuthStore()
 const walletStore = useWalletStore()

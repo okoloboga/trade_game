@@ -10,17 +10,25 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { MarketService } from '../market/market.service';
 import { MarketGateway } from '../market/market.gateway';
+import { TonModule } from '../ton/ton.module';
+import { TokensModule } from '../tokens/tokens.module';
+
 
 @Module({
   imports: [
     ConfigModule,
-    RedisModule,
+    RedisModule.forRoot({
+      type: 'single',
+      url: process.env.REDIS_URL,
+    }),
     TypeOrmModule.forFeature([Trade, User]),
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET,
       }),
     }),
+    TonModule,
+    TokensModule,
   ],
   controllers: [TradesController],
   providers: [TradesService, TokensService, MarketService, MarketGateway],

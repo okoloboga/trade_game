@@ -12,6 +12,7 @@ import { TokensModule } from './modules/tokens/tokens.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { ChallengeModule } from './modules/challenge/challenge.module';
 import { TonModule } from './modules/ton/ton.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { TonModule } from './modules/ton/ton.module';
     TokensModule,
     StatsModule,
     ChallengeModule,
-    TonModule,
+    TonModule
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

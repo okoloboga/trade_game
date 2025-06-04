@@ -19,7 +19,7 @@
 import { ref, onMounted } from 'vue'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
-import { formatCurrency, formatDate } from '@/utils/formatter'
+import { formatCurrency, formatDate } from '@/utils/formatters'
 
 const walletStore = useWalletStore()
 const errorStore = useErrorStore()

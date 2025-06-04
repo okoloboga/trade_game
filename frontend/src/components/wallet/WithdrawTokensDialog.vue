@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="modelValue" max-width="320">
+  <v-dialog :value="modelValue" @update:modelValue="emit('update:modelValue', $event)" max-width="320">
     <v-card color="black">
       <v-card-title>Withdraw RUBLE</v-card-title>
       <v-card-text>
@@ -39,7 +39,7 @@ import { ref, computed } from 'vue'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
 import { useDebounceFn } from '@vueuse/core'
-import { validateAmount } from '@/utils/validator'
+import { validateAmount } from '@/utils/validators'
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])

@@ -39,7 +39,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
 import apiService from '@/services/api'
-import { formatCurrency } from '@/utils/formatter'
+import { formatCurrency } from '@/utils/formatters'
 
 const authStore = useAuthStore()
 const tradingStore = useTradingStore()

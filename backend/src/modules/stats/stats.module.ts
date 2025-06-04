@@ -13,7 +13,10 @@ import { MarketGateway } from '../market/market.gateway';
 @Module({
   imports: [
     ConfigModule,
-    RedisModule,
+    RedisModule.forRoot({
+      type: 'single',
+      url: process.env.REDIS_URL,
+    }),
     TypeOrmModule.forFeature([User, Trade]),
     JwtModule.registerAsync({
       useFactory: () => ({

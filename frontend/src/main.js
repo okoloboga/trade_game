@@ -1,6 +1,9 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import vuetify from './plugins/vuetify'
+import { createVuetify } from 'vuetify';
+import 'vuetify/styles'; // Импорт стилей Vuetify
+import * as components from 'vuetify/components';
+import * as directives from 'vuetify/directives';
 import { createPinia } from 'pinia'
 import { router } from './router'
 import { WebApp } from '@twa-dev/sdk'
@@ -13,6 +16,15 @@ if (WebApp.isVersionAtLeast('6.0')) {
   WebApp.ready()
   WebApp.expand()
 }
+
+// Инициализация Vuetify
+const vuetify = createVuetify({
+  components,
+  directives,
+  theme: {
+    defaultTheme: 'dark', // Указываем тёмную тему, как в вашем проекте
+  },
+});
 
 const app = createApp(App)
 app.use(vuetify).use(createPinia()).use(router)

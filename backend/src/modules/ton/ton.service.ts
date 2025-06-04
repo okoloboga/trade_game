@@ -39,7 +39,7 @@ export class TonService {
 
   private async initializeWallet() {
     const mnemonic = this.configService.get<string>('CENTRAL_WALLET_MNEMONIC');
-    const jettonMasterAddress = this.configService.get<string>('JETTON_TOKEN_ADDRESS');
+    const jettonMasterAddress = this.configService.get<string>('JETTON_MASTER_ADDRESS');
     if (!mnemonic || !jettonMasterAddress) {
       throw new BadRequestException('TON configuration missing: mnemonic or jetton address');
     }

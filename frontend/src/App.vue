@@ -9,5 +9,5 @@
 
 <script setup>
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
-import Notification from '@/components/Notification.vue'
+import Notification from '@/components/common/Notification.vue'
 </script>

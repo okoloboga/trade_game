@@ -39,8 +39,8 @@ import { ref, computed } from 'vue'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
 import { useDebounceFn } from '@vueuse/core'
-import { formatTonAmount } from '@/utils/formatter'
-import { validateAmount } from '@/utils/validator'
+import { formatTonAmount } from '@/utils/formatters'
+import { validateAmount } from '@/utils/validators'
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
