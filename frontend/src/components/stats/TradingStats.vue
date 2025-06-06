@@ -1,7 +1,7 @@
 <template>
   <v-card color="black" class="mb-4">
     <v-card-title>
-      Trading Statistics
+      {{ $t('trading_stats') }}
       <v-spacer />
       <v-select
         v-model="period"
@@ -19,13 +19,13 @@
             <div class="text-h3" :class="profitClass">
               {{ formatCurrency(summary.totalProfitLoss.usd) }}
             </div>
-            <div class="text-caption">Total P&L</div>
+            <div class="text-caption">{{ $t('total_pl') }}</div>
           </div>
         </v-col>
         <v-col cols="6">
           <div class="text-center">
             <div class="text-h3">{{ tradingStore.tradeHistory.length.toLocaleString('en-US') }}</div>
-            <div class="text-caption">Total Trades</div>
+            <div class="text-caption">{{ $t('total_trades') }}</div>
           </div>
         </v-col>
       </v-row>
@@ -40,7 +40,9 @@ import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
 import apiService from '@/services/api'
 import { formatCurrency } from '@/utils/formatters'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const tradingStore = useTradingStore()
 const errorStore = useErrorStore()

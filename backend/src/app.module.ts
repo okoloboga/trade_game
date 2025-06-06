@@ -21,7 +21,7 @@ import { HealthController } from './health/health.controller';
       type: 'postgres',
       url: process.env.POSTGRES_URL,
       entities: [__dirname + '/entities/*.entity{.ts,.js}'],
-      synchronize: true, // Только для разработки, в продакшне использовать миграции
+      synchronize: false,
     }),
     envConfig,
     postgresConfig,

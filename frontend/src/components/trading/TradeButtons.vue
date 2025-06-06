@@ -31,7 +31,7 @@
             @click="placeTrade('long')"
             :disabled="!canTrade"
           >
-            BUY / LONG
+            {{ $t('buy') }}
           </v-btn>
         </v-col>
         <v-col cols="6">
@@ -43,7 +43,7 @@
             @click="placeTrade('short')"
             :disabled="!canTrade"
           >
-            SELL / SHORT
+            {{ $t('sell') }}
           </v-btn>
         </v-col>
       </v-row>
@@ -53,14 +53,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, defineAsyncComponent } from 'vue'
 import { useMarketStore } from '@/stores/market'
 import { useTradingStore } from '@/stores/trading'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
 import { useDebounceFn } from '@vueuse/core'
 import { validateAmount } from '@/utils/validators'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const ActiveTrades = defineAsyncComponent(() => import('./ActiveTrades.vue'))
 
 const amount = ref(0.1)

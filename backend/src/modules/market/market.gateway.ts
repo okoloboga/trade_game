@@ -4,31 +4,33 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  MessageBody,
 } from '@nestjs/websockets';
 import { Logger, BadRequestException } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({ cors: { origin: '*' } }) // В продакшене укажи конкретный origin
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server!: WebSocket.Server;
+  server!: Server;
 
   private readonly logger = new Logger(MarketGateway.name);
   private okxWs?: WebSocket;
-  private subscriptions: Map<string, Set<WebSocket>> = new Map(); // Хранит подписки: channel -> клиенты
+  private subscriptions: Map<string, Set<Socket>> = new Map(); // Хранит подписки: channel -> клиенты
   private validBars = ['1m', '5m', '15m']; // Допустимые таймфреймы
 
   constructor() {
     this.connectToOkxWebSocket();
   }
 
-  handleConnection(client: WebSocket) {
-    this.logger.log('Client connected to market WebSocket');
-    client.send(JSON.stringify({ message: 'Connected to market WebSocket' }));
+  handleConnection(client: Socket) {
+    this.logger.log(`Client connected to market WebSocket: ${client.id}`);
+    client.emit('message', { message: 'Connected to market WebSocket' });
   }
 
-  handleDisconnect(client: WebSocket) {
-    this.logger.log('Client disconnected from market WebSocket');
+  handleDisconnect(client: Socket) {
+    this.logger.log(`Client disconnected from market WebSocket: ${client.id}`);
     // Удаляем клиента из всех подписок
     this.subscriptions.forEach((clients, channel) => {
       clients.delete(client);
@@ -40,16 +42,16 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('subscribe')
-  handleSubscribe(client: WebSocket, data: { instId: string; bar: string }) {
+  handleSubscribe(client: Socket, @MessageBody() data: { instId: string; bar: string }) {
     const { instId, bar } = data;
 
     if (!instId || !this.validBars.includes(bar)) {
-      client.send(JSON.stringify({ error: 'Invalid instId or bar' }));
+      client.emit('error', { error: 'Invalid instId or bar' });
       throw new BadRequestException('Invalid instId or bar');
     }
 
     const channel = `candle${bar}:${instId}`;
-    this.logger.log(`Client subscribed to ${channel}`);
+    this.logger.log(`Client ${client.id} subscribed to ${channel}`);
 
     // Добавляем клиента в подписку
     if (!this.subscriptions.has(channel)) {
@@ -58,7 +60,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     this.subscriptions.get(channel)!.add(client);
 
-    client.send(JSON.stringify({ instId, bar, status: 'subscribed' }));
+    client.emit('subscribed', { instId, bar, status: 'subscribed' });
   }
 
   private subscribeToOkx(channel: string) {
@@ -68,7 +70,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       JSON.stringify({
         op: 'subscribe',
         args: [{ channel: `candle${bar}`, instId }],
-      })
+      }),
     );
     this.logger.log(`Subscribed to OKX ${channel}`);
   }
@@ -80,7 +82,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       JSON.stringify({
         op: 'unsubscribe',
         args: [{ channel: `candle${bar}`, instId }],
-      })
+      }),
     );
     this.logger.log(`Unsubscribed from OKX ${channel}`);
   }
@@ -111,21 +113,21 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           const channel = `${message.arg.channel}:${message.arg.instId}`;
           const clients = this.subscriptions.get(channel);
           if (clients) {
-            clients.forEach((client: WebSocket) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify(candle));
+            clients.forEach((client: Socket) => {
+              if (client.connected) {
+                client.emit('candle', candle);
               }
             });
           }
         }
       } catch (error) {
         this.logger.error(
-          `Failed to process OKX message: ${(error as Error).message}`
+          `Failed to process OKX message: ${(error as Error).message}`,
         );
       }
     });
 
-    this.okxWs.on('error', error => {
+    this.okxWs.on('error', (error) => {
       this.logger.error(`OKX WebSocket error: ${error.message}`);
     });
 

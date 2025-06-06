@@ -1,66 +1,114 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import { createVuetify } from 'vuetify';
-import 'vuetify/styles'; // Импорт стилей Vuetify
-import * as components from 'vuetify/components';
-import * as directives from 'vuetify/directives';
+import { createVuetify } from 'vuetify'
+import 'vuetify/styles'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 import { createPinia } from 'pinia'
 import { router } from './router'
-import { WebApp } from '@twa-dev/sdk'
-import { BackButton } from '@twa-dev/sdk';
-import { useAppStore } from './stores/app'
-import { useAuthStore } from './stores/auth'
-import { useWalletStore } from './stores/wallet'
+import WebApp from '@twa-dev/sdk'
+import { TonConnectUIPlugin } from '@townsquarelabs/ui-vue'
+import { createI18n } from 'vue-i18n'
 
-if (WebApp.isVersionAtLeast('6.0')) {
-  WebApp.ready()
-  WebApp.expand()
+// Импорт переводов
+import en from './locales/en.json'
+import ru from './locales/ru.json'
+
+// Telegram WebApp инициализация
+if (window.Telegram?.WebApp?.isVersionAtLeast?.('6.0')) {
+  window.Telegram.WebApp.ready()
+  window.Telegram.WebApp.expand()
+} else {
+  console.warn('Telegram WebApp is not available')
 }
 
-// Инициализация Vuetify
+if (!window.Telegram?.WebApp) {
+  console.warn('Running outside Telegram, mocking WebApp')
+  window.Telegram = {
+    WebApp: {
+      isVersionAtLeast: () => true,
+      ready: () => console.log('Mock WebApp ready'),
+      expand: () => console.log('Mock WebApp expand'),
+      BackButton: {
+        show: () => console.log('Mock BackButton show'),
+        hide: () => console.log('Mock BackButton hide'),
+        onClick: (callback) => console.log('Mock BackButton onClick', callback)
+      }
+    }
+  }
+}
+
+// Vuetify инициализация
 const vuetify = createVuetify({
   components,
   directives,
-  theme: {
-    defaultTheme: 'dark', // Указываем тёмную тему, как в вашем проекте
-  },
-});
+  theme: { defaultTheme: 'dark' }
+})
 
+// Инициализация vue-i18n
+const i18n = createI18n({
+  locale: 'en', // Язык по умолчанию
+  fallbackLocale: 'en', // Запасной язык
+  messages: { en, ru }, // Подключение переводов
+  legacy: false // Используем Composition API
+})
+
+// Создаем приложение
 const app = createApp(App)
-app.use(vuetify).use(createPinia()).use(router)
+const pinia = createPinia()
 
-// Инициализация сторов
-const appStore = useAppStore()
-const authStore = useAuthStore()
-const walletStore = useWalletStore()
+// Подключаем плагины
+app.use(pinia)
+app.use(router)
+app.use(vuetify)
+app.use(TonConnectUIPlugin, {
+  manifestUrl: import.meta.env.VITE_TON_MANIFEST_URL || 'http://localhost:5173/tonconnect-manifest.json'
+})
+app.use(i18n)
 
-// Глобальная загрузка
-appStore.setLoading(true)
-async function initializeApp() {
-  try {
-    if (authStore.token) {
-      await authStore.verifyToken() // Проверяем токен (нужен метод в authStore)
-      if (authStore.isConnected) {
-        await walletStore.fetchWalletData() // Загружаем данные кошелька
-      }
-    }
-  } catch (error) {
-    console.error('Initialization error:', error)
-    authStore.logout() // Очищаем сессию при ошибке
-  } finally {
-    appStore.setLoading(false)
-  }
-}
-initializeApp()
-
+// Router guard
 router.beforeEach((to, from, next) => {
-  if (to.path === '/') {
-    BackButton.hide()
-  } else {
-    BackButton.show()
-    BackButton.onClick(() => router.back())
+  const backButton = window.Telegram.WebApp.BackButton
+  if (window.Telegram.WebApp.isVersionAtLeast('6.1')) {
+    if (to.path === '/') {
+      backButton.hide()
+    } else {
+      backButton.show()
+      backButton.onClick(() => router.back())
+    }
   }
   next()
 })
 
+// Монтируем приложение
 app.mount('#app')
+
+// Инициализация после монтирования
+async function initializeApp() {
+  try {
+    const { useAppStore } = await import('./stores/app')
+    const { useAuthStore } = await import('./stores/auth')
+    const { useWalletStore } = await import('./stores/wallet')
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    const walletStore = useWalletStore()
+    appStore.setLoading(true)
+    if (authStore.token) {
+      await authStore.verifyToken()
+      if (authStore.isConnected) {
+        await walletStore.fetchWalletData()
+      }
+    }
+  } catch (error) {
+    console.error('Initialization error:', error)
+    const { useAuthStore } = await import('./stores/auth')
+    const authStore = useAuthStore()
+    authStore.logout()
+  } finally {
+    const { useAppStore } = await import('./stores/app')
+    const appStore = useAppStore()
+    appStore.setLoading(false)
+  }
+}
+
+initializeApp()

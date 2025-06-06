@@ -21,18 +21,20 @@
 import { ref, onMounted } from 'vue'
 import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
+import { useI18n } from 'vue-i18n'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 const tradingStore = useTradingStore()
 const errorStore = useErrorStore()
 const loading = ref(false)
+const { t } = useI18n()
 
 const headers = [
-  { title: 'Type', key: 'type' },
-  { title: 'Amount', key: 'amount' },
-  { title: 'Entry Price', key: 'entry_price' },
-  { title: 'P&L', key: 'profit_loss' },
-  { title: 'Date', key: 'created_at' },
+  { title: t('trade_headers.type'), key: 'type' },
+  { title: t('trade_headers.amount'), key: 'amount' },
+  { title: t('trade_headers.entry_price'), key: 'entry_price' },
+  { title: t('trade_headers.profit_loss'), key: 'profit_loss' },
+  { title: t('trade_headers.date'), key: 'created_at' },
 ]
 
 onMounted(async () => {

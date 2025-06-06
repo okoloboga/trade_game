@@ -10,7 +10,14 @@ export const useAuthStore = defineStore('auth', {
     isConnected: false,
     walletAddress: null,
   }),
+  getters: {
+    isAuthenticated: (state) => !!state.token && state.isConnected,
+    getWalletAddress: (state) => state.walletAddress,
+  },
   actions: {
+    setConnected(status) {
+      this.isConnected = status
+    },
     async generateChallenge(walletAddress) {
       const validation = validateWalletAddress(walletAddress)
       if (validation !== true) {
@@ -49,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
         const response = await api.post('/auth/login', { walletAddress })
         this.token = response.data.token
         this.user = { id: response.data.user.id, ...response.data.user }
-        this.isConnected = true
+        this.setConnected(true) // Используем новый метод
         this.walletAddress = walletAddress
         localStorage.setItem('token', this.token)
         useErrorStore().setError('Login successful', false)
@@ -66,7 +73,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await api.get('/auth/verify')
         this.user = { id: response.data.user.id, ...response.data.user }
-        this.isConnected = true
+        this.setConnected(true) // Используем новый метод
         this.walletAddress = response.data.walletAddress
       } catch (error) {
         this.logout()
@@ -77,7 +84,7 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.token = null
       this.user = null
-      this.isConnected = false
+      this.setConnected(false) // Используем новый метод
       this.walletAddress = null
       localStorage.removeItem('token')
     },

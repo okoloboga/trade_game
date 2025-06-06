@@ -1,15 +1,20 @@
-import { TonConnect } from '@tonconnect/sdk'
+import { useTonConnectUI } from '@townsquarelabs/ui-vue'
 
 export class TonConnectService {
-  constructor(manifestUrl = import.meta.env.VITE_TONCONNECT_MANIFEST_URL) {
-    this.connector = new TonConnect({
-      manifestUrl: manifestUrl || 'https://your-domain.com/tonconnect-manifest.json',
+  constructor(manifestUrl = import.meta.env.VITE_TON_MANIFEST_URL) {
+    // Инициализация tonConnectUI через хук
+    const { tonConnectUI } = useTonConnectUI()
+    this.tonConnectUI = tonConnectUI
+    // Настройка manifestUrl
+    this.tonConnectUI.setConnectRequestParameters({
+      state: 'ready',
+      value: { tonProof: manifestUrl || 'http://localhost/tonconnect-manifest.json' }
     })
   }
 
   async connect() {
     try {
-      const wallet = await this.connector.connect()
+      const wallet = await this.tonConnectUI.connectWallet()
       if (!wallet?.account?.address) {
         throw new Error('Failed to connect wallet')
       }
@@ -21,7 +26,16 @@ export class TonConnectService {
 
   async signData(data) {
     try {
-      const result = await this.connector.signData(data)
+      // Используем tonProof для подписи
+      const wallet = this.tonConnectUI.wallet
+      if (!wallet?.connectItems?.tonProof) {
+        throw new Error('No tonProof available')
+      }
+      // Предполагаем, что data — это payload для подписи
+      const result = {
+        proof: wallet.connectItems.tonProof.proof,
+        payload: data
+      }
       return result
     } catch (error) {
       throw new Error(`Data signing failed: ${error.message}`)
@@ -30,7 +44,7 @@ export class TonConnectService {
 
   async sendTransaction(transaction) {
     try {
-      const result = await this.connector.sendTransaction(transaction)
+      const result = await this.tonConnectUI.sendTransaction(transaction)
       return result
     } catch (error) {
       throw new Error(`Transaction failed: ${error.message}`)
@@ -39,7 +53,7 @@ export class TonConnectService {
 
   async disconnect() {
     try {
-      await this.connector.disconnect()
+      await this.tonConnectUI.disconnect()
     } catch (error) {
       throw new Error(`Disconnection failed: ${error.message}`)
     }

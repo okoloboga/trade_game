@@ -19,7 +19,7 @@
         :loading="tradingStore.isProcessing"
         @click="cancelTrade(item.id)"
       >
-        Cancel
+        {{ $t('cancel') }}
       </v-btn>
     </template>
   </v-data-table>
@@ -30,17 +30,19 @@ import { ref, onMounted } from 'vue'
 import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
 import { formatCurrency, formatDate } from '@/utils/formatters'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const tradingStore = useTradingStore()
 const errorStore = useErrorStore()
 const loading = ref(false)
 
 const headers = [
-  { title: 'Type', key: 'type' },
-  { title: 'Amount', key: 'amount' },
-  { title: 'Entry Price', key: 'entry_price' },
-  { title: 'Date', key: 'created_at' },
-  { title: 'Actions', key: 'actions' },
+  { title: t('trade_headers.type'), key: 'type' },
+  { title: t('trade_headers.amount'), key: 'amount' },
+  { title: t('trade_headers.entry_price'), key: 'entry_price' },
+  { title: t('trade_headers.date'), key: 'created_at' },
+  { title: t('trade_headers.actions'), key: 'actions'},
 ]
 
 const cancelTrade = async (tradeId) => {

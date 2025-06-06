@@ -1,15 +1,9 @@
 <template>
   <v-main>
-    <v-app-bar color="black" flat>
-      <v-toolbar-title>Trade App</v-toolbar-title>
-      <v-spacer />
-      <v-btn to="/" text>Home</v-btn>
-      <v-btn to="/history" text>History</v-btn>
-      <WalletConnect />
-    </v-app-bar>
+    <AppHeader />
     <v-container fluid>
       <v-progress-circular
-        v-if="appStore.globalLoading"
+        v-if="globalLoading"
         indeterminate
         color="primary"
         class="global-spinner"
@@ -20,9 +14,16 @@
 </template>
 
 <script setup>
-import { useAppStore } from '@/stores/app'
-import WalletConnect from '@/components/wallet/WalletConnect.vue'
-const appStore = useAppStore()
+import { ref, computed, onMounted } from 'vue'
+import AppHeader from '@/components/common/AppHeader.vue'
+
+const globalLoading = ref(false)
+
+onMounted(async () => {
+  const { useAppStore } = await import('@/stores/app')
+  const appStore = useAppStore()
+  globalLoading.value = computed(() => appStore.globalLoading).value
+})
 </script>
 
 <style scoped>

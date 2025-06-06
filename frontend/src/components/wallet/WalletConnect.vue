@@ -6,7 +6,6 @@
       @click="connectWallet"
       :loading="isConnecting"
     >
-      Connect Wallet
     </v-btn>
     <div v-else class="wallet-info">
       <v-chip
@@ -22,10 +21,10 @@
         <v-card color="black" min-width="300">
           <v-card-text>
             <div class="mb-2">
-              <strong>TON Balance:</strong> {{ walletStore.balance.toFixed(2) }} TON
+              <strong>{{ $t('ton_balance') }}:</strong> {{ walletStore.balance.toFixed(2) }} TON
             </div>
             <div class="mb-2">
-              <strong>RUBLE Balance:</strong> {{ walletStore.tokenBalance.toFixed(2) }} RUBLE
+              <strong>{{ $t('ruble_balance') }}:</strong> {{ walletStore.tokenBalance.toFixed(2) }} RUBLE
             </div>
             <v-btn
               color="primary"
@@ -33,19 +32,19 @@
               class="mr-2"
               @click="showWithdrawDialog = true"
             >
-              Withdraw TON
+             {{ $t('withdraw_ton') }}
             </v-btn>
             <v-btn
               color="primary"
               size="small"
               @click="showWithdrawTokensDialog = true"
             >
-              Withdraw RUBLE
+              {{ $t('withdraw_ruble') }}
             </v-btn>
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn color="red" size="small" @click="disconnectWallet">Disconnect</v-btn>
+              <v-btn color="red" size="small" @click="disconnectWallet">{{ $t('disconnect') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-menu>
@@ -56,13 +55,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
 import { formatAddress } from '@/utils/formatters'
 import { TonConnectService } from '@/services/tonConnect'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const WithdrawDialog = defineAsyncComponent(() => import('./WithdrawDialog.vue'))
 const WithdrawTokensDialog = defineAsyncComponent(() => import('./WithdrawTokensDialog.vue'))
 

@@ -2,8 +2,8 @@
   <v-container fluid>
     <TradingStats />
     <v-tabs v-model="activeTab" color="primary" class="mb-4">
-      <v-tab value="trades">Trades</v-tab>
-      <v-tab value="transactions">Transactions</v-tab>
+      <v-tab value="trades">{{ $t('trades') }}</v-tab>
+      <v-tab value="transactions">{{ $t('transactions') }}</v-tab>
     </v-tabs>
     <v-window v-model="activeTab">
       <v-window-item value="trades">
@@ -23,7 +23,9 @@ import { useErrorStore } from '@/stores/error'
 import TradingStats from '@/components/stats/TradingStats.vue'
 import TradeHistory from '@/components/history/TradeHistory.vue'
 import TransactionHistory from '@/components/history/TransactionHistory.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const activeTab = ref('trades')
 const authStore = useAuthStore()
 const errorStore = useErrorStore()

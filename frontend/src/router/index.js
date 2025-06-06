@@ -30,19 +30,28 @@ export const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
-  document.title = to.meta.title || 'Telegram Mini App'
+  router.beforeEach(async (to, from, next) => {
+     const authStore = useAuthStore()
+     document.title = to.meta.title || 'Telegram Mini App'
 
-  if (to.meta.requiresAuth && !authStore.isConnected) {
-    try {
-      await authStore.verifyToken()
-      if (!authStore.isConnected) {
-        return next({ name: 'main' }) // Перенаправление на главную
-      }
-    } catch {
-      return next({ name: 'main' })
-    }
-  }
-  next()
+     if (to.meta.requiresAuth && !authStore.isConnected) {
+       try {
+         await authStore.verifyToken()
+         if (!authStore.isConnected) {
+           // Проверяем, чтобы не перенаправлять на тот же маршрут
+           if (to.name !== 'main') {
+             return next({ name: 'main' })
+           }
+           // Если уже на 'main', пропускаем
+           return next()
+         }
+       } catch {
+         // Аналогично, избегаем цикла
+         if (to.name !== 'main') {
+           return next({ name: 'main' })
+         }
+         return next()
+       }
+     }
+     next()
 })
