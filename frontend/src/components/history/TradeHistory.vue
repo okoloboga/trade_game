@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
 import { useI18n } from 'vue-i18n'
@@ -29,20 +29,20 @@ const errorStore = useErrorStore()
 const loading = ref(false)
 const { t } = useI18n()
 
-const headers = [
+const headers = computed(() => [
   { title: t('trade_headers.type'), key: 'type' },
   { title: t('trade_headers.amount'), key: 'amount' },
   { title: t('trade_headers.entry_price'), key: 'entry_price' },
   { title: t('trade_headers.profit_loss'), key: 'profit_loss' },
   { title: t('trade_headers.date'), key: 'created_at' },
-]
+])
 
 onMounted(async () => {
   loading.value = true
   try {
     await tradingStore.fetchTradeHistory()
   } catch (error) {
-    errorStore.setError('Failed to load trade history')
+    errorStore.setError(t('load_trade_history'))
   } finally {
     loading.value = false
   }

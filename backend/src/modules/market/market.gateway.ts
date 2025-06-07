@@ -5,12 +5,21 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   MessageBody,
+  ConnectedSocket
 } from '@nestjs/websockets';
 import { Logger, BadRequestException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
-@WebSocketGateway({ cors: { origin: '*' } }) // В продакшене укажи конкретный origin
+@WebSocketGateway({ 
+    cors: { 
+        origin: '*', 
+        methods: ['GET', 'POST'],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'],
+    namespace: '/'
+})
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
@@ -42,25 +51,66 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('subscribe')
-  handleSubscribe(client: Socket, @MessageBody() data: { instId: string; bar: string }) {
+  handleSubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: { instId: string; bar: string }) {
+    this.logger.log(`Subscribe data received: ${JSON.stringify(data)}`);
+    if (!data) {
+      client.emit('error', { error: 'Missing subscription data' });
+      throw new BadRequestException('Missing subscription data');
+    }
+
     const { instId, bar } = data;
 
-    if (!instId || !this.validBars.includes(bar)) {
-      client.emit('error', { error: 'Invalid instId or bar' });
-      throw new BadRequestException('Invalid instId or bar');
+    if (!instId) {
+      client.emit('error', { error: 'Invalid instId' });
+      throw new BadRequestException('Invalid instId');
     }
 
-    const channel = `candle${bar}:${instId}`;
-    this.logger.log(`Client ${client.id} subscribed to ${channel}`);
-
-    // Добавляем клиента в подписку
-    if (!this.subscriptions.has(channel)) {
-      this.subscriptions.set(channel, new Set());
-      this.subscribeToOkx(channel);
+    if (!bar || !this.validBars.includes(bar)) {
+      client.emit('error', { error: 'Invalid bar' });
+      throw new BadRequestException('Invalid bar');
     }
-    this.subscriptions.get(channel)!.add(client);
+
+    // Обработка подписки на свечи
+    const candleChannel = `candle${bar}:${instId}`;
+    this.logger.log(`Client ${client.id} subscribed to ${candleChannel}`);
+
+    // Добавляем клиента в подписку на свечи
+    if (!this.subscriptions.has(candleChannel)) {
+      this.subscriptions.set(candleChannel, new Set());
+      this.subscribeToOkx(candleChannel);
+    }
+    this.subscriptions.get(candleChannel)!.add(client);
+
+    // Если это подписка на ticker (bar = 1m), то подписываемся и на ticker
+    if (bar === '1m') {
+      const tickerChannel = `ticker:${instId}`;
+      if (!this.subscriptions.has(tickerChannel)) {
+        this.subscriptions.set(tickerChannel, new Set());
+        // Подписка на тикер в OKX (если нужно)
+      }
+      this.subscriptions.get(tickerChannel)!.add(client);
+    }
 
     client.emit('subscribed', { instId, bar, status: 'subscribed' });
+  }
+
+  // Добавьте метод для отправки тикеров
+  private sendTickerUpdate(instId: string, price: number) {
+    const tickerChannel = `ticker:${instId}`;
+    const clients = this.subscriptions.get(tickerChannel);
+    if (clients) {
+      const tickerData = {
+        instId,
+        close: price,
+        timestamp: Date.now()
+      };
+      
+      clients.forEach((client: Socket) => {
+        if (client.connected) {
+          client.emit('ticker', tickerData);
+        }
+      });
+    }
   }
 
   private subscribeToOkx(channel: string) {
@@ -119,6 +169,9 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
               }
             });
           }
+          
+          // Также отправляем обновление тикера при получении свечи
+          this.sendTickerUpdate(message.arg.instId, candle.close);
         }
       } catch (error) {
         this.logger.error(

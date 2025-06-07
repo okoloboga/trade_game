@@ -61,7 +61,7 @@ const profitClass = computed(() => ({
 
 const fetchStats = async () => {
   if (!authStore.isConnected || !authStore.user?.id) {
-    errorStore.setError('Please connect wallet')
+    errorStore.setError(t('wallet_connect'))
     return
   }
   try {
@@ -71,7 +71,7 @@ const fetchStats = async () => {
     ])
     summary.value = summaryResponse
   } catch (error) {
-    errorStore.setError('Failed to load trading stats')
+    errorStore.setError(t('load_trafing_stats'))
   }
 }
 

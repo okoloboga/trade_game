@@ -61,10 +61,10 @@ const tonAmount = computed(() => formatTonAmount(amount.value, walletStore.tonPr
 const deposit = useDebounceFn(async () => {
   try {
     await walletStore.deposit(amount.value)
-    errorStore.setError('Deposit initiated. Please send TON.', false)
+    errorStore.setError(t('deposit_initiated'), false)
     closeDialog()
   } catch (error) {
-    errorStore.setError('Failed to initiate deposit')
+    errorStore.setError(t('failed_to_initiate_deposit'))
   }
 }, 300)
 

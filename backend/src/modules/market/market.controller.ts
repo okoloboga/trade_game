@@ -2,28 +2,27 @@ import {
   Controller,
   Get,
   Query,
-  UseGuards,
   HttpCode,
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
 import { MarketService } from './market.service';
 import { CandlesDto } from './dto/candles.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('market')
 export class MarketController {
   constructor(private readonly marketService: MarketService) {}
 
   @Get('candles')
-  @UseGuards(JwtAuthGuard)
+  @Public() // Используйте этот декоратор вместо @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getCandles(@Query() candlesDto: CandlesDto) {
     return this.marketService.getCandles(candlesDto);
   }
 
   @Get('ticker')
-  @UseGuards(JwtAuthGuard)
+  @Public() // Используйте этот декоратор вместо @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getTicker(@Query('instId') instId: string) {
     if (!instId) {

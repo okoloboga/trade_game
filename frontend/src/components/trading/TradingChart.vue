@@ -39,11 +39,18 @@ const initChart = async () => {
       throw new Error('Container has zero dimensions')
     }
 
+    // Если график уже существует, удалим его
+    if (chart) {
+      chart.remove()
+      chart = null
+      candleSeries = null
+    }
+
     chart = createChart(chartContainer.value, {
       width: Math.max(400, rect.width),
       height: 300,
       layout: {
-        background: { type: 'solid', color: '#1e1e1e' },
+        background: { type: 'solid', color: '#000000' },
         textColor: '#ffffff',
       },
       grid: {
@@ -67,6 +74,29 @@ const initChart = async () => {
     })
     console.log('Candlestick series added successfully')
 
+    // Добавим обработчик ресайза
+    const handleResize = () => {
+      if (chart && chartContainer.value) {
+        const newRect = chartContainer.value.getBoundingClientRect()
+        chart.applyOptions({
+          width: Math.max(400, newRect.width),
+          height: 300
+        })
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    // Очистка при размонтировании
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize)
+      if (chart) {
+        chart.remove()
+        chart = null
+        candleSeries = null
+      }
+    })
+
     updateChartData()
 
     chart.timeScale().fitContent()
@@ -78,51 +108,117 @@ const initChart = async () => {
 }
 
 const updateChartData = () => {
-  if (!candleSeries) return
+  if (!candleSeries || !chart) {
+    console.warn('Cannot update chart data: chart or series not initialized')
+    return
+  }
 
   try {
-    let chartData = marketStore.candles
+    console.log('Updating chart with data:', marketStore.candles.length, 'candles')
 
-    if (!chartData || chartData.length === 0) {
-      console.log('No data from store, using test data')
-      chartData = [
-        { time: '2023-12-01', open: 100, high: 110, low: 95, close: 105 },
-        { time: '2023-12-02', open: 105, high: 115, low: 100, close: 110 },
-        { time: '2023-12-03', open: 110, high: 120, low: 105, close: 115 },
-        { time: '2023-12-04', open: 115, high: 125, low: 110, close: 120 },
-        { time: '2023-12-05', open: 120, high: 130, low: 115, close: 125 },
-      ]
+    if (!marketStore.candles || marketStore.candles.length === 0) {
+      console.log('No data available for chart')
+      return
     }
 
-    console.log('Updating chart with data:', chartData.length, 'candles')
+    // Проверяем и преобразуем данные
+    const chartData = marketStore.candles
+      .filter(candle => {
+        // Проверяем наличие всех необходимых полей
+        if (!candle || candle.timestamp === undefined ||
+            candle.open === undefined || candle.high === undefined ||
+            candle.low === undefined || candle.close === undefined) {
+          console.warn('Skipping invalid candle (missing fields):', candle)
+          return false
+        }
+
+        // Проверяем, что все значения - числа
+        if (isNaN(Number(candle.open)) || isNaN(Number(candle.high)) ||
+            isNaN(Number(candle.low)) || isNaN(Number(candle.close))) {
+          console.warn('Skipping candle with non-numeric values:', candle)
+          return false
+        }
+
+        // Проверяем логику high/low
+        if (Number(candle.high) < Number(candle.low)) {
+          console.warn('Skipping candle with high < low:', candle)
+          return false
+        }
+
+        return true
+      })
+      .map(candle => {
+        // Преобразуем timestamp из миллисекунд в секунды
+        const timeInSeconds = Math.floor(candle.timestamp / 1000)
+
+        // Преобразуем все значения в числа
+        return {
+          time: timeInSeconds,
+          open: Number(candle.open),
+          high: Number(candle.high),
+          low: Number(candle.low),
+          close: Number(candle.close)
+        }
+      })
+      .sort((a, b) => a.time - b.time) // Сортируем по времени, чтобы убедиться в правильном порядке
+
+    if (chartData.length === 0) {
+      console.warn('No valid candles after filtering')
+      return
+    }
+
+    // Логируем данные для отладки
+    console.log('Formatted chart data:')
+    console.log('First 3 items:', chartData.slice(0, 3))
+    console.log('Last 3 items:', chartData.slice(-3))
+    console.log('Total valid candles:', chartData.length)
+
+    // Устанавливаем данные в график
     candleSeries.setData(chartData)
 
-    if (chart) {
-      chart.timeScale().fitContent()
-    }
+    // Масштабируем график, чтобы видеть все данные
+    chart.timeScale().fitContent()
+
+    console.log('Chart data updated successfully')
   } catch (err) {
     console.error('Error updating chart data:', err)
+    error.value = `Chart update error: ${err.message}`
   }
 }
 
-watch(() => marketStore.candles, () => {
-  console.log('Market data updated, refreshing chart')
-  updateChartData()
-}, { deep: true })
+watch(
+  () => marketStore.candles,
+  (newCandles) => {
+    console.log('Market data updated, refreshing chart');
+    updateChartData();
+  },
+  { deep: true }
+);
 
-watch(() => marketStore.currentPrice, (newPrice) => {
-  if (newPrice && candleSeries && marketStore.candles.length > 0) {
-    console.log('Current price updated:', newPrice)
-    const lastCandle = marketStore.candles[marketStore.candles.length - 1]
-    candleSeries.update({
-      time: Math.floor(Date.now() / 1000),
+// Для обновления последней свечи в реальном времени
+watch(
+  () => marketStore.currentPrice,
+  (newPrice) => {
+    if (!candleSeries || !newPrice || marketStore.candles.length === 0) return;
+
+    console.log('Current price updated:', newPrice);
+
+    // Получаем последнюю свечу
+    const lastCandle = marketStore.candles[marketStore.candles.length - 1];
+
+    // Обновляем последнюю свечу с новой ценой закрытия
+    const updatedCandle = {
+      time: Math.floor(lastCandle.timestamp / 1000),
       open: lastCandle.open,
       high: Math.max(lastCandle.high, newPrice),
       low: Math.min(lastCandle.low, newPrice),
-      close: newPrice,
-    })
+      close: newPrice
+    };
+
+    // Обновляем последнюю свечу на графике
+    candleSeries.update(updatedCandle);
   }
-})
+);
 
 onMounted(async () => {
   await nextTick()
@@ -143,9 +239,10 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 300px;
-  background: #1e1e1e;
   border-radius: 8px;
   overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2)
+
 }
 
 .chart {

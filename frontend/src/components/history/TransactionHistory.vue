@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
 import { useI18n } from 'vue-i18n'
@@ -27,19 +27,19 @@ const errorStore = useErrorStore()
 const loading = ref(false)
 const { t } = useI18n()
 
-const headers = [
+const headers = computed(() => [
   { title: t('transaction_headers.type'), key: 'type' },
   { title: t('transaction_headers.amount'), key: 'amount' },
   { title: t('transaction_headers.status'), key: 'status' },
   { title: t('transaction_headers.date'), key: 'created_at' },
-]
+])
 
 onMounted(async () => {
   loading.value = true
   try {
     await walletStore.fetchTransactions()
   } catch (error) {
-    errorStore.setError('Failed to load transaction history')
+    errorStore.setError(t('load_transaction_history'))
   } finally {
     loading.value = false
   }

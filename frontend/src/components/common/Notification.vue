@@ -6,7 +6,7 @@
     location="top"
     elevation="24"
   >
-    {{ errorStore.message }}
+    {{ t(errorStore.message) }}
     <template #actions>
       <v-btn
         color="white"
@@ -21,5 +21,14 @@
 
 <script setup>
 import { useErrorStore } from '@/stores/error'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const errorStore = useErrorStore()
 </script>
+
+<style scoped>
+:deep(.v-snackbar__wrapper) {
+  border-radius: 8px !important;
+}
+</style>

@@ -5,7 +5,7 @@
       <v-card-text>
         <v-text-field
           v-model.number="amount"
-          label="Amount ($)"
+          :label="$t('amount_label')"
           type="number"
           :max="walletStore.balance"
           :min="0.01"
@@ -61,10 +61,10 @@ const tonAmount = computed(() => formatTonAmount(amount.value, walletStore.tonPr
 const withdraw = useDebounceFn(async () => {
   try {
     await walletStore.withdraw(amount.value)
-    errorStore.setError('Withdrawal initiated', false)
+    errorStore.setError(t('withdraw_initiated'), false)
     closeDialog()
   } catch (error) {
-    errorStore.setError('Failed to initiate withdrawal')
+    errorStore.setError(t('failed_to_initiate_withdraw'))
   }
 }, 300)
 

@@ -5,7 +5,7 @@
       <v-card-text>
         <v-text-field
           v-model.number="amount"
-          label="Amount (RUBLE)"
+          :label="$t('amount_label_ruble')"
           type="number"
           :max="walletStore.tokenBalance"
           :min="0.01"
@@ -58,10 +58,10 @@ const isValid = computed(() => validateAmount(amount.value, walletStore.tokenBal
 const withdraw = useDebounceFn(async () => {
   try {
     await walletStore.withdrawTokens(amount.value)
-    errorStore.setError('RUBLE withdrawal initiated', false)
+    errorStore.setError(t('ruble_withdraw_initiated'), false)
     closeDialog()
   } catch (error) {
-    errorStore.setError('Failed to initiate RUBLE withdrawal')
+    errorStore.setError(t('failed_to_initiate_ruble_withdraw'))
   }
 }, 300)
 

@@ -42,15 +42,25 @@ if (!window.Telegram?.WebApp) {
 const vuetify = createVuetify({
   components,
   directives,
-  theme: { defaultTheme: 'dark' }
+  theme: {
+    defaultTheme: 'dark',
+    themes: {
+      dark: {
+        colors: {
+          background: '#000000',
+          surface: '#1e1e1e',
+        }
+      }
+    }
+  }
 })
 
 // Инициализация vue-i18n
 const i18n = createI18n({
-  locale: 'en', // Язык по умолчанию
-  fallbackLocale: 'en', // Запасной язык
-  messages: { en, ru }, // Подключение переводов
-  legacy: false // Используем Composition API
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: { en, ru },
+  legacy: false
 })
 
 // Создаем приложение
@@ -65,20 +75,6 @@ app.use(TonConnectUIPlugin, {
   manifestUrl: import.meta.env.VITE_TON_MANIFEST_URL || 'http://localhost:5173/tonconnect-manifest.json'
 })
 app.use(i18n)
-
-// Router guard
-router.beforeEach((to, from, next) => {
-  const backButton = window.Telegram.WebApp.BackButton
-  if (window.Telegram.WebApp.isVersionAtLeast('6.1')) {
-    if (to.path === '/') {
-      backButton.hide()
-    } else {
-      backButton.show()
-      backButton.onClick(() => router.back())
-    }
-  }
-  next()
-})
 
 // Монтируем приложение
 app.mount('#app')

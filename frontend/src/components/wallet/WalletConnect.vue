@@ -92,9 +92,9 @@ const connectWallet = async () => {
     await authStore.verifyProof(proof)
     await authStore.login(wallet.account.address)
     await walletStore.fetchWalletData()
-    errorStore.setError('Wallet connected successfully', false)
+    errorStore.setError(t('wallet_connected'), false)
   } catch (error) {
-    errorStore.setError('Failed to connect wallet')
+    errorStore.setError(t('failed_to_connect_wallet'))
   } finally {
     isConnecting.value = false
   }
@@ -105,9 +105,9 @@ const disconnectWallet = async () => {
     await tonConnectService.disconnect()
     authStore.logout()
     walletStore.$reset()
-    errorStore.setError('Wallet disconnected', false)
+    errorStore.setError(t('wallet_disconnected'), false)
   } catch (error) {
-    errorStore.setError('Failed to disconnect wallet')
+    errorStore.setError(t('failed_to_disconnect_wallet'))
   }
 }
 

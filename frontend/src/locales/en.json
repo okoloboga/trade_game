@@ -1,10 +1,13 @@
 {
   "home": "Home",
   "balance": "Balance: ${amount}",
+  "amount_label": "Amount ($)",
+  "amount_label_ruble": "Amount (RUBLE)",
   "deposit": "Deposit",
   "withdraw": "Withdraw",
   "history": "History",
   "trades": "Trades",
+  "insufficient_balance": "Insufficient balance",
   "trading_stats": "Trading statistics",
   "transactions": "Transactions",
   "trade_headers": {
@@ -40,5 +43,28 @@
   "cancel": "Cancel",
   "go_home": "Go to Home",
   "e404": "404 - Page not found",
-  "page_doesnt_exist": "The page you're looking for doesn't exist."
+  "page_doesnt_exist": "The page you're looking for doesn't exist.",
+  "error": {
+    "load_trade_history": "Failed to load trade history",
+    "load_transaction_history": "Failed to load transaction history",
+    "load_trading_stats": "Failed to load trading stats",
+    "load_active_trades": "Failde to load active trades",
+    "wallet_connect": "Please connect wallet",
+    "trade_cancel": "Trade cancelled successfully",
+    "failed_to_cancel_trade": "Failed to cancel trade",
+    "trade_placed": "Trade placed successfully",
+    "failed_to_place_trade": "Failed to place trade",
+    "deposit_initiated": "Deposit initiated. Please send TON",
+    "failed_to_initiate_deposit": "Failed to initiate deposit",
+    "wallet_connected": "Wallet connected successfully",
+    "failed_to_connect_wallet": "Failed to connect wallet",
+    "wallet_disconnected": "Wallet disconnected",
+    "failed_to_disconnect_wallet": "Failed to disconnect wallet",
+    "withdraw_initiated": "Withdrawal initiated",
+    "failed_to_initiate_withdraw": "Failed to initiate withdrawal",
+    "ruble_withdraw_initiated": "RUBLE withdrawal initiated",
+    "failed_to_initiate_ruble_withdraw": "Failed to initiate RUBLE withdrawal",
+    "page_not_found": "Page not found",
+    "offline_mode": "Working in offline mode - some features may be limited"
+  }
 }

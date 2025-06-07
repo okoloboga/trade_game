@@ -10,11 +10,6 @@
         <TradeButtons />
       </v-col>
     </v-row>
-    <v-row>
-      <v-col cols="12">
-        <ActiveTrades />
-      </v-col>
-    </v-row>
 
     <!-- Показываем ошибки если есть -->
     <v-row v-if="errorStore.error">
@@ -44,6 +39,13 @@ const errorStore = useErrorStore()
 
 onMounted(async () => {
   console.log('MainView mounted, initializing...')
+  try {
+    await marketStore.fetchCandles();
+    await marketStore.fetchCurrentPrice();
+    marketStore.startRealTimeUpdates();
+  } catch (error) {
+    console.error('Error initializing data:', error);
+  }
 
   // Очищаем предыдущие ошибки
   errorStore.clearError()
@@ -60,7 +62,7 @@ onMounted(async () => {
     const failures = results.filter(r => r.status === 'rejected').length
     if (failures > 0) {
       console.log(`${failures} requests failed - working in offline mode`)
-      errorStore.setError('Working in offline mode - some features may be limited')
+      errorStore.setError(t('offline_mode'))
     }
   }
 

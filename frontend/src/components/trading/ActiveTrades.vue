@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
 import { formatCurrency, formatDate } from '@/utils/formatters'
@@ -37,20 +37,20 @@ const tradingStore = useTradingStore()
 const errorStore = useErrorStore()
 const loading = ref(false)
 
-const headers = [
+const headers = computed(() => [
   { title: t('trade_headers.type'), key: 'type' },
   { title: t('trade_headers.amount'), key: 'amount' },
   { title: t('trade_headers.entry_price'), key: 'entry_price' },
   { title: t('trade_headers.date'), key: 'created_at' },
   { title: t('trade_headers.actions'), key: 'actions'},
-]
+])
 
 const cancelTrade = async (tradeId) => {
   try {
     await tradingStore.cancelTrade(tradeId)
-    errorStore.setError('Trade cancelled successfully', false)
+    errorStore.setError(t('trade_cancel'), false)
   } catch (error) {
-    errorStore.setError('Failed to cancel trade')
+    errorStore.setError(t('failed_to_cancel_trade'))
   }
 }
 
@@ -59,9 +59,14 @@ onMounted(async () => {
   try {
     await tradingStore.fetchActiveTrades()
   } catch (error) {
-    errorStore.setError('Failed to load active trades')
+    errorStore.setError(t('load_active_trades'))
   } finally {
     loading.value = false
   }
 })
 </script>
+<style scope>
+.v-data-table {
+  border-radius: 8px;
+}
+</style>

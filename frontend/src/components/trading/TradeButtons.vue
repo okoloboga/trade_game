@@ -5,7 +5,7 @@
         <v-col cols="6">
           <v-text-field
             v-model.number="amount"
-            label="Amount ($)"
+            :label="$t('amount_label')"
             type="number"
             :max="1"
             :min="0.01"
@@ -74,7 +74,7 @@ const loading = ref(false)
 
 const amountRules = computed(() => [
   v => validateAmount(v, 1) === true || validateAmount(v, 1),
-  v => (v <= walletStore.balance || 'Insufficient balance'),
+  v => (v <= walletStore.balance || t('insufficient_balance')),
 ])
 
 const canTrade = computed(() => {
@@ -89,12 +89,26 @@ const placeTrade = useDebounceFn(async (type) => {
       amount: amount.value,
       symbol: 'BTC-USDT',
     })
-    errorStore.setError('Trade placed successfully', false)
+    errorStore.setError(t('trade_placed'), false)
     amount.value = 0.1
   } catch (error) {
-    errorStore.setError('Failed to place trade')
+    errorStore.setError(t("failed_to_place_trade"))
   } finally {
     loading.value = false
   }
 }, 300)
 </script>
+
+<style scoped>
+.v-text-field {
+  border-radius: 8px;
+}
+
+.v-text-field :deep(.v-field__outline) {
+  border-radius: 8px; /* Для outlined варианта */
+}
+
+.v-btn {
+  border-radius: 8px; /* Для кнопок Buy и Sell */
+}
+</style>

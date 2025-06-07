@@ -21,6 +21,6 @@ const router = useRouter()
 const errorStore = useErrorStore()
 
 onMounted(() => {
-  errorStore.setError('Page not found', true)
+  errorStore.setError(t('page_not_found'), true)
 })
 </script>

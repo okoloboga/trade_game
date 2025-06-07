@@ -35,7 +35,7 @@ onMounted(async () => {
     try {
       await authStore.verifyToken()
     } catch {
-      errorStore.setError('Please connect wallet')
+      errorStore.setError(t('wallet_connect'))
     }
   }
 })

@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useErrorStore } from '@/stores/error'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -85,6 +85,7 @@ const apiService = {
       const response = await api.get('/market/candles', {
         params: { instId, bar },
       })
+      console.log('API candles response:', response.data);
       return response.data
     } catch (error) {
       return handleApiError(error)

@@ -3,13 +3,14 @@ import MainView from '@/views/MainView.vue'
 import HistoryView from '@/views/HistoryView.vue'
 import ErrorView from '@/views/ErrorView.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useErrorStore } from '@/stores/error'
 
 const routes = [
   {
     path: '/',
     name: 'main',
     component: MainView,
-    meta: { requiresAuth: true, title: 'Trade BTC-USDT' },
+    meta: { requiresAuth: false, title: 'Trade BTC-USDT' }, // Убрано requiresAuth
   },
   {
     path: '/history',
@@ -30,28 +31,35 @@ export const router = createRouter({
   routes,
 })
 
-  router.beforeEach(async (to, from, next) => {
-     const authStore = useAuthStore()
-     document.title = to.meta.title || 'Telegram Mini App'
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  const errorStore = useErrorStore()
+  const backButton = window.Telegram.WebApp.BackButton
+  document.title = to.meta.title || 'Telegram Mini App'
 
-     if (to.meta.requiresAuth && !authStore.isConnected) {
-       try {
-         await authStore.verifyToken()
-         if (!authStore.isConnected) {
-           // Проверяем, чтобы не перенаправлять на тот же маршрут
-           if (to.name !== 'main') {
-             return next({ name: 'main' })
-           }
-           // Если уже на 'main', пропускаем
-           return next()
-         }
-       } catch {
-         // Аналогично, избегаем цикла
-         if (to.name !== 'main') {
-           return next({ name: 'main' })
-         }
-         return next()
-       }
-     }
-     next()
+  // Управление Telegram BackButton
+  if (window.Telegram.WebApp.isVersionAtLeast('6.1')) {
+    if (to.path === '/') {
+      backButton.hide()
+    } else {
+      backButton.show()
+      backButton.onClick(() => router.back())
+    }
+  }
+
+  // Проверка авторизации только для маршрутов с requiresAuth
+  if (to.meta.requiresAuth && !authStore.isConnected) {
+    try {
+      await authStore.verifyToken()
+      if (!authStore.isConnected) {
+        errorStore.setError('error.wallet_connect')
+        return next({ name: 'main' }) // Перенаправляем на главную
+      }
+    } catch {
+      errorStore.setError('error.wallet_connect')
+      return next({ name: 'main' }) // Перенаправляем на главную
+    }
+  }
+
+  next()
 })

@@ -1,10 +1,13 @@
 {
   "home": "Главная",
   "balance": "Баланс: ${amount}",
+  "amount_label": "Сумма ($)",
+  "amount_label_ruble": "Amount (RUBLE)",
   "deposit": "Пополнить",
   "withdraw": "Вывести",
   "history": "История",
   "trades": "Сделки",
+  "insufficient_balance": "Недостаточно баланса",
   "trading_stats": "Статистика торговли",
   "transactions": "Транзакции",
   "trade_headers": {
@@ -40,5 +43,28 @@
   "cancel": "Отмена",
   "go_home": "Вернуться на главную",
   "e404": "404 - Страница не найдена",
-  "page_doesnt_exist": "Страница, которую вы ищете, не существует."
+  "page_doesnt_exist": "Страница, которую вы ищете, не существует.",
+  "error": {
+    "load_trade_history": "Не удалось загрузить историю торгов",
+    "load_transaction_history": "Не удалось загрузить историю транзакций",
+    "load_trading_stats": "Не удалось загрузить статистику торгов",
+    "load_active_trades": "Не удалось загрузить активные сделки",
+    "wallet_connect": "Пожалуйста, подключите кошелёк",
+    "trade_cancel": "Сделка успешно отменена",
+    "failed_to_cancel_trade": "Не удалось отменить сделку",
+    "trade_placed": "Сделка успешно размещена",
+    "failed_to_place_trade": "Не удалось разместить сделку",
+    "deposit_initiated": "Депозит инициирован. Пожалуйста, отправьте TON",
+    "failed_to_initiate_deposit": "Не удалось инициировать депозит",
+    "wallet_connected": "Кошелёк успешно подключён",
+    "failed_to_connect_wallet": "Не удалось подключить кошелёк",
+    "wallet_disconnected": "Кошелёк отключён",
+    "failed_to_disconnect_wallet": "Не удалось отключить кошелёк",
+    "withdraw_initiated": "Вывод средств инициирован",
+    "failed_to_initiate_withdraw": "Не удалось инициировать вывод средств",
+    "ruble_withdraw_initiated": "Вывод RUBLE инициирован",
+    "failed_to_initiate_ruble_withdraw": "Не удалось инициировать вывод RUBLE",
+    "page_not_found": "Страница не найдена",
+    "offline_mode": "Работа в офлайн-режиме — некоторые функции могут быть ограничены"
+  }
 }
