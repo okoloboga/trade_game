@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
+import svgLoader from 'vite-plugin-vue-svg'
 import { resolve } from 'path'
 import path from 'path'
 
@@ -13,6 +14,7 @@ export default defineConfig({
     vuetify({
       autoImport: true,
     }),
+    svgLoader(),
   ],
   server: {
     proxy: {
@@ -26,6 +28,7 @@ export default defineConfig({
         ws: true,
       },
     },
+    allowedHosts: ["https://447c-91-199-154-233.ngrok-free.app"],
     // Добавляем для корректной загрузки модулей
     fs: {
       strict: false,

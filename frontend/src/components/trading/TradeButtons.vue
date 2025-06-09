@@ -16,7 +16,7 @@
           />
         </v-col>
         <v-col cols="6">
-          <div class="text-h5 text-white">
+          <div class="text-h6 text-white">
             ${{ marketStore.currentPrice?.toFixed(2) ?? '--' }}
           </div>
         </v-col>
@@ -47,7 +47,7 @@
           </v-btn>
         </v-col>
       </v-row>
-      <ActiveTrades class="mt-4" />
+      <!-- <ActiveTrades class="mt-4" /> -->
     </v-card-text>
   </v-card>
 </template>

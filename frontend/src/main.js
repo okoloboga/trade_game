@@ -72,7 +72,7 @@ app.use(pinia)
 app.use(router)
 app.use(vuetify)
 app.use(TonConnectUIPlugin, {
-  manifestUrl: import.meta.env.VITE_TON_MANIFEST_URL || 'http://localhost:5173/tonconnect-manifest.json'
+  manifestUrl: `${import.meta.env.VITE_APP_URL}/manifest.json`
 })
 app.use(i18n)
 

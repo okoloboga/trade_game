@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainView from '@/views/MainView.vue'
 import HistoryView from '@/views/HistoryView.vue'
+import WalletView from '@/views/WalletView.vue'
 import ErrorView from '@/views/ErrorView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useErrorStore } from '@/stores/error'
@@ -10,13 +11,19 @@ const routes = [
     path: '/',
     name: 'main',
     component: MainView,
-    meta: { requiresAuth: false, title: 'Trade BTC-USDT' }, // Убрано requiresAuth
+    meta: { requiresAuth: false, title: 'Trade BTC-USDT' },
   },
   {
     path: '/history',
     name: 'history',
     component: HistoryView,
     meta: { requiresAuth: true, title: 'Trade History' },
+  },
+  {
+    path: '/wallet',
+    name: 'wallet',
+    component: WalletView,
+    meta: { requiresAuth: true, title: 'Your Wallet' },
   },
   {
     path: '/:pathMatch(.*)*',

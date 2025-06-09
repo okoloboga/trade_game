@@ -1,14 +1,14 @@
 import { useTonConnectUI } from '@townsquarelabs/ui-vue'
 
 export class TonConnectService {
-  constructor(manifestUrl = import.meta.env.VITE_TON_MANIFEST_URL) {
+  constructor(manifestUrl = import.meta.env.VITE_APP_URL) {
     // Инициализация tonConnectUI через хук
     const { tonConnectUI } = useTonConnectUI()
     this.tonConnectUI = tonConnectUI
     // Настройка manifestUrl
     this.tonConnectUI.setConnectRequestParameters({
       state: 'ready',
-      value: { tonProof: manifestUrl || 'http://localhost/tonconnect-manifest.json' }
+      value: { tonProof: `${manifestUrl}/manifest.json`}
     })
   }
 
