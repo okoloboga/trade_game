@@ -12,7 +12,7 @@ import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
 @WebSocketGateway({ 
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
     namespace: '/'
 })
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -28,8 +28,12 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.connectToOkxWebSocket();
   }
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected to market WebSocket: ${client.id}`);
+  afterInit() {
+    this.logger.log('WebSocket server initialized');
+  }
+
+  handleConnection(client: Socket, ...args: any[]) {
+    this.logger.log(`Client connected: ${client.id}, Args: ${JSON.stringify(args)}`);
     client.emit('message', { message: 'Connected to market WebSocket' });
   }
 
