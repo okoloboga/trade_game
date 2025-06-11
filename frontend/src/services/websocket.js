@@ -16,7 +16,7 @@ export class WebSocketService {
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 2000,
       path: '/socket.io',
-      transports: ['websocket', 'polling']
+      transports: ['websocket']
     });
 
     this.socket.on('connect', () => {
@@ -26,7 +26,7 @@ export class WebSocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
+      console.error('Connection error:', error, 'Namespace:', this.socket.nsp);
     });
 
     this.socket.on('candle', (data) => {

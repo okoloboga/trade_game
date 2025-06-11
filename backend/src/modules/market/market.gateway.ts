@@ -12,12 +12,7 @@ import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
 @WebSocketGateway({ 
-    cors: { 
-        origin: '*', 
-        methods: ['GET', 'POST'],
-        credentials: true
-    },
-    transports: ['websocket', 'polling'],
+    transports: ['websocket'],
     namespace: '/'
 })
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
