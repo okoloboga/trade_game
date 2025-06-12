@@ -16,7 +16,7 @@ export class WebSocketService {
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 2000,
       path: '/socket.io',
-      transports: ['websocket', 'polling'],
+      transports: ['polling'],
     });
 
     this.socket.on('connect', () => {
