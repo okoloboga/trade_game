@@ -26,14 +26,6 @@
               <v-icon color="#E0E0E0">mdi-link</v-icon>
               <v-tooltip activator="parent" location="bottom">{{ $t('wallet_connected') }}</v-tooltip>
             </v-btn>
-            <v-menu v-model="showWalletMenu" location="bottom">
-              <v-card color="black" min-width="200">
-                <v-card-text>
-                  <div class="text-h6" style="font-size: 1rem">${{ balance ? balance.toFixed(2) : '0.00' }}</div>
-                  <div class="text-caption">{{ tokenBalance }} RUBLE</div>
-                </v-card-text>
-              </v-card>
-            </v-menu>
           </div>
         </v-col>
 

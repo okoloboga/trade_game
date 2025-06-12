@@ -15,11 +15,13 @@ export class TonConnectService {
   async connect() {
     try {
       const wallet = await this.tonConnectUI.connectWallet()
+      console.log('Wallet connected:', JSON.stringify(wallet, null, 2));
       if (!wallet?.account?.address) {
         throw new Error('Failed to connect wallet')
       }
       return wallet
     } catch (error) {
+      console.error('Wallet connection failed:', error);
       throw new Error(`Wallet connection failed: ${error.message}`)
     }
   }

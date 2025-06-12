@@ -33,7 +33,6 @@ const initChart = async () => {
     await nextTick()
 
     const rect = chartContainer.value.getBoundingClientRect()
-    console.log('Container dimensions:', rect)
 
     if (rect.width === 0 || rect.height === 0) {
       throw new Error('Container has zero dimensions')
@@ -62,8 +61,6 @@ const initChart = async () => {
         secondsVisible: false,
       },
     })
-
-    console.log('Chart created successfully')
 
     candleSeries = chart.addCandlestickSeries({
       upColor: '#4caf50',
@@ -114,7 +111,6 @@ const updateChartData = () => {
   }
 
   try {
-    console.log('Updating chart with data:', marketStore.candles.length, 'candles')
 
     if (!marketStore.candles || marketStore.candles.length === 0) {
       console.log('No data available for chart')
@@ -166,12 +162,6 @@ const updateChartData = () => {
       console.warn('No valid candles after filtering')
       return
     }
-
-    // Логируем данные для отладки
-    console.log('Formatted chart data:')
-    console.log('First 3 items:', chartData.slice(0, 3))
-    console.log('Last 3 items:', chartData.slice(-3))
-    console.log('Total valid candles:', chartData.length)
 
     // Устанавливаем данные в график
     candleSeries.setData(chartData)
