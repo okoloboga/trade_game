@@ -10,7 +10,7 @@ export const useMarketStore = defineStore('market', {
     ws: null,
   }),
   actions: {
-async fetchCandles(symbol = 'BTC-USDT', timeframe = '5m') {
+async fetchCandles(symbol = 'TON-USDT', timeframe = '5m') {
   try {
     const response = await apiService.getCandles(symbol, timeframe)
 
@@ -54,7 +54,7 @@ async fetchCandles(symbol = 'BTC-USDT', timeframe = '5m') {
   }
 },
 
-    async fetchCurrentPrice(symbol = 'BTC-USDT') {
+    async fetchCurrentPrice(symbol = 'TON-USDT') {
       try {
         const response = await apiService.getCurrentPrice(symbol)
         console.log('Fetched price response:', response)
@@ -77,9 +77,9 @@ async fetchCandles(symbol = 'BTC-USDT', timeframe = '5m') {
       }
     },
 
-    startRealTimeUpdates(symbol = 'BTC-USDT') {
-      if (this.ws) return
-      this.ws = new WebSocketService()
+    startRealTimeUpdates(symbol = 'TON-USDT') {
+      if (this.ws) return;
+      this.ws = new WebSocketService();
       this.ws.connect((data) => {
         console.log('WebSocket data received in store:', JSON.stringify(data));
 

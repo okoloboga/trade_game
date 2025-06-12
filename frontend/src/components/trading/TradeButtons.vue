@@ -87,7 +87,7 @@ const placeTrade = useDebounceFn(async (type) => {
     await tradingStore.placeTrade({
       type,
       amount: amount.value,
-      symbol: 'BTC-USDT',
+      symbol: 'TON-USDT',
     })
     errorStore.setError(t('trade_placed'), false)
     amount.value = 0.1
