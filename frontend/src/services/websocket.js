@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { watch } from 'vue';
 
 export class WebSocketService {
   constructor() {
@@ -11,12 +12,12 @@ export class WebSocketService {
   connect(onMessage) {
     if (this.socket) this.close();
 
-    this.socket = io(import.meta.env.VITE_WS_URL, {
+    this.socket = io(import.meta.env.VITE_WS_URL + '/', {
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 2000,
       path: '/socket.io',
-      transports: ['polling'],
+      transports: ['websocket', 'polling'],
     });
 
     this.socket.on('connect', () => {
