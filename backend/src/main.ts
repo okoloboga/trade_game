@@ -17,7 +17,7 @@ async function bootstrap() {
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
   }); */
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['/socket.io'] });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.useWebSocketAdapter(new IoAdapter(app));

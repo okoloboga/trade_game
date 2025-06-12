@@ -14,7 +14,6 @@ import WebSocket from 'ws';
 @WebSocketGateway({ 
     transports: ['websocket', 'polling'],
     namespace: '/',
-    path: '/socket.io'
 })
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -26,7 +25,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private validBars = ['1m', '5m', '15m']; // Допустимые таймфреймы
 
   constructor() {
-    // this.connectToOkxWebSocket();
+    this.connectToOkxWebSocket();
   }
 
   afterInit() {
