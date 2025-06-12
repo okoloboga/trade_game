@@ -52,48 +52,47 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-import { ref, onMounted, defineAsyncComponent } from 'vue'
-import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue'
-import { useLanguage } from '@/composables/useLanguage'
-import { useI18n } from 'vue-i18n'
-import HomeIcon from '@/assets/home-icon.svg'
-import HistoryIcon from '@/assets/history-icon.svg'
-import WalletIcon from '@/assets/wallet-icon.svg'
+import { useRoute } from 'vue-router';
+import { ref, onMounted, defineAsyncComponent } from 'vue';
+import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
+import { useLanguage } from '@/composables/useLanguage';
+import { useI18n } from 'vue-i18n';
+import HomeIcon from '@/assets/home-icon.svg';
+import HistoryIcon from '@/assets/history-icon.svg';
+import WalletIcon from '@/assets/wallet-icon.svg';
+import { useAuthStore } from '@/stores/auth';
+import { useWalletStore } from '@/stores/wallet';
 
-const { t } = useI18n()
-const DepositDialog = defineAsyncComponent(() => import('@/components/wallet/DepositDialog.vue'))
-const WithdrawDialog = defineAsyncComponent(() => import('@/components/wallet/WithdrawDialog.vue'))
-const currentRoute = useRoute()
-const { language, changeLanguage } = useLanguage()
-const showDeposit = ref(false)
-const showWithdraw = ref(false)
-const showWalletMenu = ref(false)
+const { t } = useI18n();
+const DepositDialog = defineAsyncComponent(() => import('@/components/wallet/DepositDialog.vue'));
+const WithdrawDialog = defineAsyncComponent(() => import('@/components/wallet/WithdrawDialog.vue'));
+const currentRoute = useRoute();
+const { language, changeLanguage } = useLanguage();
+const showDeposit = ref(false);
+const showWithdraw = ref(false);
+const showWalletMenu = ref(false);
 
-const wallet = useTonWallet()
-const isWalletConnected = ref(!!wallet.value)
-
-const balance = ref(0)
-const tokenBalance = ref(0)
+const wallet = useTonWallet();
+const authStore = useAuthStore();
+const walletStore = useWalletStore();
+const isWalletConnected = ref(!!wallet.value);
 
 onMounted(async () => {
-  const { useAuthStore } = await import('@/stores/auth')
-  const { useWalletStore } = await import('@/stores/wallet')
-  const authStore = useAuthStore()
-  const walletStore = useWalletStore()
-
   if (authStore.isConnected || wallet.value) {
-    await walletStore.fetchWalletData()
-    balance.value = walletStore.balance
-    tokenBalance.value = walletStore.tokenBalance
+    await walletStore.fetchWalletData();
+    balance.value = walletStore.balance;
+    tokenBalance.value = walletStore.tokenBalance;
   }
-  wallet.value ? authStore.setConnected(true) : authStore.setConnected(false)
-})
+  wallet.value ? authStore.setConnected(true) : authStore.setConnected(false);
+});
+
+const balance = ref(0);
+const tokenBalance = ref(0);
 
 const handleLanguageChange = () => {
-  const newLanguage = language.value === 'en' ? 'ru' : 'en'
-  changeLanguage(newLanguage)
-}
+  const newLanguage = language.value === 'en' ? 'ru' : 'en';
+  changeLanguage(newLanguage);
+};
 </script>
 
 <style scoped>
