@@ -16,17 +16,17 @@ export class WebSocketService {
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 2000,
       path: '/socket.io',
-      transports: ['websocket', 'polling']
+      transports: ['polling']
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to WebSocket server', this.socket.id);
+      console.log('Connected to WebSocket server', this.socket.id, 'Namespace:', this.socket.nsp);
       this.reconnectAttempts = 0;
       this.subscriptions.forEach(channel => this.subscribe(channel));
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error, 'Namespace:', this.socket.nsp);
+      console.error('Connection error:', error, 'Namespace:', this.socket.nsp, 'Transport:', this.socket.io.engine.transport.name);
     });
 
     this.socket.on('candle', (data) => {

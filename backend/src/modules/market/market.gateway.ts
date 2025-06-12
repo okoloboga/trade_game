@@ -12,8 +12,7 @@ import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
 @WebSocketGateway({ 
-    transports: ['websocket', 'polling'],
-    namespace: '/',
+    transports: ['websocket', 'polling']
 })
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
