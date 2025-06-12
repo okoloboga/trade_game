@@ -14,12 +14,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['/socket.io'] });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new LoggingInterceptor());
-
-  const socketIoOptions = {
-    path: '/socket.io',
-    serveClient: false
-  };
-  app.useWebSocketAdapter(new IoAdapter(app).createIOServer(3000, socketIoOptions));
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
