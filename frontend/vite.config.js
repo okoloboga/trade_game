@@ -16,6 +16,11 @@ export default defineConfig({
     }),
     svgLoader(),
   ],
+  define: {
+    global: {
+      Buffer: Buffer,
+    },
+  },
   server: {
     proxy: {
       '/api': {
@@ -57,6 +62,7 @@ export default defineConfig({
       'vue-demi': path.resolve(__dirname, 'node_modules/vue-demi/lib/index.mjs'),
       'vuetify/lib': 'vuetify',
       'vuetify/styles': 'vuetify/styles',
+      buffer: 'buffer',
     },
   },
   css: {

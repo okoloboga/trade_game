@@ -9,6 +9,7 @@ import { router } from './router'
 import WebApp from '@twa-dev/sdk'
 import { TonConnectUIPlugin } from '@townsquarelabs/ui-vue'
 import { createI18n } from 'vue-i18n'
+import { Buffer } from 'buffer';
 
 // Импорт переводов
 import en from './locales/en.json'
@@ -37,6 +38,8 @@ if (!window.Telegram?.WebApp) {
     }
   }
 }
+
+window.Buffer = window.Buffer || Buffer;
 
 // Vuetify инициализация
 const vuetify = createVuetify({

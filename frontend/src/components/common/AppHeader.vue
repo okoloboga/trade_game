@@ -59,8 +59,6 @@ import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
 import WalletIcon from '@/assets/wallet-icon.svg';
-import { useAuthStore } from '@/stores/auth';
-import { useWalletStore } from '@/stores/wallet';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -69,12 +67,18 @@ const showWithdraw = ref(false);
 const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
-const authStore = useAuthStore();
-const walletStore = useWalletStore();
 const isWalletConnected = ref(!!wallet.value);
 const walletAddress = ref(null);
 
+let authStore, walletStore;
+
 onMounted(async () => {
+  // Импортируем стори асинхронно после инициализации Pinia
+  const { useAuthStore } = await import('@/stores/auth');
+  const { useWalletStore } = await import('@/stores/wallet');
+  authStore = useAuthStore();
+  walletStore = useWalletStore();
+
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   if (wallet.value) {
     await handleWalletConnect(wallet.value);
@@ -83,6 +87,12 @@ onMounted(async () => {
 
 watch(wallet, async (newWallet) => {
   console.log('Wallet changed:', !!newWallet);
+  if (!authStore || !walletStore) {
+    const { useAuthStore } = await import('@/stores/auth');
+    const { useWalletStore } = await import('@/stores/wallet');
+    authStore = useAuthStore();
+    walletStore = useWalletStore();
+  }
   if (newWallet) {
     isWalletConnected.value = true;
     await handleWalletConnect(newWallet);

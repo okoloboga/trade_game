@@ -1,5 +1,3 @@
-import { Address } from '@ton/core';
-
 export const validateAmount = (value, max, min = 0.01) => {
   if (typeof value !== 'number' || isNaN(value)) {
     return 'Amount must be a valid number';
@@ -17,13 +15,13 @@ export const validateWalletAddress = (address) => {
   if (!address || typeof address !== 'string') {
     return 'Wallet address is required';
   }
-  try {
-    // Проверяем raw-формат (0:hex) или user-friendly (base64)
-    Address.parse(address);
-    return true;
-  } catch (error) {
+  // Поддержка raw-формата (0:hex) и user-friendly (base64)
+  const rawAddressRegex = /^0:[0-9a-fA-F]{64}$/;
+  const userFriendlyRegex = /^[A-Za-z0-9+/=]{48}$/;
+  if (!rawAddressRegex.test(address) && !userFriendlyRegex.test(address)) {
     return 'Invalid wallet address format';
   }
+  return true;
 };
 
 export const validateTradeType = (type) => {
