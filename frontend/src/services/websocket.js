@@ -16,7 +16,7 @@ export class WebSocketService {
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 2000,
       path: '/socket.io',
-      transports: ['polling']
+      transports: ['websocket', 'polling'],
     });
 
     this.socket.on('connect', () => {
@@ -26,7 +26,15 @@ export class WebSocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error, 'Namespace:', this.socket.nsp, 'Transport:', this.socket.io.engine.transport.name);
+      console.error('Connection error:', error.message, 'Namespace:', this.socket.nsp, 'Transport:', this.socket.io.engine.transport.name);
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+
+    this.socket.on('message', (data) => {
+      console.log('WebSocket message:', data);
     });
 
     this.socket.on('candle', (data) => {
@@ -35,11 +43,8 @@ export class WebSocketService {
     });
 
     this.socket.on('ticker', (data) => {
+      console.log('Received ticker data:', data);
       onMessage({ type: 'ticker', symbol: data.instId, price: data.close });
-    });
-
-    this.socket.on('error', (error) => {
-      console.error('WebSocket error:', error);
     });
 
     this.socket.on('disconnect', () => {

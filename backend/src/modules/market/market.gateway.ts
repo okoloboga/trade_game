@@ -5,14 +5,15 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   MessageBody,
-  ConnectedSocket
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Logger, BadRequestException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
-@WebSocketGateway({ 
-    transports: ['websocket', 'polling']
+@WebSocketGateway({
+  transports: ['websocket', 'polling'],
+  path: '/socket.io',
 })
 export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -20,8 +21,8 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(MarketGateway.name);
   private okxWs?: WebSocket;
-  private subscriptions: Map<string, Set<Socket>> = new Map(); // Хранит подписки: channel -> клиенты
-  private validBars = ['1m', '5m', '15m']; // Допустимые таймфреймы
+  private subscriptions: Map<string, Set<Socket>> = new Map();
+  private validBars = ['1m', '5m', '15m'];
 
   constructor() {
     this.connectToOkxWebSocket();
@@ -32,13 +33,12 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Client connected: ${client.id}, Args: ${JSON.stringify(args)}`);
+    this.logger.log(`Client connected: ${client.id}, Args: ${JSON.stringify(args)}, Namespace: ${client.nsp.name}`);
     client.emit('message', { message: 'Connected to market WebSocket' });
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected from market WebSocket: ${client.id}`);
-    // Удаляем клиента из всех подписок
+    this.logger.log(`Client disconnected from WebSocket: ${client.id}`);
     this.subscriptions.forEach((clients, channel) => {
       clients.delete(client);
       if (clients.size === 0) {
@@ -68,23 +68,19 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       throw new BadRequestException('Invalid bar');
     }
 
-    // Обработка подписки на свечи
     const candleChannel = `candle${bar}:${instId}`;
     this.logger.log(`Client ${client.id} subscribed to ${candleChannel}`);
 
-    // Добавляем клиента в подписку на свечи
     if (!this.subscriptions.has(candleChannel)) {
       this.subscriptions.set(candleChannel, new Set());
       this.subscribeToOkx(candleChannel);
     }
     this.subscriptions.get(candleChannel)!.add(client);
 
-    // Если это подписка на ticker (bar = 1m), то подписываемся и на ticker
     if (bar === '1m') {
       const tickerChannel = `ticker:${instId}`;
       if (!this.subscriptions.has(tickerChannel)) {
         this.subscriptions.set(tickerChannel, new Set());
-        // Подписка на тикер в OKX (если нужно)
       }
       this.subscriptions.get(tickerChannel)!.add(client);
     }
@@ -92,7 +88,6 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('subscribed', { instId, bar, status: 'subscribed' });
   }
 
-  // Добавьте метод для отправки тикеров
   private sendTickerUpdate(instId: string, price: number) {
     const tickerChannel = `ticker:${instId}`;
     const clients = this.subscriptions.get(tickerChannel);
@@ -100,9 +95,8 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const tickerData = {
         instId,
         close: price,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
       clients.forEach((client: Socket) => {
         if (client.connected) {
           client.emit('ticker', tickerData);
@@ -167,14 +161,10 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
               }
             });
           }
-          
-          // Также отправляем обновление тикера при получении свечи
           this.sendTickerUpdate(message.arg.instId, candle.close);
         }
       } catch (error) {
-        this.logger.error(
-          `Failed to process OKX message: ${(error as Error).message}`,
-        );
+        this.logger.error(`Failed to process OKX message: ${(error as Error).message}`);
       }
     });
 
