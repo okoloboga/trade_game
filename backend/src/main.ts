@@ -6,7 +6,6 @@ import helmet from 'helmet';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { Logger } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
-import { ServerOptions } from 'socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
