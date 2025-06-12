@@ -20,11 +20,11 @@
 
         <!-- Connect Wallet -->
         <v-col cols="4" class="text-center">
-          <TonConnectButton v-if="!isWalletConnected" :style="{ display: 'inline-block' }" />
-          <div v-if="isWalletConnected">
+          <TonConnectButton v-if="!isWalletConnected" />
+          <div v-else>
             <v-btn variant="text" icon @click="showWalletMenu = !showWalletMenu" class="header-btn">
               <v-icon color="#E0E0E0">mdi-link</v-icon>
-              <v-tooltip activator="parent" location="bottom">{{ $t('wallet_connected') }}</v-tooltip>
+              <v-tooltip activator="parent" location="bottom">{{ walletAddress || $t('wallet_connected') }}</v-tooltip>
             </v-btn>
           </div>
         </v-col>
@@ -52,9 +52,8 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router';
-import { ref, onMounted } from 'vue';
-import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { ref, onMounted, watch } from 'vue';
+import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
@@ -64,44 +63,33 @@ import { useAuthStore } from '@/stores/auth';
 import { useWalletStore } from '@/stores/wallet';
 
 const { t } = useI18n();
-const currentRoute = useRoute();
 const { language, changeLanguage } = useLanguage();
 const showDeposit = ref(false);
 const showWithdraw = ref(false);
 const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
-const { tonConnectUI } = useTonConnectUI();
 const authStore = useAuthStore();
 const walletStore = useWalletStore();
 const isWalletConnected = ref(!!wallet.value);
-const balance = ref(0);
-const tokenBalance = ref(0);
+const walletAddress = ref(null);
 
 onMounted(async () => {
-  console.log('AppHeader mounted, wallet:', !!wallet.value);
-  if (tonConnectUI) {
-    console.log('TonConnectUI available');
-    tonConnectUI.onStatusChange(async (wallet) => {
-      console.log('TonConnectUI status changed:', JSON.stringify(wallet, null, 2));
-      if (wallet) {
-        try {
-          isWalletConnected.value = true;
-          await handleWalletConnect(wallet);
-          await walletStore.fetchWalletData();
-          balance.value = walletStore.balance;
-          tokenBalance.value = walletStore.tokenBalance;
-        } catch (error) {
-          console.error('Failed to handle wallet connect:', error);
-          authStore.logout();
-        }
-      } else {
-        isWalletConnected.value = false;
-        authStore.logout();
-      }
-    });
+  console.log('AppHeader mounted, initial wallet:', !!wallet.value);
+  if (wallet.value) {
+    await handleWalletConnect(wallet.value);
+  }
+});
+
+watch(wallet, async (newWallet) => {
+  console.log('Wallet changed:', !!newWallet);
+  if (newWallet) {
+    isWalletConnected.value = true;
+    await handleWalletConnect(newWallet);
   } else {
-    console.error('TonConnectUI not initialized');
+    isWalletConnected.value = false;
+    walletAddress.value = null;
+    authStore.logout();
   }
 });
 
@@ -110,28 +98,32 @@ async function handleWalletConnect(wallet) {
     if (!wallet?.account?.address) {
       throw new Error('No wallet address');
     }
-    const walletAddress = wallet.account.address;
-    console.log('Handling wallet connect for address:', walletAddress);
+    const walletAddressRaw = wallet.account.address;
+    console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
-    const { challenge } = await authStore.generateChallenge(walletAddress);
+    // Генерация challenge
+    const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
+    // Формирование tonProof
     if (!wallet.connectItems?.tonProof) {
       throw new Error('No tonProof available');
     }
     const tonProof = wallet.connectItems.tonProof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
+    // Формирование account
     const account = {
-      address: wallet.account.address,
+      address: walletAddressRaw,
       publicKey: wallet.account.publicKey,
       chain: wallet.account.chain,
       walletStateInit: wallet.account.walletStateInit || '',
     };
     console.log('Account:', JSON.stringify(account, null, 2));
 
+    // Проверка tonProof
     const verifyResult = await authStore.verifyProof({
-      walletAddress,
+      walletAddress: walletAddressRaw,
       tonProof,
       account,
     });
@@ -141,12 +133,18 @@ async function handleWalletConnect(wallet) {
       throw new Error('TON Proof verification failed');
     }
 
-    await authStore.login({ ton_address: walletAddress, tonProof, account });
+    // Логин
+    await authStore.login({ ton_address: walletAddressRaw, tonProof, account });
     console.log('Login successful');
+    isWalletConnected.value = true;
+    walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
+    await walletStore.fetchWalletData();
   } catch (error) {
     console.error('Authorization failed:', error);
     authStore.logout();
+    isWalletConnected.value = false;
+    walletAddress.value = null;
     throw error;
   }
 }
