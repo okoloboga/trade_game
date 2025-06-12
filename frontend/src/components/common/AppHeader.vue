@@ -54,7 +54,7 @@
 <script setup>
 import { useRoute } from 'vue-router';
 import { ref, onMounted } from 'vue';
-import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
+import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
@@ -62,7 +62,6 @@ import HistoryIcon from '@/assets/history-icon.svg';
 import WalletIcon from '@/assets/wallet-icon.svg';
 import { useAuthStore } from '@/stores/auth';
 import { useWalletStore } from '@/stores/wallet';
-import { TonConnectService } from '@/services/tonConnect';
 
 const { t } = useI18n();
 const currentRoute = useRoute();
@@ -72,29 +71,85 @@ const showWithdraw = ref(false);
 const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
+const { tonConnectUI } = useTonConnectUI();
 const authStore = useAuthStore();
 const walletStore = useWalletStore();
 const isWalletConnected = ref(!!wallet.value);
-const tonConnectService = new TonConnectService();
+const balance = ref(0);
+const tokenBalance = ref(0);
 
 onMounted(async () => {
   console.log('AppHeader mounted, wallet:', !!wallet.value);
-  if (wallet.value) {
-    try {
-      await tonConnectService.handleWalletConnect(wallet.value);
-      isWalletConnected.value = true;
-      await walletStore.fetchWalletData();
-      balance.value = walletStore.balance;
-      tokenBalance.value = walletStore.tokenBalance;
-    } catch (error) {
-      console.error('Failed to handle wallet on mount:', error);
-    }
+  if (tonConnectUI) {
+    console.log('TonConnectUI available');
+    tonConnectUI.onStatusChange(async (wallet) => {
+      console.log('TonConnectUI status changed:', JSON.stringify(wallet, null, 2));
+      if (wallet) {
+        try {
+          isWalletConnected.value = true;
+          await handleWalletConnect(wallet);
+          await walletStore.fetchWalletData();
+          balance.value = walletStore.balance;
+          tokenBalance.value = walletStore.tokenBalance;
+        } catch (error) {
+          console.error('Failed to handle wallet connect:', error);
+          authStore.logout();
+        }
+      } else {
+        isWalletConnected.value = false;
+        authStore.logout();
+      }
+    });
+  } else {
+    console.error('TonConnectUI not initialized');
   }
-  authStore.setConnected(!!wallet.value);
 });
 
-const balance = ref(0);
-const tokenBalance = ref(0);
+async function handleWalletConnect(wallet) {
+  try {
+    if (!wallet?.account?.address) {
+      throw new Error('No wallet address');
+    }
+    const walletAddress = wallet.account.address;
+    console.log('Handling wallet connect for address:', walletAddress);
+
+    const { challenge } = await authStore.generateChallenge(walletAddress);
+    console.log('Challenge generated:', challenge);
+
+    if (!wallet.connectItems?.tonProof) {
+      throw new Error('No tonProof available');
+    }
+    const tonProof = wallet.connectItems.tonProof;
+    console.log('tonProof:', JSON.stringify(tonProof, null, 2));
+
+    const account = {
+      address: wallet.account.address,
+      publicKey: wallet.account.publicKey,
+      chain: wallet.account.chain,
+      walletStateInit: wallet.account.walletStateInit || '',
+    };
+    console.log('Account:', JSON.stringify(account, null, 2));
+
+    const verifyResult = await authStore.verifyProof({
+      walletAddress,
+      tonProof,
+      account,
+    });
+    console.log('Verify result:', verifyResult);
+
+    if (!verifyResult.valid) {
+      throw new Error('TON Proof verification failed');
+    }
+
+    await authStore.login({ ton_address: walletAddress, tonProof, account });
+    console.log('Login successful');
+    authStore.setConnected(true);
+  } catch (error) {
+    console.error('Authorization failed:', error);
+    authStore.logout();
+    throw error;
+  }
+}
 
 const handleLanguageChange = () => {
   const newLanguage = language.value === 'en' ? 'ru' : 'en';

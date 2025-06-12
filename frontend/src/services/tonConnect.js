@@ -4,17 +4,21 @@ import { useAuthStore } from '@/stores/auth';
 export class TonConnectService {
   constructor(manifestUrl = import.meta.env.VITE_APP_URL) {
     try {
+      console.log('Initializing TonConnectService with manifest:', manifestUrl);
       const { tonConnectUI } = useTonConnectUI();
       this.tonConnectUI = tonConnectUI;
       this.authStore = useAuthStore();
-      console.log('TonConnectService initialized:', !!this.tonConnectUI);
+      console.log('TonConnectUI initialized:', !!this.tonConnectUI);
+
+      if (!this.tonConnectUI) {
+        throw new Error('TonConnectUI not initialized');
+      }
 
       this.tonConnectUI.setConnectRequestParameters({
         state: 'ready',
         value: { tonProof: `${manifestUrl}/manifest.json` },
       });
 
-      // Слушаем изменения статуса
       this.tonConnectUI.onStatusChange(async (wallet) => {
         console.log('Wallet status changed:', JSON.stringify(wallet, null, 2));
         if (wallet) {
@@ -44,24 +48,22 @@ export class TonConnectService {
 
   async handleWalletConnect(wallet) {
     try {
+      console.log('Handling wallet connect:', wallet);
       if (!wallet?.account?.address) {
         throw new Error('No wallet address');
       }
       const walletAddress = wallet.account.address;
-      console.log('Handling wallet connect for address:', walletAddress);
+      console.log('Wallet address:', walletAddress);
 
-      // Генерация challenge
       const { challenge } = await this.authStore.generateChallenge(walletAddress);
       console.log('Challenge generated:', challenge);
 
-      // Формирование tonProof
       if (!wallet.connectItems?.tonProof) {
         throw new Error('No tonProof available');
       }
       const tonProof = wallet.connectItems.tonProof;
       console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
-      // Формирование account
       const account = {
         address: wallet.account.address,
         publicKey: wallet.account.publicKey,
@@ -70,7 +72,6 @@ export class TonConnectService {
       };
       console.log('Account:', JSON.stringify(account, null, 2));
 
-      // Проверка tonProof
       const verifyResult = await this.authStore.verifyProof({
         walletAddress,
         tonProof,
@@ -82,7 +83,6 @@ export class TonConnectService {
         throw new Error('TON Proof verification failed');
       }
 
-      // Логин
       await this.authStore.login({ ton_address: walletAddress, tonProof, account });
       console.log('Login successful');
     } catch (error) {

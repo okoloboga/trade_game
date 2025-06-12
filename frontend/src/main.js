@@ -21,7 +21,7 @@ if (window.Telegram?.WebApp?.isVersionAtLeast?.('6.0')) {
 } else {
   console.warn('Telegram WebApp is not available')
 }
-/*
+
 if (!window.Telegram?.WebApp) {
   console.warn('Running outside Telegram, mocking WebApp')
   window.Telegram = {
@@ -37,7 +37,7 @@ if (!window.Telegram?.WebApp) {
     }
   }
 }
-*/
+
 // Vuetify инициализация
 const vuetify = createVuetify({
   components,
