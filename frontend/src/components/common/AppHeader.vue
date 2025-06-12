@@ -53,7 +53,7 @@
 
 <script setup>
 import { useRoute } from 'vue-router';
-import { ref, onMounted, defineAsyncComponent } from 'vue';
+import { ref, onMounted } from 'vue';
 import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
@@ -62,10 +62,9 @@ import HistoryIcon from '@/assets/history-icon.svg';
 import WalletIcon from '@/assets/wallet-icon.svg';
 import { useAuthStore } from '@/stores/auth';
 import { useWalletStore } from '@/stores/wallet';
+import { TonConnectService } from '@/services/tonConnect';
 
 const { t } = useI18n();
-const DepositDialog = defineAsyncComponent(() => import('@/components/wallet/DepositDialog.vue'));
-const WithdrawDialog = defineAsyncComponent(() => import('@/components/wallet/WithdrawDialog.vue'));
 const currentRoute = useRoute();
 const { language, changeLanguage } = useLanguage();
 const showDeposit = ref(false);
@@ -76,14 +75,22 @@ const wallet = useTonWallet();
 const authStore = useAuthStore();
 const walletStore = useWalletStore();
 const isWalletConnected = ref(!!wallet.value);
+const tonConnectService = new TonConnectService();
 
 onMounted(async () => {
-  if (authStore.isConnected || wallet.value) {
-    await walletStore.fetchWalletData();
-    balance.value = walletStore.balance;
-    tokenBalance.value = walletStore.tokenBalance;
+  console.log('AppHeader mounted, wallet:', !!wallet.value);
+  if (wallet.value) {
+    try {
+      await tonConnectService.handleWalletConnect(wallet.value);
+      isWalletConnected.value = true;
+      await walletStore.fetchWalletData();
+      balance.value = walletStore.balance;
+      tokenBalance.value = walletStore.tokenBalance;
+    } catch (error) {
+      console.error('Failed to handle wallet on mount:', error);
+    }
   }
-  wallet.value ? authStore.setConnected(true) : authStore.setConnected(false);
+  authStore.setConnected(!!wallet.value);
 });
 
 const balance = ref(0);

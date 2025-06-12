@@ -3,29 +3,38 @@ import { useAuthStore } from '@/stores/auth';
 
 export class TonConnectService {
   constructor(manifestUrl = import.meta.env.VITE_APP_URL) {
-    const { tonConnectUI } = useTonConnectUI();
-    this.tonConnectUI = tonConnectUI;
-    this.authStore = useAuthStore();
-    this.tonConnectUI.setConnectRequestParameters({
-      state: 'ready',
-      value: { tonProof: `${manifestUrl}/manifest.json` },
-    });
+    try {
+      const { tonConnectUI } = useTonConnectUI();
+      this.tonConnectUI = tonConnectUI;
+      this.authStore = useAuthStore();
+      console.log('TonConnectService initialized:', !!this.tonConnectUI);
 
-    // Слушаем изменения статуса кошелька
-    this.tonConnectUI.onStatusChange(async (wallet) => {
-      console.log('Wallet status changed:', JSON.stringify(wallet, null, 2));
-      if (wallet) {
-        await this.handleWalletConnect(wallet);
-      } else {
-        await this.authStore.logout();
-      }
-    });
+      this.tonConnectUI.setConnectRequestParameters({
+        state: 'ready',
+        value: { tonProof: `${manifestUrl}/manifest.json` },
+      });
+
+      // Слушаем изменения статуса
+      this.tonConnectUI.onStatusChange(async (wallet) => {
+        console.log('Wallet status changed:', JSON.stringify(wallet, null, 2));
+        if (wallet) {
+          await this.handleWalletConnect(wallet);
+        } else {
+          console.log('Wallet disconnected');
+          await this.authStore.logout();
+        }
+      });
+    } catch (error) {
+      console.error('Failed to initialize TonConnectService:', error);
+    }
   }
 
   async connect() {
     try {
+      console.log('Attempting to connect wallet');
       const wallet = await this.tonConnectUI.connectWallet();
       console.log('Wallet connected:', JSON.stringify(wallet, null, 2));
+      await this.handleWalletConnect(wallet);
       return wallet;
     } catch (error) {
       console.error('Wallet connection failed:', error);
@@ -39,15 +48,18 @@ export class TonConnectService {
         throw new Error('No wallet address');
       }
       const walletAddress = wallet.account.address;
+      console.log('Handling wallet connect for address:', walletAddress);
 
       // Генерация challenge
       const { challenge } = await this.authStore.generateChallenge(walletAddress);
+      console.log('Challenge generated:', challenge);
 
       // Формирование tonProof
       if (!wallet.connectItems?.tonProof) {
         throw new Error('No tonProof available');
       }
       const tonProof = wallet.connectItems.tonProof;
+      console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
       // Формирование account
       const account = {
@@ -56,6 +68,7 @@ export class TonConnectService {
         chain: wallet.account.chain,
         walletStateInit: wallet.account.walletStateInit || '',
       };
+      console.log('Account:', JSON.stringify(account, null, 2));
 
       // Проверка tonProof
       const verifyResult = await this.authStore.verifyProof({
@@ -63,6 +76,7 @@ export class TonConnectService {
         tonProof,
         account,
       });
+      console.log('Verify result:', verifyResult);
 
       if (!verifyResult.valid) {
         throw new Error('TON Proof verification failed');
@@ -70,6 +84,7 @@ export class TonConnectService {
 
       // Логин
       await this.authStore.login({ ton_address: walletAddress, tonProof, account });
+      console.log('Login successful');
     } catch (error) {
       console.error('Authorization failed:', error);
       await this.authStore.logout();
