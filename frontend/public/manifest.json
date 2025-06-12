@@ -1,6 +1,6 @@
 {
-  "url": "https://5b5d-91-199-154-233.ngrok-free.app",
+  "url": "https://trade.ruble.website",
   "name": "Ruble Trade Game",
-  "iconUrl": "https://5b5d-91-199-154-233.ngrok-free.app/icon.png",
+  "iconUrl": "https://trade.ruble.website/icon.png",
   "networks": ["mainnet", "testnet"]
 }
