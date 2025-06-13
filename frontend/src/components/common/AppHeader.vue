@@ -111,7 +111,6 @@ async function handleWalletConnect(wallet) {
           wallet.connectItems = connectItems;
         }
       }
-    }
 
     const tonProof = wallet.connectItems?.tonProof?.proof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
