@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { Address, Cell } from '@ton/core';
 import { TonService } from '../ton/ton.service';
 import { TonProof, Account } from 'src/types/ton.types';
+// import { signVerify } from '@ton/crypto';
 
 @Injectable()
 export class ChallengeService {

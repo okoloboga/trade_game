@@ -80,6 +80,7 @@ onMounted(async () => {
       isWalletConnected.value = false;
       walletAddress.value = null;
       authStore.logout();
+      close(); // Закрываем модалку при отключении
     }
   });
 });
@@ -95,6 +96,7 @@ async function handleWalletConnect(wallet) {
 
     // Сбрасываем параметры
     tonConnectUI.setConnectRequestParameters(null);
+    await new Promise(resolve => setTimeout(resolve, 100)); // Даём время на сброс
 
     // Запрашиваем challenge
     tonConnectUI.setConnectRequestParameters({ state: 'loading' });
@@ -109,7 +111,7 @@ async function handleWalletConnect(wallet) {
 
     // Ждём tonProof
     let tonProof = wallet.connectItems?.tonProof?.proof;
-    let attempts = 5;
+    let attempts = 10; // Увеличиваем попытки
     while (!tonProof && attempts > 0 && tonConnectUI.connected) {
       console.log(`Waiting for tonProof, attempts left: ${attempts}`);
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -118,14 +120,17 @@ async function handleWalletConnect(wallet) {
     }
 
     if (!tonProof || tonProof.payload !== challenge) {
-      console.warn('No valid tonProof or mismatched payload, reconnecting...');
+      console.warn('No valid tonProof or mismatched payload, attempting manual reconnect...');
       if (tonConnectUI.connected) {
         await tonConnectUI.disconnect();
+        close(); // Закрываем модалку перед повторным подключением
       }
+      // Обновляем параметры перед новым подключением
       tonConnectUI.setConnectRequestParameters({
         state: 'ready',
         value: { tonProof: challenge },
       });
+      await tonConnectUI.openModal(); // Открываем модалку вручную
       const walletData = await tonConnectUI.connectWallet();
       tonProof = walletData.connectItems?.tonProof?.proof;
       if (!tonProof || tonProof.payload !== challenge) {
@@ -146,7 +151,7 @@ async function handleWalletConnect(wallet) {
 
     const verifyResult = await authStore.verifyProof({
       walletAddress: walletAddressRaw,
-      tonProof,
+      tonProof: { proof: tonProof },
       account,
     });
     console.log('Verify result:', verifyResult);
@@ -155,19 +160,20 @@ async function handleWalletConnect(wallet) {
       throw new Error('TON Proof verification failed');
     }
 
-    await authStore.login({ ton_address: walletAddressRaw, tonProof, account });
+    await authStore.login({ ton_address: walletAddressRaw, tonProof: { proof: tonProof }, account });
     console.log('Login successful');
     isWalletConnected.value = true;
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
+    close(); // Закрываем модалку после успеха
   } catch (error) {
     console.error('Authorization failed:', error);
     tonConnectUI.setConnectRequestParameters(null);
     authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
-    close(); // Закрываем модальное окно при ошибке
+    close(); // Закрываем модалку при ошибке
     throw error;
   }
 }
