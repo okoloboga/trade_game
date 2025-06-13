@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { TonConnectButton, useTonWallet, useTonConnectUI, useTonConnectModal } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
@@ -52,6 +52,7 @@ const showWithdraw = ref(false);
 
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
+const { close } = useTonConnectModal();
 const isWalletConnected = ref(false);
 const walletAddress = ref(null);
 
@@ -65,6 +66,9 @@ onMounted(async () => {
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
+
+  // Закрываем модальное окно при загрузке
+  close();
 
   tonConnectUI.onStatusChange(async (newWallet) => {
     console.log('Wallet status changed:', !!newWallet);
@@ -105,7 +109,7 @@ async function handleWalletConnect(wallet) {
 
     // Ждём tonProof
     let tonProof = wallet.connectItems?.tonProof?.proof;
-    let attempts = 3;
+    let attempts = 5;
     while (!tonProof && attempts > 0 && tonConnectUI.connected) {
       console.log(`Waiting for tonProof, attempts left: ${attempts}`);
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -118,6 +122,10 @@ async function handleWalletConnect(wallet) {
       if (tonConnectUI.connected) {
         await tonConnectUI.disconnect();
       }
+      tonConnectUI.setConnectRequestParameters({
+        state: 'ready',
+        value: { tonProof: challenge },
+      });
       const walletData = await tonConnectUI.connectWallet();
       tonProof = walletData.connectItems?.tonProof?.proof;
       if (!tonProof || tonProof.payload !== challenge) {
@@ -159,6 +167,7 @@ async function handleWalletConnect(wallet) {
     authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
+    close(); // Закрываем модальное окно при ошибке
     throw error;
   }
 }

@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
         console.log('Login response:', response);
         this.token = response.access_token;
         this.user = response.user;
-        this.walletAddress = response.user.ton_;
+        this.walletAddress = response.user.ton_address;
         this.setConnected(true);
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify(response.user));
