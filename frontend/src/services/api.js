@@ -21,7 +21,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     console.log('API response:', response.config.url, response.data); // Отладка
-    return response.data; // Возвращаем только данные
+    return response;
   },
 
   (error) => {

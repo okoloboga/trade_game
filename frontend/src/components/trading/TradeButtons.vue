@@ -17,7 +17,7 @@
         </v-col>
         <v-col cols="6">
           <div class="text-h6 text-white">
-            ${{ marketStore.currentPrice?.toFixed(2) ?? '--' }}
+            ${{ currentPrice.toFixed(2) ?? '--' }}
           </div>
         </v-col>
       </v-row>
@@ -71,6 +71,11 @@ const tradingStore = useTradingStore()
 const walletStore = useWalletStore()
 const errorStore = useErrorStore()
 const loading = ref(false)
+
+const currentPrice = computed(() => {
+  console.log('TradeButtons current price:', marketStore.currentPrice);
+  return marketStore.currentPrice;
+});
 
 const amountRules = computed(() => [
   v => validateAmount(v, 1) === true || validateAmount(v, 1),
