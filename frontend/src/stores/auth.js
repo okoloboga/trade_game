@@ -1,80 +1,92 @@
-import { defineStore } from 'pinia';
-import apiService from '@/services/api';
-import { useErrorStore } from '@/stores/error';
+import { defineStore } from 'pinia'
+import api from '@/services/api'
+import { useErrorStore } from '@/stores/error'
+import { validateWalletAddress } from '@/utils/validators'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('token') || null,
     user: null,
-    walletAddress: null,
+    token: localStorage.getItem('token') || null,
     isConnected: false,
+    walletAddress: null,
   }),
+  getters: {
+    isAuthenticated: (state) => !!state.token && state.isConnected,
+    getWalletAddress: (state) => state.walletAddress,
+  },
   actions: {
-    async init() {
-      if (this.token && !this.user) {
-        try {
-          const response = JSON.parse(localStorage.getItem('user') || '{}');
-          if (response.id && response.ton_address) {
-            this.user = response;
-            this.walletAddress = response.ton_address;
-            this.setConnected(true);
-          } else {
-            this.logout();
-          }
-        } catch (error) {
-          this.logout();
-          useErrorStore().setError('Failed to restore session');
-        }
-      }
+    setConnected(status) {
+      this.isConnected = status
     },
     async generateChallenge(walletAddress) {
+      const validation = validateWalletAddress(walletAddress)
+      if (validation !== true) {
+        useErrorStore().setError(validation)
+        throw new Error(validation)
+      }
       try {
-        const response = await apiService.generateChallenge(walletAddress);
-        console.log('Challenge response:', response);
-        return response;
+        const response = await api.get(`/challenge/generate`, { params: { walletAddress } })
+        return response.data
       } catch (error) {
-        console.error('Error generating challenge:', error);
-        useErrorStore().setError('Failed to generate challenge');
-        throw error;
+        useErrorStore().setError('Failed to generate challenge')
+        throw error
       }
     },
-    async verifyProof(data) {
+    async verifyProof(proof) {
+      if (!proof) {
+        useErrorStore().setError('Proof is required')
+        throw new Error('Proof is required')
+      }
       try {
-        const response = await apiService.verifyProof(data);
-        console.log('Verify proof response:', JSON.stringify(response, null, 2));
-        return response;
+        const response = await api.post('/challenge/verify', proof)
+        return response.data
       } catch (error) {
-        console.error('Error verifying proof:', error);
-        useErrorStore().setError('Failed to verify proof');
-        throw error;
+        useErrorStore().setError('Proof verification failed')
+        throw error
       }
     },
-    async login(data) {
+    async login(walletAddress) {
+      const validation = validateWalletAddress(walletAddress)
+      if (validation !== true) {
+        useErrorStore().setError(validation)
+        throw new Error(validation)
+      }
       try {
-        const response = await apiService.login(data);
-        console.log('Login response:', response);
-        this.token = response.access_token;
-        this.user = response.user;
-        this.walletAddress = response.user.ton_address;
-        this.setConnected(true);
-        localStorage.setItem('token', response.access_token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        return response;
+        localStorage.removeItem('token')
+        const response = await api.post('/auth/login', { walletAddress })
+        this.token = response.data.token
+        this.user = { id: response.data.user.id, ...response.data.user }
+        this.setConnected(true) // Используем новый метод
+        this.walletAddress = walletAddress
+        localStorage.setItem('token', this.token)
+        useErrorStore().setError('Login successful', false)
       } catch (error) {
-        useErrorStore().setError('Login failed');
-        throw error;
+        useErrorStore().setError('Login failed')
+        throw error
+      }
+    },
+    async verifyToken() {
+      if (!this.token) {
+        this.logout()
+        return
+      }
+      try {
+        const response = await api.get('/auth/verify')
+        this.user = { id: response.data.user.id, ...response.data.user }
+        this.setConnected(true) // Используем новый метод
+        this.walletAddress = response.data.walletAddress
+      } catch (error) {
+        this.logout()
+        useErrorStore().setError('Session verification failed')
+        throw error
       }
     },
     logout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      this.token = null;
-      this.user = null;
-      this.walletAddress = null;
-      this.setConnected(false);
-    },
-    setConnected(isConnected) {
-      this.isConnected = isConnected;
+      this.token = null
+      this.user = null
+      this.setConnected(false) // Используем новый метод
+      this.walletAddress = null
+      localStorage.removeItem('token')
     },
   },
-});
+})
