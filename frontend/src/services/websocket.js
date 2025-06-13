@@ -62,9 +62,9 @@ export class WebSocketService {
     if (this.socket && this.socket.connected) {
       const [type, instId, bar] = channel.split(':');
       if (type === 'candles') {
-        this.socket.emit('subscribe', { instId, bar: bar || '5m' });
+        this.socket.emit('subscribe', { instId: 'TON-USDT', bar: bar || '5m' });
       } else if (type === 'ticker') {
-        this.socket.emit('subscribe', { instId, bar: '1m' });
+        this.socket.emit('subscribe', { instId: 'TON-USDT', bar: '5m' });
       }
     }
   }
@@ -74,7 +74,7 @@ export class WebSocketService {
       this.subscriptions.delete(channel);
       if (this.socket && this.socket.connected) {
         const [type, instId, bar] = channel.split(':');
-        this.socket.emit('unsubscribe', { instId, bar });
+        this.socket.emit('unsubscribe', { instId: 'TON-USDT', bar: '5m' });
       }
     }
   }

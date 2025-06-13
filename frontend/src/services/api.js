@@ -19,8 +19,13 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API response:', response.config.url, response.data); // Отладка
+    return response.data; // Возвращаем только данные
+  },
+
   (error) => {
+    console.error('API error:', error.response?.data || error.message);
     const errorStore = useErrorStore();
     if (error.response?.status === 401) {
       const authStore = useAuthStore();
