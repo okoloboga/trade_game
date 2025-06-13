@@ -44,48 +44,117 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-import { ref, onMounted, defineAsyncComponent } from 'vue'
-import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue'
-import { useLanguage } from '@/composables/useLanguage'
-import { useI18n } from 'vue-i18n'
-import HomeIcon from '@/assets/home-icon.svg'
-import HistoryIcon from '@/assets/history-icon.svg'
-import WalletIcon from '@/assets/wallet-icon.svg'
+import { ref, onMounted, watch } from 'vue';
+import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
+import { useLanguage } from '@/composables/useLanguage';
+import { useI18n } from 'vue-i18n';
+import HomeIcon from '@/assets/home-icon.svg';
+import HistoryIcon from '@/assets/history-icon.svg';
+import WalletIcon from '@/assets/wallet-icon.svg';
 
-const { t } = useI18n()
-const DepositDialog = defineAsyncComponent(() => import('@/components/wallet/DepositDialog.vue'))
-const WithdrawDialog = defineAsyncComponent(() => import('@/components/wallet/WithdrawDialog.vue'))
-const currentRoute = useRoute()
-const { language, changeLanguage } = useLanguage()
-const showDeposit = ref(false)
-const showWithdraw = ref(false)
-const showWalletMenu = ref(false)
+const { t } = useI18n();
+const { language, changeLanguage } = useLanguage();
+const showDeposit = ref(false);
+const showWithdraw = ref(false);
+const showWalletMenu = ref(false);
 
-const wallet = useTonWallet()
-const isWalletConnected = ref(!!wallet.value)
+const wallet = useTonWallet();
+const isWalletConnected = ref(!!wallet.value);
+const walletAddress = ref(null);
 
-const balance = ref(0)
-const tokenBalance = ref(0)
+let authStore, walletStore;
 
 onMounted(async () => {
-  const { useAuthStore } = await import('@/stores/auth')
-  const { useWalletStore } = await import('@/stores/wallet')
-  const authStore = useAuthStore()
-  const walletStore = useWalletStore()
+  // Импортируем стори асинхронно после инициализации Pinia
+  const { useAuthStore } = await import('@/stores/auth');
+  const { useWalletStore } = await import('@/stores/wallet');
+  authStore = useAuthStore();
+  walletStore = useWalletStore();
 
-  if (authStore.isConnected || wallet.value) {
-    await walletStore.fetchWalletData()
-    balance.value = walletStore.balance
-    tokenBalance.value = walletStore.tokenBalance
+  console.log('AppHeader mounted, initial wallet:', !!wallet.value);
+  if (wallet.value) {
+    await handleWalletConnect(wallet.value);
   }
-  wallet.value ? authStore.setConnected(true) : authStore.setConnected(false)
-})
+});
+
+watch(wallet, async (newWallet) => {
+  console.log('Wallet changed:', !!newWallet);
+  if (!authStore || !walletStore) {
+    const { useAuthStore } = await import('@/stores/auth');
+    const { useWalletStore } = await import('@/stores/wallet');
+    authStore = useAuthStore();
+    walletStore = useWalletStore();
+  }
+  if (newWallet) {
+    isWalletConnected.value = true;
+    await handleWalletConnect(newWallet);
+  } else {
+    isWalletConnected.value = false;
+    walletAddress.value = null;
+    authStore.logout();
+  }
+});
+
+async function handleWalletConnect(wallet) {
+  try {
+    if (!wallet?.account?.address) {
+      throw new Error('No wallet address');
+    }
+    const walletAddressRaw = wallet.account.address;
+    console.log('Handling wallet connect for raw address:', walletAddressRaw);
+
+    // Генерация challenge
+    const { challenge } = await authStore.generateChallenge(walletAddressRaw);
+    console.log('Challenge generated:', challenge);
+
+    // Формирование tonProof
+    if (!wallet.connectItems?.tonProof) {
+      throw new Error('No tonProof available');
+    }
+    const tonProof = wallet.connectItems.tonProof;
+    console.log('tonProof:', JSON.stringify(tonProof, null, 2));
+
+    // Формирование account
+    const account = {
+      address: walletAddressRaw,
+      publicKey: wallet.account.publicKey,
+      chain: wallet.account.chain,
+      walletStateInit: wallet.account.walletStateInit || '',
+    };
+    console.log('Account:', JSON.stringify(account, null, 2));
+
+    // Проверка tonProof
+    const verifyResult = await authStore.verifyProof({
+      walletAddress: walletAddressRaw,
+      tonProof,
+      account,
+    });
+    console.log('Verify result:', verifyResult);
+
+    if (!verifyResult.valid) {
+      throw new Error('TON Proof verification failed');
+    }
+
+    // Логин
+    await authStore.login({ ton_address: walletAddressRaw, tonProof, account });
+    console.log('Login successful');
+    isWalletConnected.value = true;
+    walletAddress.value = walletAddressRaw;
+    authStore.setConnected(true);
+    await walletStore.fetchWalletData();
+  } catch (error) {
+    console.error('Authorization failed:', error);
+    authStore.logout();
+    isWalletConnected.value = false;
+    walletAddress.value = null;
+    throw error;
+  }
+}
 
 const handleLanguageChange = () => {
-  const newLanguage = language.value === 'en' ? 'ru' : 'en'
-  changeLanguage(newLanguage)
-}
+  const newLanguage = language.value === 'en' ? 'ru' : 'en';
+  changeLanguage(newLanguage);
+};
 </script>
 
 <style scoped>
