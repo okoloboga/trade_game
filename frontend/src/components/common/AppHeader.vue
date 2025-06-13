@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
