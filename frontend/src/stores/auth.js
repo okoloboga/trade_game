@@ -40,8 +40,8 @@ export const useAuthStore = defineStore('auth', {
     },
     async verifyProof(data) {
       try {
-        console.log('Verify proof response:', response);
         const response = await apiService.verifyProof(data);
+        console.log('Verify proof response:', response);
         return response;
       } catch (error) {
         console.error('Error verifying proof:', error);
@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
         console.log('Login response:', response);
         this.token = response.access_token;
         this.user = response.user;
-        this.walletAddress = response.user.ton_address;
+        this.walletAddress = response.user.ton_;
         this.setConnected(true);
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify(response.user));
@@ -67,7 +67,7 @@ export const useAuthStore = defineStore('auth', {
     },
     logout() {
       localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.setItem('user');
       this.token = null;
       this.user = null;
       this.walletAddress = null;
@@ -75,6 +75,6 @@ export const useAuthStore = defineStore('auth', {
     },
     setConnected(isConnected) {
       this.isConnected = isConnected;
-    },
+    }
   },
 });

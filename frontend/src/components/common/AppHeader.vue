@@ -104,36 +104,19 @@ async function handleWalletConnect(wallet) {
 
     // Проверяем tonProof
     if (!wallet.connectItems?.tonProof?.proof) {
-      console.warn('No tonProof available, waiting for wallet response...');
-      // Проверяем, подключен ли кошелёк
+      console.warn('No tonProof available, attempting reconnect...');
       if (tonConnectUI.connected) {
-        console.warn('Wallet already connected, attempting to fetch tonProof...');
-        // Даём время для обновления tonProof
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!wallet.connectItems?.tonProof?.proof) {
-          console.warn('Still no tonProof, disconnecting and reconnecting...');
-          await tonConnectUI.disconnect();
-          const walletData = await tonConnectUI.connectWallet();
-          if (!walletData.connectItems?.tonProof?.proof) {
-            throw new Error('No tonProof available after reconnect');
-          }
-          wallet.connectItems = walletData.connectItems;
-        }
-      } else {
-        console.warn('Wallet not connected, initiating connection...');
-        const walletData = await tonConnectUI.connectWallet();
-        if (!walletData.connectItems?.tonProof?.proof) {
-          throw new Error('No tonProof available after connect');
-        }
-        wallet.connectItems = walletData.connectItems;
+        await tonConnectUI.disconnect();
       }
+      const walletData = await tonConnectUI.connectWallet();
+      if (!walletData.connectItems?.tonProof?.proof) {
+        throw new Error('No tonProof available after reconnect');
+      }
+      wallet.connectItems = walletData.connectItems;
     }
 
     const tonProof = wallet.connectItems.tonProof.proof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
-    if (!tonProof) {
-      throw new Error('No tonProof available');
-    }
 
     const account = {
       address: walletAddressRaw,
@@ -162,6 +145,7 @@ async function handleWalletConnect(wallet) {
     walletStore.syncFromAuthStore();
   } catch (error) {
     console.error('Authorization failed:', error);
+    tonConnectUI.setConnectRequestParameters(null);
     authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
