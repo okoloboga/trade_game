@@ -44,13 +44,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
-import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
+import { ref, onMounted } from 'vue';
+import { useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
-import WalletIcon from '@/assets/wallet-icon.svg';
+import WalletIcon from '@/assets/home-icon.svg';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -59,62 +59,62 @@ const showWithdraw = ref(false);
 const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
-const isWalletConnected = ref(!!wallet.value);
+const { tonConnectUI } = useTonConnectUI();
+const isWalletConnected = ref(false);
 const walletAddress = ref(null);
 
 let authStore, walletStore;
 
 onMounted(async () => {
-  // Импортируем стори асинхронно после инициализации Pinia
   const { useAuthStore } = await import('@/stores/auth');
   const { useWalletStore } = await import('@/stores/wallet');
   authStore = useAuthStore();
   walletStore = useWalletStore();
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
-  if (wallet.value) {
-    await handleWalletConnect(wallet.value);
+  await authStore.init();
+  if (tonConnectUI && tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
+    isWalletConnected.value = true;
+    walletAddress.value = wallet.value.account.address;
+    authStore.setConnected(true);
+    walletStore.syncFromAuthStore();
+    console.log('Wallet already connected, synced state');
   }
 });
 
-watch(wallet, async (newWallet) => {
-  console.log('Wallet changed:', !!newWallet);
-  if (!authStore || !walletStore) {
-    const { useAuthStore } = await import('@/stores/auth');
-    const { useWalletStore } = await import('@/stores/wallet');
-    authStore = useAuthStore();
-    walletStore = useWalletStore();
+async function connectWallet() {
+  try {
+    if (tonConnectUI.connected) {
+      console.log('Wallet already connected, skipping');
+      return;
+    }
+    tonConnectUI.setConnectRequestParameters({
+      state: 'ready',
+      value: { tonProof: 'trade.ruble.website' },
+    });
+    const walletData = await tonConnectUI.connectWallet();
+    if (walletData?.account?.address) {
+      await handleWalletConnect(walletData);
+    }
+  } catch (error) {
+    console.error('Wallet connection failed:', error);
   }
-  if (newWallet) {
-    isWalletConnected.value = true;
-    await handleWalletConnect(newWallet);
-  } else {
-    isWalletConnected.value = false;
-    walletAddress.value = null;
-    authStore.logout();
-  }
-});
+}
 
 async function handleWalletConnect(wallet) {
   try {
-    if (!wallet?.account?.address) {
-      throw new Error('No wallet address');
-    }
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
-    // Генерация challenge
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
-    // Формирование tonProof
     if (!wallet.connectItems?.tonProof) {
       throw new Error('No tonProof available');
     }
     const tonProof = wallet.connectItems.tonProof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
-    // Формирование account
     const account = {
       address: walletAddressRaw,
       publicKey: wallet.account.publicKey,
@@ -123,7 +123,6 @@ async function handleWalletConnect(wallet) {
     };
     console.log('Account:', JSON.stringify(account, null, 2));
 
-    // Проверка tonProof
     const verifyResult = await authStore.verifyProof({
       walletAddress: walletAddressRaw,
       tonProof,
@@ -135,13 +134,12 @@ async function handleWalletConnect(wallet) {
       throw new Error('TON Proof verification failed');
     }
 
-    // Логин
     await authStore.login({ ton_address: walletAddressRaw, tonProof, account });
     console.log('Login successful');
     isWalletConnected.value = true;
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
-    await walletStore.fetchWalletData();
+    walletStore.syncFromAuthStore();
   } catch (error) {
     console.error('Authorization failed:', error);
     authStore.logout();
