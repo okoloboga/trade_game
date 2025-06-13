@@ -1,16 +1,13 @@
- <template>
+<template>
   <v-app-bar color="#1a1a1a" flat dark>
     <v-container fluid>
       <v-row align="center" no-gutters>
-        <!-- Home -->
         <v-col cols="2" class="text-center">
           <v-btn :to="'/'" variant="text" icon class="header-btn">
             <img :src="HomeIcon" class="icon home-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('home') }}</v-tooltip>
           </v-btn>
         </v-col>
-
-        <!-- History -->
         <v-col cols="2" class="text-center">
           <v-btn :to="'/history'" variant="text" icon class="header-btn">
             <img :src="HistoryIcon" class="icon history-icon" />
@@ -18,18 +15,22 @@
           </v-btn>
         </v-col>
         <v-col cols="4" class="text-center">
-          <TonConnectButton />
+          <v-btn v-if="!isWalletConnected" @click="connectWallet" variant="text" color="primary">
+            {{ $t('connect_wallet') }}
+          </v-btn>
+          <div v-else>
+            <v-btn variant="text" icon @click="showWalletMenu = !showWalletMenu" class="header-btn">
+              <v-icon color="#E0E0E0">mdi-link</v-icon>
+              <v-tooltip activator="parent" location="bottom">{{ walletAddress || $t('wallet_connected') }}</v-tooltip>
+            </v-btn>
+          </div>
         </v-col>
-
-        <!-- Wallet -->
         <v-col cols="2" class="text-center">
           <v-btn :to="'/wallet'" variant="text" icon class="header-btn">
             <img :src="WalletIcon" class="icon wallet-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('wallet') }}</v-tooltip>
           </v-btn>
         </v-col>
-
-        <!-- Language -->
         <v-col cols="2" class="text-center">
           <v-btn variant="text" @click="handleLanguageChange" class="header-btn">
             {{ language === 'en' ? 'EN' : 'RU' }}
@@ -42,6 +43,7 @@
     <WithdrawDialog v-model="showWithdraw" />
   </v-app-bar>
 </template>
+
 
 <script setup>
 import { ref, onMounted } from 'vue';
