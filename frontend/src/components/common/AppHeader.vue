@@ -92,7 +92,10 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
+    tonConnectUI.setConnectRequestParameters(null);
+
     // Запрашиваем challenge
+    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
@@ -102,22 +105,22 @@ async function handleWalletConnect(wallet) {
       value: { tonProof: challenge },
     });
 
-    // Проверяем tonProof
-    if (!wallet.connectItems?.tonProof?.proof) {
-      console.warn('No tonProof available, attempting reconnect...');
+    // Ждём tonProof
+    let tonProof = wallet.connectItems?.tonProof?.proof;
+    if (!tonProof || tonProof.payload !== challenge) {
+      console.warn('No valid tonProof or mismatched payload, reconnecting...');
       if (tonConnectUI.connected) {
         await tonConnectUI.disconnect();
       }
       const walletData = await tonConnectUI.connectWallet();
-      if (!walletData.connectItems?.tonProof?.proof) {
-        throw new Error('No tonProof available after reconnect');
+      tonProof = walletData.connectItems?.tonProof?.proof;
+      if (!tonProof || tonProof.payload !== challenge) {
+        throw new Error('No valid tonProof available after reconnect');
       }
       wallet.connectItems = walletData.connectItems;
     }
 
-    const tonProof = wallet.connectItems.tonProof.proof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
-
     const account = {
       address: walletAddressRaw,
       publicKey: wallet.account.publicKey,
