@@ -16,15 +16,13 @@ export const useMarketStore = defineStore('market', {
         const response = await apiService.getCandles(symbol, timeframe);
         console.log('Raw candles response:', JSON.stringify(response, null, 2));
 
-        let candlesData = response;
-        if (response.data) candlesData = response.data; // Учитываем возможный вложенный data
-        if (!Array.isArray(candlesData)) {
-          console.error('Candles response is not an array:', candlesData);
+        if (!Array.isArray(response)) {
+          console.error('Candles response is not an array:', response);
           this.candles = [];
           return;
         }
 
-        const validCandles = candlesData.filter(candle => {
+        const validCandles = response.filter(candle => {
           if (!candle || !candle.timestamp || !candle.open || !candle.high || !candle.low || !candle.close) {
             console.warn('Invalid candle data (missing fields):', candle);
             return false;
@@ -37,7 +35,7 @@ export const useMarketStore = defineStore('market', {
           return true;
         });
 
-        console.log(`Filtered ${candlesData.length - validCandles.length} invalid candles`);
+        console.log(`Filtered ${response.length - validCandles.length} invalid candles`);
         console.log('First 3 valid candles:', validCandles.slice(0, 3));
         console.log('Last 3 valid candles:', validCandles.slice(-3));
 
@@ -55,11 +53,9 @@ export const useMarketStore = defineStore('market', {
         const response = await apiService.getCurrentPrice(symbol);
         console.log('Raw price response:', JSON.stringify(response, null, 2));
 
-        let price = response;
-        if (response.price) price = response.price; // Учитываем возможный объект
-        if (response.data) price = response.data; // Учитываем возможный вложенный data
+        let price = response.price;
         if (typeof price !== 'number') {
-          console.error('Unexpected price format:', price);
+          console.error('Unexpected price format:', response);
           this.currentPrice = null;
           return;
         }
