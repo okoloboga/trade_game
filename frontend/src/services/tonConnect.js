@@ -16,7 +16,7 @@ export class TonConnectService {
 
       this.tonConnectUI.setConnectRequestParameters({
         state: 'ready',
-        value: { tonProof: `${manifestUrl}/manifest.json` },
+        value: { tonProof: 'trade.ruble.website' },
       });
 
       this.tonConnectUI.onStatusChange(async (wallet) => {
@@ -58,6 +58,7 @@ export class TonConnectService {
       const { challenge } = await this.authStore.generateChallenge(walletAddress);
       console.log('Challenge generated:', challenge);
 
+      console.log('Wallet connectItems:', JSON.stringify(wallet.connectItems, null, 2));
       if (!wallet.connectItems?.tonProof) {
         throw new Error('No tonProof available');
       }

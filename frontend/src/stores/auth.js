@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import apiService from '@/services/api'; // Используем apiService
+import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { validateWalletAddress } from '@/utils/validators';
 
@@ -25,7 +25,7 @@ export const useAuthStore = defineStore('auth', {
         throw new Error(validation);
       }
       try {
-        const response = await apiService.generateChallenge(walletAddress); // Используем apiService
+        const response = await apiService.generateChallenge(walletAddress);
         return response;
       } catch (error) {
         useErrorStore().setError('Failed to generate challenge');
@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', {
         throw new Error('Missing required parameters');
       }
       try {
-        const response = await apiService.verifyProof({ walletAddress, tonProof, account }); // Используем apiService
+        const response = await apiService.verifyProof({ walletAddress, tonProof, account });
         return response;
       } catch (error) {
         useErrorStore().setError('Proof verification failed');
@@ -53,7 +53,7 @@ export const useAuthStore = defineStore('auth', {
       }
       try {
         localStorage.removeItem('token');
-        const response = await apiService.login({ ton_address, tonProof, account }); // Используем apiService
+        const response = await apiService.login({ ton_address, tonProof, account });
         this.token = response.access_token;
         this.user = { id: response.user.id, ...response.user };
         this.setConnected(true);
@@ -71,7 +71,7 @@ export const useAuthStore = defineStore('auth', {
         return;
       }
       try {
-        const response = await apiService.getWalletData(); // Используем apiService для проверки токена
+        const response = await apiService.getWalletData();
         this.user = { id: response.user.id, ...response.user };
         this.setConnected(true);
         this.walletAddress = response.walletAddress;

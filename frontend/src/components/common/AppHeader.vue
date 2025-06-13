@@ -53,7 +53,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { TonConnectButton, useTonWallet } from '@townsquarelabs/ui-vue';
+import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
@@ -67,19 +67,28 @@ const showWithdraw = ref(false);
 const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
+const { tonConnectUI } = useTonConnectUI();
 const isWalletConnected = ref(!!wallet.value);
 const walletAddress = ref(null);
 
 let authStore, walletStore;
 
 onMounted(async () => {
-  // Импортируем стори асинхронно после инициализации Pinia
   const { useAuthStore } = await import('@/stores/auth');
   const { useWalletStore } = await import('@/stores/wallet');
   authStore = useAuthStore();
   walletStore = useWalletStore();
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
+  // Настраиваем tonProof
+  if (tonConnectUI) {
+    tonConnectUI.setConnectRequestParameters({
+      state: 'ready',
+      value: {
+        tonProof: 'trade.ruble.website', // Уникальный payload, например, домен
+      },
+    });
+  }
   if (wallet.value) {
     await handleWalletConnect(wallet.value);
   }
@@ -116,6 +125,7 @@ async function handleWalletConnect(wallet) {
     console.log('Challenge generated:', challenge);
 
     // Формирование tonProof
+    console.log('Wallet connectItems:', JSON.stringify(wallet.connectItems, null, 2));
     if (!wallet.connectItems?.tonProof) {
       throw new Error('No tonProof available');
     }
