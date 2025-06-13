@@ -100,17 +100,24 @@ async function handleWalletConnect(wallet) {
       value: { tonProof: challenge },
     });
 
-    if (!wallet.connectItems?.tonProof) {
-      console.warn('No tonProof available, reconnecting...');
-      const walletData = await tonConnectUI.connectWallet();
-      if (!walletData.connectItems?.tonProof) {
-        throw new Error('No tonProof available after reconnect');
+    if (tonConnectUI.connected) {
+        const connectItems = wallet.connectItems || (await tonConnectUI.getConnectItems());
+        if (!connectItems?.tonProof?.proof) {
+          console.warn('Still no tonProof, disconnecting and reconnecting...');
+          await tonConnectUI.disconnect();
+          const walletData = await tonConnectUI.connectWallet();
+          wallet.connectItems = walletData.connectItems;
+        } else {
+          wallet.connectItems = connectItems;
+        }
       }
-      wallet.connectItems = walletData.connectItems;
     }
 
-    const tonProof = wallet.connectItems.tonProof;
+    const tonProof = wallet.connectItems?.tonProof?.proof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
+    if (!tonProof) {
+      throw new Error('No tonProof available after all attempts');
+    }
 
     const account = {
       address: walletAddressRaw,
