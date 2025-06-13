@@ -66,11 +66,6 @@ onMounted(async () => {
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
-  if (tonConnectUI && wallet.value && !isWalletConnected.value) {
-    isWalletConnected.value = true;
-    walletAddress.value = wallet.value.account.address;
-    await handleWalletConnect(wallet.value);
-  }
 });
 
 watch(wallet, async (newWallet, oldWallet) => {
@@ -99,9 +94,21 @@ async function handleWalletConnect(wallet) {
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
+    // Устанавливаем параметры подключения
+    tonConnectUI.setConnectRequestParameters({
+      state: 'ready',
+      value: { tonProof: challenge },
+    });
+
     if (!wallet.connectItems?.tonProof) {
-      throw new Error('No tonProof available');
+      console.warn('No tonProof available, reconnecting...');
+      const walletData = await tonConnectUI.connectWallet();
+      if (!walletData.connectItems?.tonProof) {
+        throw new Error('No tonProof available after reconnect');
+      }
+      wallet.connectItems = walletData.connectItems;
     }
+
     const tonProof = wallet.connectItems.tonProof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 

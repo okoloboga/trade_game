@@ -129,7 +129,6 @@ const updateChartData = () => {
         return true;
       })
       .map(candle => {
-        console.log('Processing candle:', candle); // Отладка
         return {
           time: Math.floor(candle.timestamp / 1000),
           open: Number(candle.open),

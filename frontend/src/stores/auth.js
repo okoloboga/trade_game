@@ -30,17 +30,21 @@ export const useAuthStore = defineStore('auth', {
     async generateChallenge(walletAddress) {
       try {
         const response = await apiService.generateChallenge(walletAddress);
+        console.log('Challenge response:', response);
         return response;
       } catch (error) {
+        console.error('Error generating challenge:', error);
         useErrorStore().setError('Failed to generate challenge');
         throw error;
       }
     },
     async verifyProof(data) {
       try {
+        console.log('Verify proof response:', response);
         const response = await apiService.verifyProof(data);
         return response;
       } catch (error) {
+        console.error('Error verifying proof:', error);
         useErrorStore().setError('Failed to verify proof');
         throw error;
       }
@@ -48,12 +52,13 @@ export const useAuthStore = defineStore('auth', {
     async login(data) {
       try {
         const response = await apiService.login(data);
-        localStorage.setItem('token', response.access_token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        console.log('Login response:', response);
         this.token = response.access_token;
         this.user = response.user;
         this.walletAddress = response.user.ton_address;
         this.setConnected(true);
+        localStorage.setItem('token', response.access_token);
+        localStorage.setItem('user', JSON.stringify(response.user));
         return response;
       } catch (error) {
         useErrorStore().setError('Login failed');
