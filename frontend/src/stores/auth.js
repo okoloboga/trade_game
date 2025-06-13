@@ -10,6 +10,24 @@ export const useAuthStore = defineStore('auth', {
     isConnected: false,
   }),
   actions: {
+    async init() {
+      if (this.token && !this.user) {
+        try {
+          // Проверяем, есть ли сохранённые данные пользователя
+          const response = JSON.parse(localStorage.getItem('user') || '{}');
+          if (response.id && response.ton_address) {
+            this.user = response;
+            this.walletAddress = response.ton_address;
+            this.setConnected(true);
+          } else {
+            this.logout();
+          }
+        } catch (error) {
+          this.logout();
+          useErrorStore().setError('Failed to restore session');
+        }
+      }
+    },
     async generateChallenge(walletAddress) {
       try {
         const response = await apiService.generateChallenge(walletAddress);
@@ -32,8 +50,9 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await apiService.login(data);
         localStorage.setItem('token', response.access_token);
+        localStorage.setItem('user', JSON.stringify(response.user));
         this.token = response.access_token;
-        this.user = response.user; // Сохраняем данные пользователя
+        this.user = response.user;
         this.walletAddress = response.user.ton_address;
         this.setConnected(true);
         return response;
@@ -44,6 +63,7 @@ export const useAuthStore = defineStore('auth', {
     },
     logout() {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       this.token = null;
       this.user = null;
       this.walletAddress = null;

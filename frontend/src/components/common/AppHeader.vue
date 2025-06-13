@@ -86,18 +86,24 @@ onMounted(async () => {
       value: { tonProof: 'trade.ruble.website' },
     });
     // Проверяем статус подключения
-    const status = await tonConnectUI.getConnectionStatus();
-    if (status === 'connected' && wallet.value) {
-      isWalletConnected.value = true;
-      walletAddress.value = wallet.value.account.address;
-      authStore.setConnected(true);
-      walletStore.syncFromAuthStore();
+    try {
+      const status = await tonConnectUI.getConnectionStatus();
+      console.log('Connection status:', status);
+      if (status === 'connected' && wallet.value && !isWalletConnected.value) {
+        isWalletConnected.value = true;
+        walletAddress.value = wallet.value.account.address;
+        authStore.setConnected(true);
+        walletStore.syncFromAuthStore();
+        console.log('Wallet already connected, synced state');
+      }
+    } catch (error) {
+      console.error('Failed to check connection status:', error);
     }
   }
 });
 
-watch(wallet, async (newWallet) => {
-  console.log('Wallet changed:', !!newWallet);
+watch(wallet, async (newWallet, oldWallet) => {
+  console.log('Wallet changed:', !!newWallet, 'Previous wallet:', !!oldWallet);
   if (!authStore || !walletStore) {
     const { useAuthStore } = await import('@/stores/auth');
     const { useWalletStore } = await import('@/stores/wallet');
@@ -105,12 +111,16 @@ watch(wallet, async (newWallet) => {
     walletStore = useWalletStore();
   }
   if (newWallet && !isWalletConnected.value) {
+    console.log('New wallet detected, connecting...');
     isWalletConnected.value = true;
     await handleWalletConnect(newWallet);
-  } else if (!newWallet) {
+  } else if (!newWallet && oldWallet) {
+    console.log('Wallet disconnected');
     isWalletConnected.value = false;
     walletAddress.value = null;
     authStore.logout();
+  } else if (newWallet && isWalletConnected.value) {
+    console.log('Wallet already connected, skipping reconnect');
   }
 });
 
@@ -156,7 +166,7 @@ async function handleWalletConnect(wallet) {
     isWalletConnected.value = true;
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
-    walletStore.syncFromAuthStore(); // Синхронизируем данные
+    walletStore.syncFromAuthStore();
   } catch (error) {
     console.error('Authorization failed:', error);
     authStore.logout();
