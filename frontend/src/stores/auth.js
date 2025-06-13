@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api from '@/services/api';
+import apiService from '@/services/api'; // Используем apiService
 import { useErrorStore } from '@/stores/error';
 import { validateWalletAddress } from '@/utils/validators';
 
@@ -25,8 +25,8 @@ export const useAuthStore = defineStore('auth', {
         throw new Error(validation);
       }
       try {
-        const response = await api.get(`/challenge/generate`, { params: { walletAddress } });
-        return response.data;
+        const response = await apiService.generateChallenge(walletAddress); // Используем apiService
+        return response;
       } catch (error) {
         useErrorStore().setError('Failed to generate challenge');
         throw error;
@@ -38,8 +38,8 @@ export const useAuthStore = defineStore('auth', {
         throw new Error('Missing required parameters');
       }
       try {
-        const response = await api.post('/challenge/verify', { walletAddress, tonProof, account });
-        return response.data;
+        const response = await apiService.verifyProof({ walletAddress, tonProof, account }); // Используем apiService
+        return response;
       } catch (error) {
         useErrorStore().setError('Proof verification failed');
         throw error;
@@ -53,9 +53,9 @@ export const useAuthStore = defineStore('auth', {
       }
       try {
         localStorage.removeItem('token');
-        const response = await api.post('/auth/login', { ton_address, tonProof, account });
-        this.token = response.data.access_token;
-        this.user = { id: response.data.user.id, ...response.data.user };
+        const response = await apiService.login({ ton_address, tonProof, account }); // Используем apiService
+        this.token = response.access_token;
+        this.user = { id: response.user.id, ...response.user };
         this.setConnected(true);
         this.walletAddress = ton_address;
         localStorage.setItem('token', this.token);
@@ -71,10 +71,10 @@ export const useAuthStore = defineStore('auth', {
         return;
       }
       try {
-        const response = await api.get('/auth/verify');
-        this.user = { id: response.data.user.id, ...response.data.user };
+        const response = await apiService.getWalletData(); // Используем apiService для проверки токена
+        this.user = { id: response.user.id, ...response.user };
         this.setConnected(true);
-        this.walletAddress = response.data.walletAddress;
+        this.walletAddress = response.walletAddress;
       } catch (error) {
         this.logout();
         useErrorStore().setError('Session verification failed');
