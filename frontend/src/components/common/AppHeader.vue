@@ -49,7 +49,6 @@ const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
 const showDeposit = ref(false);
 const showWithdraw = ref(false);
-const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
@@ -67,7 +66,6 @@ onMounted(async () => {
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
 
-  // Устанавливаем обработчик статуса кошелька
   tonConnectUI.onStatusChange(async (newWallet) => {
     console.log('Wallet status changed:', !!newWallet);
     if (newWallet && !isWalletConnected.value) {
@@ -83,7 +81,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  // Очищаем обработчики, если библиотека поддерживает
   tonConnectUI.onStatusChange(null);
 });
 
@@ -92,6 +89,7 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
+    // Сбрасываем параметры
     tonConnectUI.setConnectRequestParameters(null);
 
     // Запрашиваем challenge
@@ -99,7 +97,7 @@ async function handleWalletConnect(wallet) {
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
-    // Устанавливаем параметры подключения
+    // Устанавливаем tonProof
     tonConnectUI.setConnectRequestParameters({
       state: 'ready',
       value: { tonProof: challenge },
@@ -107,6 +105,14 @@ async function handleWalletConnect(wallet) {
 
     // Ждём tonProof
     let tonProof = wallet.connectItems?.tonProof?.proof;
+    let attempts = 3;
+    while (!tonProof && attempts > 0 && tonConnectUI.connected) {
+      console.log(`Waiting for tonProof, attempts left: ${attempts}`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      tonProof = wallet.connectItems?.tonProof?.proof;
+      attempts--;
+    }
+
     if (!tonProof || tonProof.payload !== challenge) {
       console.warn('No valid tonProof or mismatched payload, reconnecting...');
       if (tonConnectUI.connected) {
@@ -121,6 +127,7 @@ async function handleWalletConnect(wallet) {
     }
 
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
+
     const account = {
       address: walletAddressRaw,
       publicKey: wallet.account.publicKey,
