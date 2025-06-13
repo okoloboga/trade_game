@@ -80,16 +80,13 @@ onMounted(async () => {
   walletStore = useWalletStore();
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
-  // Настраиваем tonProof
   if (tonConnectUI) {
     tonConnectUI.setConnectRequestParameters({
       state: 'ready',
-      value: {
-        tonProof: 'trade.ruble.website', // Уникальный payload, например, домен
-      },
+      value: { tonProof: 'trade.ruble.website' },
     });
   }
-  if (wallet.value) {
+  if (wallet.value && !isWalletConnected.value) {
     await handleWalletConnect(wallet.value);
   }
 });
@@ -102,10 +99,10 @@ watch(wallet, async (newWallet) => {
     authStore = useAuthStore();
     walletStore = useWalletStore();
   }
-  if (newWallet) {
+  if (newWallet && !isWalletConnected.value) {
     isWalletConnected.value = true;
     await handleWalletConnect(newWallet);
-  } else {
+  } else if (!newWallet) {
     isWalletConnected.value = false;
     walletAddress.value = null;
     authStore.logout();
@@ -120,11 +117,9 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
-    // Генерация challenge
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
-    // Формирование tonProof
     console.log('Wallet connectItems:', JSON.stringify(wallet.connectItems, null, 2));
     if (!wallet.connectItems?.tonProof) {
       throw new Error('No tonProof available');
@@ -132,7 +127,6 @@ async function handleWalletConnect(wallet) {
     const tonProof = wallet.connectItems.tonProof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
-    // Формирование account
     const account = {
       address: walletAddressRaw,
       publicKey: wallet.account.publicKey,
@@ -141,7 +135,6 @@ async function handleWalletConnect(wallet) {
     };
     console.log('Account:', JSON.stringify(account, null, 2));
 
-    // Проверка tonProof
     const verifyResult = await authStore.verifyProof({
       walletAddress: walletAddressRaw,
       tonProof,
@@ -153,7 +146,6 @@ async function handleWalletConnect(wallet) {
       throw new Error('TON Proof verification failed');
     }
 
-    // Логин
     await authStore.login({ ton_address: walletAddressRaw, tonProof, account });
     console.log('Login successful');
     isWalletConnected.value = true;
