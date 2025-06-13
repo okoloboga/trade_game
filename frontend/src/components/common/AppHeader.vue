@@ -66,24 +66,25 @@ onMounted(async () => {
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
+
+  // Устанавливаем обработчик статуса кошелька
+  tonConnectUI.onStatusChange(async (newWallet) => {
+    console.log('Wallet status changed:', !!newWallet);
+    if (newWallet && !isWalletConnected.value) {
+      isWalletConnected.value = true;
+      walletAddress.value = newWallet.account.address;
+      await handleWalletConnect(newWallet);
+    } else if (!newWallet) {
+      isWalletConnected.value = false;
+      walletAddress.value = null;
+      authStore.logout();
+    }
+  });
 });
 
-watch(wallet, async (newWallet, oldWallet) => {
-  console.log('Wallet changed:', !!newWallet, 'Previous wallet:', !!oldWallet);
-  if (!authStore || !walletStore) {
-    const { useAuthStore } = await import('@/stores/auth');
-    const { useWalletStore } = await import('@/stores/wallet');
-    authStore = useAuthStore();
-    walletStore = useWalletStore();
-  }
-  if (newWallet && !isWalletConnected.value) {
-    isWalletConnected.value = true;
-    await handleWalletConnect(newWallet);
-  } else if (!newWallet && oldWallet) {
-    isWalletConnected.value = false;
-    walletAddress.value = null;
-    authStore.logout();
-  }
+onUnmounted(() => {
+  // Очищаем обработчики, если библиотека поддерживает
+  tonConnectUI.onStatusChange(null);
 });
 
 async function handleWalletConnect(wallet) {
@@ -91,6 +92,7 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
+    // Запрашиваем challenge
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
@@ -100,22 +102,37 @@ async function handleWalletConnect(wallet) {
       value: { tonProof: challenge },
     });
 
-    if (tonConnectUI.connected) {
-        const connectItems = wallet.connectItems || (await tonConnectUI.getConnectItems());
-        if (!connectItems?.tonProof?.proof) {
+    // Проверяем tonProof
+    if (!wallet.connectItems?.tonProof?.proof) {
+      console.warn('No tonProof available, waiting for wallet response...');
+      // Проверяем, подключен ли кошелёк
+      if (tonConnectUI.connected) {
+        console.warn('Wallet already connected, attempting to fetch tonProof...');
+        // Даём время для обновления tonProof
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!wallet.connectItems?.tonProof?.proof) {
           console.warn('Still no tonProof, disconnecting and reconnecting...');
           await tonConnectUI.disconnect();
           const walletData = await tonConnectUI.connectWallet();
+          if (!walletData.connectItems?.tonProof?.proof) {
+            throw new Error('No tonProof available after reconnect');
+          }
           wallet.connectItems = walletData.connectItems;
-        } else {
-          wallet.connectItems = connectItems;
         }
+      } else {
+        console.warn('Wallet not connected, initiating connection...');
+        const walletData = await tonConnectUI.connectWallet();
+        if (!walletData.connectItems?.tonProof?.proof) {
+          throw new Error('No tonProof available after connect');
+        }
+        wallet.connectItems = walletData.connectItems;
       }
+    }
 
-    const tonProof = wallet.connectItems?.tonProof?.proof;
+    const tonProof = wallet.connectItems.tonProof.proof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
     if (!tonProof) {
-      throw new Error('No tonProof available after all attempts');
+      throw new Error('No tonProof available');
     }
 
     const account = {
