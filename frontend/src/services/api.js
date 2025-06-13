@@ -88,7 +88,7 @@ export default {
   async getTonPrice() {
     try {
       const response = await api.get('/market/ticker', {
-        params: { instId: 'TON-USD' },
+        params: { instId: 'TON-USDT' },
       });
       return response.data;
     } catch (error) {

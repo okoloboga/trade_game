@@ -46,8 +46,8 @@ onMounted(async () => {
 
   const loadData = async () => {
     const results = await Promise.allSettled([
-      apiService.getCandles('BTC-USD', '1m').catch(e => console.log('Candles fetch failed:', e.message)),
-      apiService.getCurrentPrice('BTC-USD').catch(e => console.log('Price fetch failed:', e.message)),
+      apiService.getCandles('TON-USDT', '5m').catch(e => console.log('Candles fetch failed:', e.message)),
+      apiService.getCurrentPrice('TON-USDT').catch(e => console.log('Price fetch failed:', e.message)),
       tradingStore.fetchTradeHistory().catch(e => console.log('Trade history fetch failed:', e.message)),
       tradingStore.fetchActiveTrades().catch(e => console.log('Active trades fetch failed:', e.message)),
     ]);
