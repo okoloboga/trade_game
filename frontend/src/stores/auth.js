@@ -13,7 +13,6 @@ export const useAuthStore = defineStore('auth', {
     async init() {
       if (this.token && !this.user) {
         try {
-          // Проверяем, есть ли сохранённые данные пользователя
           const response = JSON.parse(localStorage.getItem('user') || '{}');
           if (response.id && response.ton_address) {
             this.user = response;

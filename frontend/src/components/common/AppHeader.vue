@@ -2,25 +2,22 @@
   <v-app-bar color="#1a1a1a" flat dark>
     <v-container fluid>
       <v-row align="center" no-gutters>
-        <!-- Home -->
         <v-col cols="2" class="text-center">
           <v-btn :to="'/'" variant="text" icon class="header-btn">
             <img :src="HomeIcon" class="icon home-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('home') }}</v-tooltip>
           </v-btn>
         </v-col>
-
-        <!-- History -->
         <v-col cols="2" class="text-center">
           <v-btn :to="'/history'" variant="text" icon class="header-btn">
             <img :src="HistoryIcon" class="icon history-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('history') }}</v-tooltip>
           </v-btn>
         </v-col>
-
-        <!-- Connect Wallet -->
         <v-col cols="4" class="text-center">
-          <TonConnectButton v-if="!isWalletConnected" />
+          <v-btn v-if="!isWalletConnected" @click="connectWallet" variant="text" color="primary">
+            {{ $t('connect_wallet') }}
+          </v-btn>
           <div v-else>
             <v-btn variant="text" icon @click="showWalletMenu = !showWalletMenu" class="header-btn">
               <v-icon color="#E0E0E0">mdi-link</v-icon>
@@ -28,16 +25,12 @@
             </v-btn>
           </div>
         </v-col>
-
-        <!-- Wallet -->
         <v-col cols="2" class="text-center">
           <v-btn :to="'/wallet'" variant="text" icon class="header-btn">
             <img :src="WalletIcon" class="icon wallet-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('wallet') }}</v-tooltip>
           </v-btn>
         </v-col>
-
-        <!-- Language -->
         <v-col cols="2" class="text-center">
           <v-btn variant="text" @click="handleLanguageChange" class="header-btn">
             {{ language === 'en' ? 'EN' : 'RU' }}
@@ -52,13 +45,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
-import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { ref, onMounted } from 'vue';
+import { useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
-import WalletIcon from '@/assets/wallet-icon.svg';
+import WalletIcon from '@/assets/home-icon.svg';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -80,62 +73,43 @@ onMounted(async () => {
   walletStore = useWalletStore();
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
-  if (tonConnectUI) {
+  await authStore.init();
+  if (tonConnectUI && tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
+    isWalletConnected.value = true;
+    walletAddress.value = wallet.value.account.address;
+    authStore.setConnected(true);
+    walletStore.syncFromAuthStore();
+    console.log('Wallet already connected, synced state');
+  }
+});
+
+async function connectWallet() {
+  try {
+    if (tonConnectUI.connected) {
+      console.log('Wallet already connected, skipping');
+      return;
+    }
     tonConnectUI.setConnectRequestParameters({
       state: 'ready',
       value: { tonProof: 'trade.ruble.website' },
     });
-    // Проверяем статус подключения
-    try {
-      const status = await tonConnectUI.getConnectionStatus();
-      console.log('Connection status:', status);
-      if (status === 'connected' && wallet.value && !isWalletConnected.value) {
-        isWalletConnected.value = true;
-        walletAddress.value = wallet.value.account.address;
-        authStore.setConnected(true);
-        walletStore.syncFromAuthStore();
-        console.log('Wallet already connected, synced state');
-      }
-    } catch (error) {
-      console.error('Failed to check connection status:', error);
+    const walletData = await tonConnectUI.connectWallet();
+    if (walletData?.account?.address) {
+      await handleWalletConnect(walletData);
     }
+  } catch (error) {
+    console.error('Wallet connection failed:', error);
   }
-});
-
-watch(wallet, async (newWallet, oldWallet) => {
-  console.log('Wallet changed:', !!newWallet, 'Previous wallet:', !!oldWallet);
-  if (!authStore || !walletStore) {
-    const { useAuthStore } = await import('@/stores/auth');
-    const { useWalletStore } = await import('@/stores/wallet');
-    authStore = useAuthStore();
-    walletStore = useWalletStore();
-  }
-  if (newWallet && !isWalletConnected.value) {
-    console.log('New wallet detected, connecting...');
-    isWalletConnected.value = true;
-    await handleWalletConnect(newWallet);
-  } else if (!newWallet && oldWallet) {
-    console.log('Wallet disconnected');
-    isWalletConnected.value = false;
-    walletAddress.value = null;
-    authStore.logout();
-  } else if (newWallet && isWalletConnected.value) {
-    console.log('Wallet already connected, skipping reconnect');
-  }
-});
+}
 
 async function handleWalletConnect(wallet) {
   try {
-    if (!wallet?.account?.address) {
-      throw new Error('No wallet address');
-    }
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
-    console.log('Wallet connectItems:', JSON.stringify(wallet.connectItems, null, 2));
     if (!wallet.connectItems?.tonProof) {
       throw new Error('No tonProof available');
     }

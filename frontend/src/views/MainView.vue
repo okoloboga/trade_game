@@ -23,67 +23,56 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
-import { useMarketStore } from '@/stores/market'
-import { useTradingStore } from '@/stores/trading'
-import { useAuthStore } from '@/stores/auth'
-import { useErrorStore } from '@/stores/error'
-import TradingChart from '@/components/trading/TradingChart.vue'
-import TradeButtons from '@/components/trading/TradeButtons.vue'
-import ActiveTrades from '@/components/trading/ActiveTrades.vue'
+import { onMounted, onUnmounted } from 'vue';
+import apiService from '@/services/api';
+import { useMarketStore } from '@/stores/market';
+import { useTradingStore } from '@/stores/trading';
+import { useAuthStore } from '@/stores/auth';
+import { useErrorStore } from '@/stores/error';
+import TradingChart from '@/components/trading/TradingChart.vue';
+import TradeButtons from '@/components/trading/TradeButtons.vue';
+import ActiveTrades from '@/components/trading/ActiveTrades.vue';
+import { useI18n } from 'vue-i18n';
 
-const marketStore = useMarketStore()
-const tradingStore = useTradingStore()
-const authStore = useAuthStore()
-const errorStore = useErrorStore()
+const { t } = useI18n();
+const marketStore = useMarketStore();
+const tradingStore = useTradingStore();
+const authStore = useAuthStore();
+const errorStore = useErrorStore();
 
 onMounted(async () => {
-  console.log('MainView mounted, initializing...')
-  try {
-    await marketStore.fetchCandles();
-    await marketStore.fetchCurrentPrice();
-    marketStore.startRealTimeUpdates();
-  } catch (error) {
-    console.error('Error initializing data:', error);
-  }
+  console.log('MainView mounted, initializing...');
+  errorStore.clearError();
 
-  // Очищаем предыдущие ошибки
-  errorStore.clearError()
-
-  // Пробуем загрузить данные, но не падаем на ошибках
   const loadData = async () => {
     const results = await Promise.allSettled([
-      marketStore.fetchCandles().catch(e => console.log('Candles fetch failed:', e.message)),
-      marketStore.fetchCurrentPrice().catch(e => console.log('Price fetch failed:', e.message)),
+      apiService.getCandles('BTC-USD', '1m').catch(e => console.log('Candles fetch failed:', e.message)),
+      apiService.getCurrentPrice('BTC-USD').catch(e => console.log('Price fetch failed:', e.message)),
       tradingStore.fetchTradeHistory().catch(e => console.log('Trade history fetch failed:', e.message)),
       tradingStore.fetchActiveTrades().catch(e => console.log('Active trades fetch failed:', e.message)),
-    ])
+    ]);
 
-    const failures = results.filter(r => r.status === 'rejected').length
+    const failures = results.filter(r => r.status === 'rejected').length;
     if (failures > 0) {
-      console.log(`${failures} requests failed - working in offline mode`)
-      errorStore.setError(t('offline_mode'))
+      console.log(`${failures} requests failed - working in offline mode`);
+      errorStore.setError(t('offline_mode'));
     }
-  }
+  };
 
-  // Проверяем авторизацию (но не блокируем на этом)
   try {
-    if (!authStore.isConnected) {
-      await authStore.verifyToken()
-    }
-    await loadData()
-    marketStore.startRealTimeUpdates()
+    await authStore.init(); // Восстанавливаем сессию
+    await loadData();
+    marketStore.startRealTimeUpdates();
   } catch (error) {
-    console.log('Auth or data loading failed:', error.message)
-    // Все равно пробуем загрузить данные
-    await loadData()
+    console.error('Data loading failed:', error.message);
+    await loadData(); // Пробуем загрузить данные даже при ошибке
   }
-})
+});
 
 onUnmounted(() => {
-  console.log('MainView unmounted, cleaning up...')
+  console.log('MainView unmounted, cleaning up...');
   if (marketStore.stopRealTimeUpdates) {
-    marketStore.stopRealTimeUpdates()
+    marketStore.stopRealTimeUpdates();
   }
-})
+});
 </script>

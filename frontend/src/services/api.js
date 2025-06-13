@@ -65,6 +65,26 @@ export default {
       return handleApiError(error);
     }
   },
+  async getCandles(instId, bar) {
+    try {
+      const response = await api.get('/market/candles', {
+        params: { instId, bar },
+      });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  async getCurrentPrice(instId) {
+    try {
+      const response = await api.get('/market/ticker', {
+        params: { instId },
+      });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
   async getTonPrice() {
     try {
       const response = await api.get('/market/ticker', {
