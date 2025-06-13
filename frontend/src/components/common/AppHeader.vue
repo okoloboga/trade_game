@@ -68,7 +68,7 @@ const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
-const isWalletConnected = ref(!!wallet.value);
+const isWalletConnected = ref(false);
 const walletAddress = ref(null);
 
 let authStore, walletStore;
@@ -85,9 +85,14 @@ onMounted(async () => {
       state: 'ready',
       value: { tonProof: 'trade.ruble.website' },
     });
-  }
-  if (wallet.value && !isWalletConnected.value) {
-    await handleWalletConnect(wallet.value);
+    // Проверяем статус подключения
+    const status = await tonConnectUI.getConnectionStatus();
+    if (status === 'connected' && wallet.value) {
+      isWalletConnected.value = true;
+      walletAddress.value = wallet.value.account.address;
+      authStore.setConnected(true);
+      walletStore.syncFromAuthStore();
+    }
   }
 });
 
@@ -151,7 +156,7 @@ async function handleWalletConnect(wallet) {
     isWalletConnected.value = true;
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
-    await walletStore.fetchWalletData();
+    walletStore.syncFromAuthStore(); // Синхронизируем данные
   } catch (error) {
     console.error('Authorization failed:', error);
     authStore.logout();

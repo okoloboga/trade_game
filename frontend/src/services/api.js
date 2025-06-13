@@ -3,47 +3,42 @@ import { useAuthStore } from '@/stores/auth';
 import { useErrorStore } from '@/stores/error';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_URL || 'https://trade.ruble.website/api',
+  headers: { 'Content-Type': 'application/json' },
 });
 
-const publicEndpoints = ['/auth/login', '/challenge/generate', '/challenge/verify'];
-
-// Interceptor to add Authorization header
-api.interceptors.request.use((config) => {
-  const authStore = useAuthStore();
-  if (authStore.isConnected && authStore.token && !publicEndpoints.includes(config.url)) {
-    config.headers.Authorization = `Bearer ${authStore.token}`;
-  }
-  return config;
-});
-
-// Error handling
-const handleApiError = (error) => {
-  const errorStore = useErrorStore();
-  let message = 'An error occurred';
-  let code = error.response?.status || 500;
-
-  if (error.response?.data) {
-    message = error.response.data.message || error.response.data.error || message;
-  } else if (error.message) {
-    message = error.message;
-  }
-
-  errorStore.setError(message);
-
-  if (code === 401) {
+api.interceptors.request.use(
+  (config) => {
     const authStore = useAuthStore();
-    authStore.logout();
+    if (authStore.token) {
+      config.headers.Authorization = `Bearer ${authStore.token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const errorStore = useErrorStore();
+    if (error.response?.status === 401) {
+      const authStore = useAuthStore();
+      authStore.logout();
+      errorStore.setError('Session expired');
+    }
+    return Promise.reject(error);
   }
+);
 
-  return Promise.reject({ code, message });
-};
+function handleApiError(error) {
+  const errorStore = useErrorStore();
+  const message = error.response?.data?.message || error.message || 'Unknown error';
+  errorStore.setError(message);
+  return { error: message, status: error.response?.status || 500 };
+}
 
-const apiService = {
-  // Challenge Module
+export default {
   async generateChallenge(walletAddress) {
     try {
       const response = await api.get('/challenge/generate', {
@@ -54,128 +49,43 @@ const apiService = {
       return handleApiError(error);
     }
   },
-
-  async verifyProof({ walletAddress, tonProof, account }) {
+  async verifyProof(data) {
     try {
-      const response = await api.post('/challenge/verify', {
-        walletAddress,
-        tonProof,
-        account,
-      });
+      const response = await api.post('/challenge/verify', data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
-
-  // Auth Module
-  async login({ ton_address, tonProof, account }) {
+  async login(data) {
     try {
-      const response = await api.post('/auth/login', { ton_address, tonProof, account });
+      const response = await api.post('/auth/login', data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
-
-  // Market Module
-  async getCandles(instId = 'BTC-USDT', bar = '5m') {
-    try {
-      const response = await api.get('/market/candles', {
-        params: { instId, bar },
-      });
-      console.log('API candles response:', response.data);
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  async getCurrentPrice(instId = 'BTC-USDT') {
-    try {
-      const response = await api.get('/market/ticker', {
-        params: { instId },
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
   async getTonPrice() {
     try {
-      const response = await api.get('/market/ton-price');
+      const response = await api.get('/market/ticker', {
+        params: { instId: 'TON-USD' },
+      });
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
-
-  // Stats Module
-  async getTradeHistory(period = '1w') {
+  async getTransactions() {
     try {
       const authStore = useAuthStore();
       const response = await api.get('/stats/trades', {
-        params: { userId: authStore.user?.id, period },
+        params: { userId: authStore.user?.id, period: '1w' },
       });
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
-
-  async getSummary(period = '1d') {
-    try {
-      const authStore = useAuthStore();
-      const response = await api.get('/stats/summary', {
-        params: { userId: authStore.user?.id, period },
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  // Tokens Module
-  async withdrawTokens(amount) {
-    try {
-      const authStore = useAuthStore();
-      const response = await api.post('/tokens/withdraw', {
-        userId: authStore.user?.id,
-        amount,
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  // Trades Module
-  async placeTrade({ type, amount, symbol = 'BTC-USDT' }) {
-    try {
-      const authStore = useAuthStore();
-      const response = await api.post('/trades/place', {
-        userId: authStore.user?.id,
-        instrument: symbol,
-        type,
-        amount,
-      });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  async cancelTrade(tradeId) {
-    try {
-      const response = await api.post('/trades/cancel', { tradeId });
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  // Transactions Module
   async deposit(amount, txHash) {
     try {
       const authStore = useAuthStore();
@@ -189,7 +99,6 @@ const apiService = {
       return handleApiError(error);
     }
   },
-
   async withdraw(amount) {
     try {
       const authStore = useAuthStore();
@@ -202,22 +111,12 @@ const apiService = {
       return handleApiError(error);
     }
   },
-
-  // Wallet Module
-  async getWalletData() {
-    try {
-      const response = await api.get('/wallet');
-      return response.data;
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
-
-  async getTransactions() {
+  async withdrawTokens(amount) {
     try {
       const authStore = useAuthStore();
-      const response = await api.get('/transactions', {
-        params: { userId: authStore.user?.id },
+      const response = await api.post('/tokens/withdraw', {
+        userId: authStore.user?.id,
+        amount,
       });
       return response.data;
     } catch (error) {
@@ -225,5 +124,3 @@ const apiService = {
     }
   },
 };
-
-export default apiService;
