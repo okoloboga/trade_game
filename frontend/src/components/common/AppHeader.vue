@@ -69,6 +69,7 @@ onMounted(async () => {
 
   // Проверяем, подключён ли кошелёк
   if (tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
+    console.log('Initial tonConnectUI check:', tonConnectUI.connected && wallet.value && !isWalletConnected.value)
     isWalletConnected.value = true;
     walletAddress.value = wallet.value.account.address;
     await handleWalletConnect(wallet.value);
@@ -76,10 +77,28 @@ onMounted(async () => {
 
   tonConnectUI.onStatusChange(async (newWallet) => {
     console.log('Wallet status changed:', !!newWallet);
+
     if (newWallet && !isWalletConnected.value) {
       isWalletConnected.value = true;
       walletAddress.value = newWallet.account.address;
-      await handleWalletConnect(newWallet);
+
+      try {
+        if (tonConnectUI.connected) {
+          console.log('Wallet already connected, skipping');
+          return;
+        }
+        tonConnectUI.setConnectRequestParameters({
+          state: 'ready',
+          value: { tonProof: 'trade.ruble.website' },
+        });
+        const walletData = await tonConnectUI.connectWallet();
+        if (walletData?.account?.address) {
+          await handleWalletConnect(walletData);
+        }
+      } catch (error) {
+        console.error('Wallet connection failed:', error);
+      }
+
     } else if (!newWallet) {
       isWalletConnected.value = false;
       walletAddress.value = null;
@@ -105,7 +124,11 @@ async function handleWalletConnect(wallet) {
     const tonProof = wallet.connectItems?.tonProof;
     console.log('TonProof:', wallet.connectItems?.tonProof);
 
-    if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
+    if (!wallet.connectItems?.tonProof) {
+      throw new Error('No tonProof available');
+    }
+
+    if (tonProof.proof.payload !== challenge) {
       throw new Error('Invalid tonProof');
     };
 
