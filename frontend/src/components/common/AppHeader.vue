@@ -127,6 +127,7 @@ async function handleWalletConnect(wallet) {
     console.log('Challenge generated:', challenge);
 
     const tonProof = wallet.connectItems?.tonProof;
+    console.log('Wallet after get TonProof:', wallet);
     if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
       console.warn('Invalid tonProof, refreshing payload and awaiting reconnect');
       await refreshPayload();
