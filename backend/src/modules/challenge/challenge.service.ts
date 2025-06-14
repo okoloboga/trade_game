@@ -43,6 +43,7 @@ export class ChallengeService {
       return false;
     }
 
+
     const payload = {
       address: account.address,
       public_key: account.publicKey,
