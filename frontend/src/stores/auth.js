@@ -39,8 +39,10 @@ export const useAuthStore = defineStore('auth', {
     async verifyProof(data) {
       try {
         const response = await apiService.verifyProof(data);
+        console.log('Verify proof response:', JSON.stringify(response, null, 2));
         return response;
       } catch (error) {
+        console.error('Error verifying proof:', error);
         useErrorStore().setError('Failed to verify proof');
         throw error;
       }

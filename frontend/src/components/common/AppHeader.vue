@@ -14,19 +14,9 @@
             <v-tooltip activator="parent" location="bottom">{{ $t('history') }}</v-tooltip>
           </v-btn>
         </v-col>
-
         <v-col cols="4" class="text-center">
-          <v-btn v-if="!isWalletConnected" @click="connectWallet" variant="text" color="primary">
-            {{ $t('connect_wallet') }}
-          </v-btn>
-          <div v-else>
-            <v-btn variant="text" icon @click="showWalletMenu = !showWalletMenu" class="header-btn">
-              <v-icon color="#E0E0E0">mdi-link</v-icon>
-              <v-tooltip activator="parent" location="bottom">{{ walletAddress || $t('wallet_connected') }}</v-tooltip>
-            </v-btn>
-          </div>
+          <TonConnectButton />
         </v-col>
-
         <v-col cols="2" class="text-center">
           <v-btn :to="'/wallet'" variant="text" icon class="header-btn">
             <img :src="WalletIcon" class="icon wallet-icon" />
@@ -46,10 +36,9 @@
   </v-app-bar>
 </template>
 
-
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { TonConnectButton, useTonWallet, useTonConnectUI, useTonConnectModal } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
@@ -60,12 +49,13 @@ const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
 const showDeposit = ref(false);
 const showWithdraw = ref(false);
-const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
+const { close } = useTonConnectModal();
 const isWalletConnected = ref(false);
 const walletAddress = ref(null);
+let interval = null;
 
 let authStore, walletStore;
 
@@ -77,31 +67,57 @@ onMounted(async () => {
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
-  if (tonConnectUI && tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
+
+  // Закрываем модальное окно при загрузке
+  close();
+
+  // Периодическое обновление tonProof payload
+  await refreshPayload();
+  interval = setInterval(refreshPayload, 20 * 60 * 1000); // Каждые 20 минут
+
+  // Проверяем, подключён ли кошелёк
+  if (tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
     isWalletConnected.value = true;
     walletAddress.value = wallet.value.account.address;
-    authStore.setConnected(true);
-    walletStore.syncFromAuthStore();
-    console.log('Wallet already connected, synced state');
+    await handleWalletConnect(wallet.value);
   }
+
+  tonConnectUI.onStatusChange(async (newWallet) => {
+    console.log('Wallet status changed:', !!newWallet);
+    if (newWallet && !isWalletConnected.value) {
+      isWalletConnected.value = true;
+      walletAddress.value = newWallet.account.address;
+      await handleWalletConnect(newWallet);
+    } else if (!newWallet) {
+      isWalletConnected.value = false;
+      walletAddress.value = null;
+      authStore.logout();
+      close();
+    }
+  });
 });
 
-async function connectWallet() {
+onUnmounted(() => {
+  clearInterval(interval);
+  tonConnectUI.onStatusChange(null);
+});
+
+async function refreshPayload() {
   try {
-    if (tonConnectUI.connected) {
-      console.log('Wallet already connected, skipping');
-      return;
-    }
-    tonConnectUI.setConnectRequestParameters({
-      state: 'ready',
-      value: { tonProof: 'trade.ruble.website' },
-    });
-    const walletData = await tonConnectUI.connectWallet();
-    if (walletData?.account?.address) {
-      await handleWalletConnect(walletData);
+    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+    const response = await authStore.generateChallenge('temp'); // Временный адрес
+    if (response.challenge) {
+      tonConnectUI.setConnectRequestParameters({
+        state: 'ready',
+        value: { tonProof: response.challenge },
+      });
+      console.log('Payload refreshed:', response.challenge);
+    } else {
+      tonConnectUI.setConnectRequestParameters(null);
     }
   } catch (error) {
-    console.error('Wallet connection failed:', error);
+    console.error('Failed to refresh payload:', error);
+    tonConnectUI.setConnectRequestParameters(null);
   }
 }
 
@@ -110,13 +126,29 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
+    // Запрашиваем новый challenge для конкретного кошелька
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
-    if (!wallet.connectItems?.tonProof) {
-      throw new Error('No tonProof available');
+    let tonProof = wallet.connectItems?.tonProof;
+    if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
+      console.warn('No valid tonProof or mismatched payload, reconnecting...');
+      if (tonConnectUI.connected) {
+        await tonConnectUI.disconnect();
+        close();
+      }
+      tonConnectUI.setConnectRequestParameters({
+        state: 'ready',
+        value: { tonProof: challenge },
+      });
+      const walletData = await tonConnectUI.connectWallet();
+      tonProof = walletData.connectItems?.tonProof;
+      if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
+        throw new Error('No valid tonProof available after reconnect');
+      }
+      wallet.connectItems = walletData.connectItems;
     }
-    const tonProof = wallet.connectItems.tonProof;
+
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
     const account = {
@@ -144,11 +176,14 @@ async function handleWalletConnect(wallet) {
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
+    close();
   } catch (error) {
     console.error('Authorization failed:', error);
+    tonConnectUI.setConnectRequestParameters(null);
     authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
+    close();
     throw error;
   }
 }
