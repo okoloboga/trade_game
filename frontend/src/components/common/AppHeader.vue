@@ -1,3 +1,4 @@
+```vue
 <template>
   <v-app-bar color="#1a1a1a" flat dark>
     <v-container fluid>
@@ -16,7 +17,7 @@
         </v-col>
         <v-col cols="4" class="text-center">
           <div class="m-btn">
-            <TonConnectButton :button-root-id="`ton-connect-button`" />
+            <TonConnectButton :button-root-id="'ton-connect-button'" />
           </div>
         </v-col>
         <v-col cols="2" class="text-center">
@@ -39,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useTonWallet, useTonConnectUI, TonConnectButton } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
@@ -56,26 +57,31 @@ const { tonConnectUI } = useTonConnectUI();
 const walletAddress = ref(null);
 
 let authStore, walletStore;
+let stopRefreshInterval = null;
 
 const refreshIntervalMs = 10 * 60 * 1000; // 10 minutes
 
-const recreateProofPayload = async () => {
-  if (tonConnectUI) {
-    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
-    try {
-      const payload = await authStore.generateChallenge(walletAddress.value || '');
-      if (payload?.challenge) {
-        tonConnectUI.setConnectRequestParameters({
-          state: 'ready',
-          value: { tonProof: payload.challenge },
-        });
-      } else {
-        tonConnectUI.setConnectRequestParameters(null);
-      }
-    } catch (error) {
-      console.error('Failed to generate tonProof payload:', error);
+const recreateProofPayload = async (address) => {
+  if (!address) {
+    console.warn('No wallet address provided, skipping tonProof generation');
+    tonConnectUI.setConnectRequestParameters(null);
+    return;
+  }
+
+  tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+  try {
+    const payload = await authStore.generateChallenge(address);
+    if (payload?.challenge) {
+      tonConnectUI.setConnectRequestParameters({
+        state: 'ready',
+        value: { tonProof: payload.challenge },
+      });
+    } else {
       tonConnectUI.setConnectRequestParameters(null);
     }
+  } catch (error) {
+    console.error('Failed to generate tonProof payload:', error);
+    tonConnectUI.setConnectRequestParameters(null);
   }
 };
 
@@ -109,6 +115,9 @@ const handleWalletConnect = async (walletData) => {
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
     console.log('Wallet connected and authorized');
+
+    // Start periodic tonProof refresh
+    stopRefreshInterval = useInterval(() => recreateProofPayload(walletAddressRaw), refreshIntervalMs);
   } catch (error) {
     console.error('Authorization failed:', error);
     authStore.logout();
@@ -126,14 +135,9 @@ onMounted(async () => {
   await authStore.init();
   if (tonConnectUI && tonConnectUI.connected && wallet.value) {
     walletAddress.value = wallet.value.account.address;
-    authStore.setConnected(true);
-    walletStore.syncFromAuthStore();
+    await handleWalletConnect(wallet.value);
     console.log('Wallet already connected, synced state');
   }
-
-  // Set up tonProof payload refresh
-  await recreateProofPayload();
-  useInterval(recreateProofPayload, refreshIntervalMs);
 
   // Listen for wallet status changes
   tonConnectUI.onStatusChange(async (walletData) => {
@@ -142,9 +146,21 @@ onMounted(async () => {
     } else {
       authStore.logout();
       walletAddress.value = null;
+      if (stopRefreshInterval) {
+        stopRefreshInterval();
+        stopRefreshInterval = null;
+      }
+      tonConnectUI.setConnectRequestParameters(null);
       console.log('Wallet disconnected');
     }
   });
+});
+
+onUnmounted(() => {
+  if (stopRefreshInterval) {
+    stopRefreshInterval();
+    stopRefreshInterval = null;
+  }
 });
 
 const handleLanguageChange = () => {
