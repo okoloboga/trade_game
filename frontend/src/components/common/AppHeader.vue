@@ -83,10 +83,6 @@ onMounted(async () => {
       walletAddress.value = newWallet.account.address;
 
       try {
-        if (tonConnectUI.connected) {
-          console.log('Wallet already connected, skipping');
-          return;
-        }
         tonConnectUI.setConnectRequestParameters({
           state: 'ready',
           value: { tonProof: 'trade.ruble.website' },
