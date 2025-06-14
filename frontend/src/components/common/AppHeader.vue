@@ -89,63 +89,25 @@ onMounted(async () => {
   });
 });
 
-onUnmounted(() => {
-  clearInterval(interval);
-  tonConnectUI.onStatusChange(null);
-});
-
-async function refreshPayload(walletAddress) {
-  try {
-    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
-    const response = await authStore.generateChallenge(walletAddress);
-    if (response.challenge) {
-      tonConnectUI.setConnectRequestParameters({
-        state: 'ready',
-        value: { tonProof: response.challenge },
-      });
-      console.log('Payload refreshed:', response.challenge);
-      return response.challenge;
-    } else {
-      tonConnectUI.setConnectRequestParameters(null);
-      return null;
-    }
-  } catch (error) {
-    console.error('Failed to refresh payload:', error);
-    tonConnectUI.setConnectRequestParameters(null);
-    return null;
-  }
-}
-
 async function handleWalletConnect(wallet) {
   try {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
     // Запрашиваем challenge и устанавливаем его для tonProof
-    const challenge = await refreshPayload(walletAddressRaw);
+    const challenge = await authStore.generateChallenge(walletAddressRaw);
     if (!challenge) {
       throw new Error('Failed to generate challenge');
     }
     console.log('Challenge generated:', challenge);
 
     // Проверяем tonProof
-    let tonProof = wallet.connectItems?.tonProof;
-    console.log('Wallet after get tonProof:', wallet);
+    const tonProof = wallet.connectItems.tonProof;
+    console.log('TonProof:', wallet.connectItems.tonProof);
 
     if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
-      console.warn('Invalid tonProof, waiting for correct tonProof...');
-      // Даём кошельку время вернуть правильный tonProof
-      let attempts = 3;
-      while (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
-        if (attempts === 0) {
-          throw new Error('No valid tonProof after attempts');
-        }
-        console.log(`Waiting for valid tonProof, attempts left: ${attempts}`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Ждём 2 секунды
-        tonProof = wallet.connectItems?.tonProof;
-        attempts--;
-      }
-    }
+      throw new Error('Invalid tonProof');
+    };
 
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
