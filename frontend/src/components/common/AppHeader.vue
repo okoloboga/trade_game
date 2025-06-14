@@ -70,7 +70,9 @@ const recreateProofPayload = async (address) => {
 
   tonConnectUI.setConnectRequestParameters({ state: 'loading' });
   try {
+    console.log('setConnectRequestParameters - loading')
     const payload = await authStore.generateChallenge(address);
+    console.log('Payload with challenge:', payload);
     if (payload?.challenge) {
       tonConnectUI.setConnectRequestParameters({
         state: 'ready',
@@ -87,6 +89,7 @@ const recreateProofPayload = async (address) => {
 
 const handleWalletConnect = async (walletData) => {
   try {
+    console.log('Connecting wallet:', walletData);
     if (!walletData?.connectItems?.tonProof || !('proof' in walletData.connectItems.tonProof)) {
       throw new Error('No tonProof available');
     }
