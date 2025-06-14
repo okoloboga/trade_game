@@ -36,21 +36,12 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
-    async verifyProof(data) {
-      try {
-        const response = await apiService.verifyProof(data);
-        console.log('Verify proof response:', JSON.stringify(response, null, 2));
-        return response;
-      } catch (error) {
-        console.error('Error verifying proof:', error);
-        useErrorStore().setError('Failed to verify proof');
-        throw error;
-      }
-    },
+
     async login(data) {
       try {
-        console.log('[login] Sending data:', JSON.stringify(data, null, 2)); // Добавили лог
+        console.log('[login] Sending data:', JSON.stringify(data, null, 2));
         const response = await apiService.login(data);
+        console.log('[login] Response:', JSON.stringify(response, null, 2));
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify(response.user));
         this.token = response.access_token;
@@ -59,10 +50,12 @@ export const useAuthStore = defineStore('auth', {
         this.setConnected(true);
         return response;
       } catch (error) {
+        console.error('[login] Error:', error);
         useErrorStore().setError('Login failed');
         throw error;
       }
     },
+
     logout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');

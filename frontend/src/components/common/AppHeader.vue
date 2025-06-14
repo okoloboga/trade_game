@@ -105,22 +105,6 @@ const handleWalletConnect = async (walletData) => {
     };
     console.log('[handleWalletConnect] Account:', JSON.stringify(account, null, 2));
 
-    if (tonProof) {
-      console.log('[handleWalletConnect] Verifying proof for address:', walletAddressRaw);
-      const verifyResult = await authStore.verifyProof({
-        walletAddress: walletAddressRaw,
-        tonProof,
-        account,
-        clientId: clientId.value, // Передаём clientId
-      });
-      console.log('[handleWalletConnect] Verify result:', JSON.stringify(verifyResult, null, 2));
-
-      if (!verifyResult.valid) {
-        console.error('[handleWalletConnect] TON Proof verification failed');
-        throw new Error('TON Proof verification failed');
-      }
-    }
-
     console.log('[handleWalletConnect] Logging in with address:', walletAddressRaw);
     await authStore.login({
       ton_address: walletAddressRaw,

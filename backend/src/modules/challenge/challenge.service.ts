@@ -38,9 +38,8 @@ export class ChallengeService {
     }
 
     const receivedChallenge = tonProof.proof.payload;
-
     if (storedChallenge.challenge !== receivedChallenge) {
-      this.logger.error(`Challenge mismatch for clientId ${clientId}`);
+      this.logger.error(`Challenge mismatch for clientId ${clientId}: expected ${storedChallenge.challenge}, received ${receivedChallenge}`);
       return false;
     }
 
@@ -100,7 +99,7 @@ export class ChallengeService {
           this.logger.error('Proof is too old');
           return false;
         }
-
+        this.logger.log(`Removing challenge for clientId ${clientId} after successful verification`);
         this.challenges.delete(clientId);
         return true;
       }
@@ -129,7 +128,7 @@ export class ChallengeService {
         this.logger.error('Proof is too old');
         return false;
       }
-
+      this.logger.log(`Removing challenge for clientId ${clientId} after successful verification`);
       this.challenges.delete(clientId);
       return true;
     } catch (error) {
