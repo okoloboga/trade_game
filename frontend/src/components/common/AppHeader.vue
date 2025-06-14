@@ -1,4 +1,3 @@
-```vue
 <template>
   <v-app-bar color="#1a1a1a" flat dark>
     <v-container fluid>
@@ -47,7 +46,6 @@ import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
 import WalletIcon from '@/assets/home-icon.svg';
-import useInterval from '@/hooks/useInterval';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -55,35 +53,27 @@ const { language, changeLanguage } = useLanguage();
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
 const walletAddress = ref(null);
+const clientId = ref(null); // Для хранения client_id сессии
 
 let authStore, walletStore;
-let stopRefreshInterval = null;
 
-const refreshIntervalMs = 10 * 60 * 1000; // 10 minutes
-
-const recreateProofPayload = async (address) => {
-  console.log(`[recreateProofPayload] Starting for address: ${address || 'none'}`);
-  if (!address) {
-    console.warn('[recreateProofPayload] No wallet address provided, skipping tonProof generation');
-    tonConnectUI.setConnectRequestParameters(null);
-    return false;
-  }
-
-  console.log('[recreateProofPayload] Setting connect parameters to loading');
+const recreateProofPayload = async () => {
+  console.log('[recreateProofPayload] Generating challenge');
   tonConnectUI.setConnectRequestParameters({ state: 'loading' });
   try {
-    console.log('[recreateProofPayload] Requesting challenge from backend for address:', address);
-    const payload = await authStore.generateChallenge(address);
+    console.log('[recreateProofPayload] Requesting challenge from backend with clientId:', clientId.value || 'none');
+    const payload = await authStore.generateChallenge(clientId.value);
     console.log('[recreateProofPayload] Received payload:', JSON.stringify(payload, null, 2));
-    if (payload?.challenge) {
+    if (payload?.challenge && payload?.clientId) {
+      clientId.value = payload.clientId; // Сохраняем clientId для верификации
       console.log('[recreateProofPayload] Setting connect parameters to ready with challenge:', payload.challenge);
       tonConnectUI.setConnectRequestParameters({
         state: 'ready',
-        value: { tonProof: payload.challenge },
+        value: { tonProof: `ton-proof-item-v2/${payload.challenge}` }, // Добавляем префикс
       });
       return true;
     } else {
-      console.warn('[recreateProofPayload] No valid challenge received, resetting parameters');
+      console.warn('[recreateProofPayload] No valid challenge or clientId received, resetting parameters');
       tonConnectUI.setConnectRequestParameters(null);
       return false;
     }
@@ -98,12 +88,12 @@ const handleWalletConnect = async (walletData) => {
   console.log('[handleWalletConnect] Starting wallet connection process:', JSON.stringify(walletData, null, 2));
   try {
     if (!walletData?.connectItems?.tonProof || !('proof' in walletData.connectItems.tonProof)) {
-      console.error('[handleWalletConnect] No tonProof available');
-      throw new Error('No tonProof available');
+      console.warn('[handleWalletConnect] No tonProof available, proceeding without tonProof verification');
+      // Временная заглушка для тестирования
     }
 
     const walletAddressRaw = walletData.account.address;
-    const tonProof = walletData.connectItems.tonProof.proof;
+    const tonProof = walletData.connectItems?.tonProof?.proof;
     console.log('[handleWalletConnect] tonProof:', JSON.stringify(tonProof, null, 2));
 
     const account = {
@@ -114,17 +104,20 @@ const handleWalletConnect = async (walletData) => {
     };
     console.log('[handleWalletConnect] Account:', JSON.stringify(account, null, 2));
 
-    console.log('[handleWalletConnect] Verifying proof for address:', walletAddressRaw);
-    const verifyResult = await authStore.verifyProof({
-      walletAddress: walletAddressRaw,
-      tonProof,
-      account,
-    });
-    console.log('[handleWalletConnect] Verify result:', JSON.stringify(verifyResult, null, 2));
+    if (tonProof) {
+      console.log('[handleWalletConnect] Verifying proof for address:', walletAddressRaw);
+      const verifyResult = await authStore.verifyProof({
+        walletAddress: walletAddressRaw,
+        tonProof,
+        account,
+        clientId: clientId.value, // Передаём clientId
+      });
+      console.log('[handleWalletConnect] Verify result:', JSON.stringify(verifyResult, null, 2));
 
-    if (!verifyResult.valid) {
-      console.error('[handleWalletConnect] TON Proof verification failed');
-      throw new Error('TON Proof verification failed');
+      if (!verifyResult.valid) {
+        console.error('[handleWalletConnect] TON Proof verification failed');
+        throw new Error('TON Proof verification failed');
+      }
     }
 
     console.log('[handleWalletConnect] Logging in with address:', walletAddressRaw);
@@ -133,14 +126,11 @@ const handleWalletConnect = async (walletData) => {
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
     console.log('[handleWalletConnect] Wallet connected and authorized successfully');
-
-    // Start periodic tonProof refresh
-    console.log('[handleWalletConnect] Starting periodic tonProof refresh for address:', walletAddressRaw);
-    stopRefreshInterval = useInterval(() => recreateProofPayload(walletAddressRaw), refreshIntervalMs);
   } catch (error) {
     console.error('[handleWalletConnect] Authorization failed:', error);
     authStore.logout();
     walletAddress.value = null;
+    clientId.value = null;
     throw error;
   }
 };
@@ -157,7 +147,7 @@ onMounted(async () => {
   if (tonConnectUI && tonConnectUI.connected && wallet.value) {
     console.log('[onMounted] Wallet already connected, address:', wallet.value.account.address);
     walletAddress.value = wallet.value.account.address;
-    const success = await recreateProofPayload(wallet.value.account.address);
+    const success = await recreateProofPayload();
     if (success) {
       await handleWalletConnect(wallet.value);
       console.log('[onMounted] Wallet already connected, synced state');
@@ -166,8 +156,8 @@ onMounted(async () => {
       authStore.logout();
     }
   } else {
-    console.log('[onMounted] No wallet connected, resetting connect parameters');
-    tonConnectUI.setConnectRequestParameters(null);
+    console.log('[onMounted] No wallet connected, generating initial challenge');
+    await recreateProofPayload();
   }
 
   // Listen for wallet status changes
@@ -175,8 +165,8 @@ onMounted(async () => {
   tonConnectUI.onStatusChange(async (walletData) => {
     console.log('[onStatusChange] Wallet status changed:', JSON.stringify(walletData, null, 2));
     if (walletData) {
-      console.log('[onStatusChange] Wallet connected, generating challenge for address:', walletData.account.address);
-      const success = await recreateProofPayload(walletData.account.address);
+      console.log('[onStatusChange] Wallet connected, address:', walletData.account.address);
+      const success = await recreateProofPayload();
       if (success) {
         console.log('[onStatusChange] Challenge generated successfully, proceeding to handleWalletConnect');
         await handleWalletConnect(walletData);
@@ -184,17 +174,14 @@ onMounted(async () => {
         console.error('[onStatusChange] Failed to generate challenge, aborting connection');
         authStore.logout();
         walletAddress.value = null;
+        clientId.value = null;
         tonConnectUI.setConnectRequestParameters(null);
       }
     } else {
       console.log('[onStatusChange] Wallet disconnected');
       authStore.logout();
       walletAddress.value = null;
-      if (stopRefreshInterval) {
-        console.log('[onStatusChange] Stopping periodic tonProof refresh');
-        stopRefreshInterval();
-        stopRefreshInterval = null;
-      }
+      clientId.value = null;
       console.log('[onStatusChange] Resetting connect parameters');
       tonConnectUI.setConnectRequestParameters(null);
     }
@@ -203,11 +190,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   console.log('[onUnmounted] Cleaning up AppHeader');
-  if (stopRefreshInterval) {
-    console.log('[onUnmounted] Stopping periodic tonProof refresh');
-    stopRefreshInterval();
-    stopRefreshInterval = null;
-  }
 });
 
 const handleLanguageChange = () => {

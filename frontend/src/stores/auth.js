@@ -27,9 +27,9 @@ export const useAuthStore = defineStore('auth', {
         }
       }
     },
-    async generateChallenge(walletAddress) {
+    async generateChallenge(clientId) {
       try {
-        const response = await apiService.generateChallenge(walletAddress);
+        const response = await apiService.generateChallenge(clientId);
         return response;
       } catch (error) {
         useErrorStore().setError('Failed to generate challenge');

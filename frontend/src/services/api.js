@@ -44,10 +44,10 @@ function handleApiError(error) {
 }
 
 export default {
-  async generateChallenge(walletAddress) {
+  async generateChallenge(clientId) {
     try {
       const response = await api.get('/challenge/generate', {
-        params: { walletAddress },
+        params: { clientId }, // Передаём clientId, если есть
       });
       return response.data;
     } catch (error) {
