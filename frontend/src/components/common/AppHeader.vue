@@ -38,12 +38,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { TonConnectButton, useTonWallet, useTonConnectUI, useTonConnectModal } from '@townsquarelabs/ui-vue';
+import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
-import WalletIcon from '@/assets/home-icon.svg';
+import WalletIcon from '@/assets/wallet-icon.svg';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -52,7 +52,6 @@ const showWithdraw = ref(false);
 
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
-const { close } = useTonConnectModal();
 const isWalletConnected = ref(false);
 const walletAddress = ref(null);
 let interval = null;
@@ -67,9 +66,6 @@ onMounted(async () => {
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
-
-  // Закрываем модальное окно при загрузке
-  close();
 
   // Периодическое обновление tonProof payload
   await refreshPayload();
@@ -92,7 +88,6 @@ onMounted(async () => {
       isWalletConnected.value = false;
       walletAddress.value = null;
       authStore.logout();
-      close();
     }
   });
 });
@@ -131,11 +126,11 @@ async function handleWalletConnect(wallet) {
     console.log('Challenge generated:', challenge);
 
     let tonProof = wallet.connectItems?.tonProof;
-    if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
-      console.warn('No valid tonProof or mismatched payload, reconnecting...');
+    let attempts = 5;
+    while ((!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) && attempts > 0) {
+      console.log(`Waiting for valid tonProof, attempts left: ${attempts}`);
       if (tonConnectUI.connected) {
         await tonConnectUI.disconnect();
-        close();
       }
       tonConnectUI.setConnectRequestParameters({
         state: 'ready',
@@ -143,10 +138,11 @@ async function handleWalletConnect(wallet) {
       });
       const walletData = await tonConnectUI.connectWallet();
       tonProof = walletData.connectItems?.tonProof;
-      if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
-        throw new Error('No valid tonProof available after reconnect');
-      }
-      wallet.connectItems = walletData.connectItems;
+      attempts--;
+    }
+
+    if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
+      throw new Error('No valid tonProof available after attempts');
     }
 
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
@@ -176,14 +172,12 @@ async function handleWalletConnect(wallet) {
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
-    close();
   } catch (error) {
     console.error('Authorization failed:', error);
     tonConnectUI.setConnectRequestParameters(null);
     authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
-    close();
     throw error;
   }
 }
