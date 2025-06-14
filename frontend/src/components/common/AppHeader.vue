@@ -71,13 +71,14 @@ onMounted(async () => {
   await refreshPayload();
   interval = setInterval(refreshPayload, 20 * 60 * 1000); // Каждые 20 минут
 
-  // Проверяем, подключён ли кошелёк
+  // Проверка текущего статуса кошелька при монтировании
   if (tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
     isWalletConnected.value = true;
     walletAddress.value = wallet.value.account.address;
     await handleWalletConnect(wallet.value);
   }
 
+  // Отслеживание изменений статуса кошелька
   tonConnectUI.onStatusChange(async (newWallet) => {
     console.log('Wallet status changed:', !!newWallet);
     if (newWallet && !isWalletConnected.value) {
@@ -121,28 +122,15 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
-    // Запрашиваем новый challenge для конкретного кошелька
+    // Получаем challenge для конкретного кошелька
     const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
 
-    let tonProof = wallet.connectItems?.tonProof;
-    let attempts = 5;
-    while ((!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) && attempts > 0) {
-      console.log(`Waiting for valid tonProof, attempts left: ${attempts}`);
-      if (tonConnectUI.connected) {
-        await tonConnectUI.disconnect();
-      }
-      tonConnectUI.setConnectRequestParameters({
-        state: 'ready',
-        value: { tonProof: challenge },
-      });
-      const walletData = await tonConnectUI.connectWallet();
-      tonProof = walletData.connectItems?.tonProof;
-      attempts--;
-    }
-
+    const tonProof = wallet.connectItems?.tonProof;
     if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
-      throw new Error('No valid tonProof available after attempts');
+      console.warn('Invalid tonProof, refreshing payload and awaiting reconnect');
+      await refreshPayload();
+      throw new Error('Invalid tonProof, please try reconnecting');
     }
 
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
@@ -174,10 +162,9 @@ async function handleWalletConnect(wallet) {
     walletStore.syncFromAuthStore();
   } catch (error) {
     console.error('Authorization failed:', error);
-    tonConnectUI.setConnectRequestParameters(null);
-    authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
+    authStore.logout();
     throw error;
   }
 }
