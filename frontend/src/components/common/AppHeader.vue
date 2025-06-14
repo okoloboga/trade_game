@@ -14,9 +14,19 @@
             <v-tooltip activator="parent" location="bottom">{{ $t('history') }}</v-tooltip>
           </v-btn>
         </v-col>
+
         <v-col cols="4" class="text-center">
-          <TonConnectButton />
+          <v-btn v-if="!isWalletConnected" @click="connectWallet" variant="text" color="primary">
+            {{ $t('connect_wallet') }}
+          </v-btn>
+          <div v-else>
+            <v-btn variant="text" icon @click="showWalletMenu = !showWalletMenu" class="header-btn">
+              <v-icon color="#E0E0E0">mdi-link</v-icon>
+              <v-tooltip activator="parent" location="bottom">{{ walletAddress || $t('wallet_connected') }}</v-tooltip>
+            </v-btn>
+          </div>
         </v-col>
+
         <v-col cols="2" class="text-center">
           <v-btn :to="'/wallet'" variant="text" icon class="header-btn">
             <img :src="WalletIcon" class="icon wallet-icon" />
@@ -36,25 +46,26 @@
   </v-app-bar>
 </template>
 
+
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { TonConnectButton, useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { ref, onMounted } from 'vue';
+import { useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
-import WalletIcon from '@/assets/wallet-icon.svg';
+import WalletIcon from '@/assets/home-icon.svg';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
 const showDeposit = ref(false);
 const showWithdraw = ref(false);
+const showWalletMenu = ref(false);
 
 const wallet = useTonWallet();
 const { tonConnectUI } = useTonConnectUI();
 const isWalletConnected = ref(false);
 const walletAddress = ref(null);
-let interval = null;
 
 let authStore, walletStore;
 
@@ -66,68 +77,46 @@ onMounted(async () => {
 
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
-
-  // Проверяем, подключён ли кошелёк
-  if (tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
-    console.log('Initial tonConnectUI check:', tonConnectUI.connected && wallet.value && !isWalletConnected.value)
+  if (tonConnectUI && tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
     isWalletConnected.value = true;
     walletAddress.value = wallet.value.account.address;
-    await handleWalletConnect(wallet.value);
+    authStore.setConnected(true);
+    walletStore.syncFromAuthStore();
+    console.log('Wallet already connected, synced state');
   }
-
-  tonConnectUI.onStatusChange(async (newWallet) => {
-    console.log('Wallet status changed:', !!newWallet);
-
-    if (newWallet && !isWalletConnected.value) {
-      isWalletConnected.value = true;
-      walletAddress.value = newWallet.account.address;
-
-      try {
-        tonConnectUI.setConnectRequestParameters({
-          state: 'ready',
-          value: { tonProof: 'trade.ruble.website' },
-        });
-        const walletData = await tonConnectUI.connectWallet();
-        if (walletData?.account?.address) {
-          await handleWalletConnect(walletData);
-        }
-      } catch (error) {
-        console.error('Wallet connection failed:', error);
-      }
-
-    } else if (!newWallet) {
-      isWalletConnected.value = false;
-      walletAddress.value = null;
-      authStore.logout();
-      clearInterval(interval); // Останавливаем обновление при отключении
-    }
-  });
 });
+
+async function connectWallet() {
+  try {
+    if (tonConnectUI.connected) {
+      console.log('Wallet already connected, skipping');
+      return;
+    }
+    tonConnectUI.setConnectRequestParameters({
+      state: 'ready',
+      value: { tonProof: 'trade.ruble.website' },
+    });
+    const walletData = await tonConnectUI.connectWallet();
+    if (walletData?.account?.address) {
+      await handleWalletConnect(walletData);
+    }
+  } catch (error) {
+    console.error('Wallet connection failed:', error);
+  }
+}
 
 async function handleWalletConnect(wallet) {
   try {
-    console.log('Handling wallet:', wallet);
+    console.log('Connecting wallet tonProof:', wallet.connectItems?.tonProof);
     const walletAddressRaw = wallet.account.address;
 
-    // Запрашиваем challenge и устанавливаем его для tonProof
-    const challenge = await authStore.generateChallenge(walletAddressRaw);
-    if (!challenge) {
-      throw new Error('Failed to generate challenge');
-    }
+    const { challenge } = await authStore.generateChallenge(walletAddressRaw);
     console.log('Challenge generated:', challenge);
-
-    // Проверяем tonProof
-    const tonProof = wallet.connectItems?.tonProof;
-    console.log('TonProof:', wallet.connectItems?.tonProof);
 
     if (!wallet.connectItems?.tonProof) {
       throw new Error('No tonProof available');
     }
-
-    if (tonProof.proof.payload !== challenge) {
-      throw new Error('Invalid tonProof');
-    };
-
+    const tonProof = wallet.connectItems.tonProof;
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
 
     const account = {
@@ -155,15 +144,11 @@ async function handleWalletConnect(wallet) {
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
-
-    // Запускаем периодическое обновление challenge для поддержания сессии
-    interval = setInterval(() => refreshPayload(walletAddressRaw), 15 * 60 * 1000); // Каждые 15 минут
   } catch (error) {
     console.error('Authorization failed:', error);
-    tonConnectUI.setConnectRequestParameters(null);
+    authStore.logout();
     isWalletConnected.value = false;
     walletAddress.value = null;
-    authStore.logout();
     throw error;
   }
 }
@@ -173,6 +158,7 @@ const handleLanguageChange = () => {
   changeLanguage(newLanguage);
 };
 </script>
+
 
 <style scoped>
 /* Базовые стили */
