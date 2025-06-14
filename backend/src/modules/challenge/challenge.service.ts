@@ -37,9 +37,7 @@ export class ChallengeService {
       return false;
     }
 
-    const receivedChallenge = tonProof.proof.payload.startsWith('ton-proof-item-v2/')
-      ? tonProof.proof.payload.slice('ton-proof-item-v2/'.length)
-      : tonProof.proof.payload;
+    const receivedChallenge = tonProof.proof.payload;
 
     if (storedChallenge.challenge !== receivedChallenge) {
       this.logger.error(`Challenge mismatch for clientId ${clientId}`);

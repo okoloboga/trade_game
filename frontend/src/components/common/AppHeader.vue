@@ -93,7 +93,8 @@ const handleWalletConnect = async (walletData) => {
     }
 
     const walletAddressRaw = walletData.account.address;
-    const tonProof = walletData.connectItems?.tonProof?.proof;
+    const tonProofPayload = walletData.connectItems.tonProof.proof;
+    const tonProof = { proof: tonProofPayload };
     console.log('[handleWalletConnect] tonProof:', JSON.stringify(tonProof, null, 2));
 
     const account = {
