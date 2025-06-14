@@ -66,7 +66,7 @@ const recreateProofPayload = async (address) => {
   if (!address) {
     console.warn('[recreateProofPayload] No wallet address provided, skipping tonProof generation');
     tonConnectUI.setConnectRequestParameters(null);
-    return;
+    return false;
   }
 
   console.log('[recreateProofPayload] Setting connect parameters to loading');
@@ -81,13 +81,16 @@ const recreateProofPayload = async (address) => {
         state: 'ready',
         value: { tonProof: payload.challenge },
       });
+      return true;
     } else {
       console.warn('[recreateProofPayload] No valid challenge received, resetting parameters');
       tonConnectUI.setConnectRequestParameters(null);
+      return false;
     }
   } catch (error) {
     console.error('[recreateProofPayload] Failed to generate tonProof payload:', error);
     tonConnectUI.setConnectRequestParameters(null);
+    return false;
   }
 };
 
@@ -95,7 +98,7 @@ const handleWalletConnect = async (walletData) => {
   console.log('[handleWalletConnect] Starting wallet connection process:', JSON.stringify(walletData, null, 2));
   try {
     if (!walletData?.connectItems?.tonProof || !('proof' in walletData.connectItems.tonProof)) {
-      console.error('[handleWalletConnect] No System: No tonProof available');
+      console.error('[handleWalletConnect] No tonProof available');
       throw new Error('No tonProof available');
     }
 
@@ -107,7 +110,7 @@ const handleWalletConnect = async (walletData) => {
       address: walletAddressRaw,
       publicKey: walletData.account.publicKey,
       chain: walletData.account.chain,
-      walletStateInit: walletData.account.walletQuint || '',
+      walletStateInit: walletData.account.walletStateInit || '',
     };
     console.log('[handleWalletConnect] Account:', JSON.stringify(account, null, 2));
 
@@ -154,12 +157,17 @@ onMounted(async () => {
   if (tonConnectUI && tonConnectUI.connected && wallet.value) {
     console.log('[onMounted] Wallet already connected, address:', wallet.value.account.address);
     walletAddress.value = wallet.value.account.address;
-    await recreateProofPayload(wallet.value.account.address);
-    await handleWalletConnect(wallet.value);
-    console.log('[onMounted] Wallet already connected, synced state');
+    const success = await recreateProofPayload(wallet.value.account.address);
+    if (success) {
+      await handleWalletConnect(wallet.value);
+      console.log('[onMounted] Wallet already connected, synced state');
+    } else {
+      console.warn('[onMounted] Failed to generate tonProof for existing wallet, logging out');
+      authStore.logout();
+    }
   } else {
-    console.log('[onMounted] No wallet connected, setting initial connect parameters to loading');
-    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+    console.log('[onMounted] No wallet connected, resetting connect parameters');
+    tonConnectUI.setConnectRequestParameters(null);
   }
 
   // Listen for wallet status changes
@@ -168,8 +176,16 @@ onMounted(async () => {
     console.log('[onStatusChange] Wallet status changed:', JSON.stringify(walletData, null, 2));
     if (walletData) {
       console.log('[onStatusChange] Wallet connected, generating challenge for address:', walletData.account.address);
-      await recreateProofPayload(walletData.account.address);
-      await handleWalletConnect(walletData);
+      const success = await recreateProofPayload(walletData.account.address);
+      if (success) {
+        console.log('[onStatusChange] Challenge generated successfully, proceeding to handleWalletConnect');
+        await handleWalletConnect(walletData);
+      } else {
+        console.error('[onStatusChange] Failed to generate challenge, aborting connection');
+        authStore.logout();
+        walletAddress.value = null;
+        tonConnectUI.setConnectRequestParameters(null);
+      }
     } else {
       console.log('[onStatusChange] Wallet disconnected');
       authStore.logout();
