@@ -69,7 +69,7 @@ const recreateProofPayload = async () => {
       console.log('[recreateProofPayload] Setting connect parameters to ready with challenge:', payload.challenge);
       tonConnectUI.setConnectRequestParameters({
         state: 'ready',
-        value: { tonProof: `ton-proof-item-v2/${payload.challenge}` }, // Добавляем префикс
+        value: { tonProof: payload.challenge },
       });
       return true;
     } else {
