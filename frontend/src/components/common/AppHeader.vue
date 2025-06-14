@@ -95,9 +95,7 @@ const handleWalletConnect = async (walletData) => {
   console.log('[handleWalletConnect] Starting wallet connection process:', JSON.stringify(walletData, null, 2));
   try {
     if (!walletData?.connectItems?.tonProof || !('proof' in walletData.connectItems.tonProof)) {
-      console.error('[handleWalletConnect] No彼此
-
-System: No tonProof available');
+      console.error('[handleWalletConnect] No System: No tonProof available');
       throw new Error('No tonProof available');
     }
 
