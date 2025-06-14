@@ -16,18 +16,17 @@ export class AuthService {
   ) {}
 
   async login(authDto: AuthDto) {
-    const { ton_address, tonProof, account } = authDto;
+    const { ton_address, tonProof, account, clientId } = authDto;
 
-    // Проверка подписи через TON Proof
-    const isValid = await this.challengeService.verifyTonProof(
-      account,
-      tonProof
-    );
+    if (!clientId) {
+      throw new UnauthorizedException('Client ID is required');
+    }
+
+    const isValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
     if (!isValid) {
       throw new UnauthorizedException('Invalid TON Proof');
     }
 
-    // Поиск или создание пользователя
     let user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
       const newUser: Partial<User> = {
@@ -39,7 +38,6 @@ export class AuthService {
       await this.userRepository.save(user);
     }
 
-    // Генерация JWT
     const payload = { sub: user.id, ton_address: user.ton_address };
     const token = await this.jwtService.signAsync(payload);
 

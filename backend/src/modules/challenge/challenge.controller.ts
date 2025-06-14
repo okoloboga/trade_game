@@ -15,11 +15,13 @@ interface VerifyTonProofDto {
   walletAddress: string;
   tonProof: TonProof;
   account: Account;
+  clientId: string; // Добавляем clientId
 }
 
 interface ChallengeResponse {
   challenge: string;
   validUntil: number;
+  clientId: string;
 }
 
 @Controller('challenge')
@@ -29,49 +31,34 @@ export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
   @Get('generate')
-  async generateChallenge(@Query('walletAddress') walletAddress: string): Promise<ChallengeResponse> {
-    if (!walletAddress) {
-      throw new BadRequestException('Wallet address is required');
-    }
-
-    const { challenge, validUntil } = await this.challengeService.generateChallenge(walletAddress);
-    return { challenge, validUntil };
+  async generateChallenge(@Query('clientId') clientId?: string): Promise<ChallengeResponse> {
+    this.logger.log(`Generating challenge for clientId: ${clientId || 'new session'}`);
+    return await this.challengeService.generateChallenge(clientId);
   }
 
   @Post('verify')
-  async verifyTonProof(
-    @Body() verifyDto: VerifyTonProofDto
-  ): Promise<{ valid: boolean }> {
-    const { walletAddress, tonProof, account } = verifyDto;
+  async verifyTonProof(@Body() verifyDto: VerifyTonProofDto): Promise<{ valid: boolean }> {
+    const { walletAddress, tonProof, account, clientId } = verifyDto;
 
-    if (!walletAddress || !tonProof) {
+    if (!walletAddress || !tonProof || !clientId) {
       this.logger.warn('Missing required parameters in verify request');
       throw new BadRequestException('Missing required parameters');
     }
 
     try {
-      this.logger.log(
-        `Starting TON Proof verification for walletAddress: ${walletAddress}`
-      );
-      const isValid = await this.challengeService.verifyTonProof(
-        account,
-        tonProof
-      );
+      this.logger.log(`Starting TON Proof verification for walletAddress: ${walletAddress}, clientId: ${clientId}`);
+      const isValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
 
       if (isValid) {
-        this.logger.log(
-          `TON Proof verification successful for walletAddress: ${walletAddress}`
-        );
+        this.logger.log(`TON Proof verification successful for walletAddress: ${walletAddress}, clientId: ${clientId}`);
       } else {
-        this.logger.warn(
-          `TON Proof verification failed for walletAddress: ${walletAddress}`
-        );
+        this.logger.warn(`TON Proof verification failed for walletAddress: ${walletAddress}, clientId: ${clientId}`);
       }
 
       return { valid: isValid };
     } catch (error) {
       this.logger.error(
-        `Error verifying TON Proof for walletAddress: ${walletAddress}`,
+        `Error verifying TON Proof for walletAddress: ${walletAddress}, clientId: ${clientId}`,
         (error as AxiosError).message
       );
       throw new BadRequestException('Error verifying TON Proof.');

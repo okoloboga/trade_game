@@ -7,10 +7,12 @@ export class AuthDto {
   ton_address!: string;
 
   @IsObject()
-  @IsNotEmpty()
   tonProof!: TonProof; // Объект TON Proof с proof { timestamp, domain, signature, payload }
 
   @IsObject()
-  @IsNotEmpty()
   account!: Account; // Объект аккаунта с address, publicKey, chain
+
+  @IsString()
+  @IsNotEmpty()
+  clientId!: string;
 }

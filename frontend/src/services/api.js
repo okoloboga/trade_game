@@ -20,10 +20,9 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    console.log('API response:', response.config.url, response.data); // Отладка
+    console.log('API response:', response.config.url, response.data);
     return response;
   },
-
   (error) => {
     console.error('API error:', error.response?.data || error.message);
     const errorStore = useErrorStore();
@@ -47,7 +46,7 @@ export default {
   async generateChallenge(clientId) {
     try {
       const response = await api.get('/challenge/generate', {
-        params: { clientId }, // Передаём clientId, если есть
+        params: { clientId },
       });
       return response.data;
     } catch (error) {

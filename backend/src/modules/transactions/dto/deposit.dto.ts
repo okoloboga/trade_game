@@ -19,4 +19,8 @@ export class DepositDto {
 
   @IsNotEmpty()
   account!: Account;
+
+  @IsString()
+  @IsNotEmpty()
+  clientId!: string;
 }

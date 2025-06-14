@@ -21,14 +21,18 @@ export class TransactionsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly challengeService: ChallengeService,
-    private readonly tonService: TonService,
+    private readonly tonService: TonService
   ) {}
 
   async processDeposit(depositDto: DepositDto) {
-    const { userId, amount, txHash, tonProof, account } = depositDto;
+    const { userId, amount, txHash, tonProof, account, clientId } = depositDto;
 
     if (amount <= 0) {
       throw new BadRequestException('Invalid amount');
+    }
+
+    if (!clientId) {
+      throw new BadRequestException('Client ID is required');
     }
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -36,7 +40,7 @@ export class TransactionsService {
       throw new NotFoundException('User not found');
     }
 
-    const isProofValid = await this.challengeService.verifyTonProof(account, tonProof);
+    const isProofValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
     if (!isProofValid) {
       throw new BadRequestException('Invalid TON proof');
     }

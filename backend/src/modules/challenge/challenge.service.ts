@@ -15,32 +15,28 @@ export class ChallengeService {
 
   constructor(private readonly tonService: TonService) {}
 
-  // Генерация челленджа для TON Proof
   async generateChallenge(clientId?: string): Promise<{ challenge: string; validUntil: number; clientId: string }> {
-    const newClientId = clientId || uuidv4(); // Используем переданный clientId или генерируем новый
+    const newClientId = clientId || uuidv4();
     const challenge = randomBytes(32).toString('hex');
-    const validUntil = Date.now() + 5 * 60 * 1000; // 5 минут, как в твоём примере
+    const validUntil = Date.now() + 5 * 60 * 1000;
     this.challenges.set(newClientId, { challenge, validUntil });
     this.logger.log(`Generated challenge for clientId ${newClientId}: ${challenge}`);
     return { challenge, validUntil, clientId: newClientId };
   }
 
-  // Проверка TON Proof
   async verifyTonProof(account: Account, tonProof: TonProof, clientId: string): Promise<boolean> {
     if (!account?.address || !account.publicKey || !account.walletStateInit || !tonProof?.proof || !clientId) {
       this.logger.error('Invalid account, proof, or clientId');
       throw new BadRequestException('Invalid account, proof, or clientId');
     }
 
-    // Проверяем наличие и валидность challenge
     const storedChallenge = this.challenges.get(clientId);
     if (!storedChallenge || storedChallenge.validUntil < Date.now()) {
       this.logger.error(`No valid challenge found for clientId ${clientId}`);
-      this.challenges.delete(clientId); // Очистка устаревшего challenge
+      this.challenges.delete(clientId);
       return false;
     }
 
-    // Удаляем префикс ton-proof-item-v2/ из payload, если он есть
     const receivedChallenge = tonProof.proof.payload.startsWith('ton-proof-item-v2/')
       ? tonProof.proof.payload.slice('ton-proof-item-v2/'.length)
       : tonProof.proof.payload;
@@ -107,7 +103,7 @@ export class ChallengeService {
           return false;
         }
 
-        this.challenges.delete(clientId); // Очистка после успешной верификации
+        this.challenges.delete(clientId);
         return true;
       }
 
@@ -136,7 +132,7 @@ export class ChallengeService {
         return false;
       }
 
-      this.challenges.delete(clientId); // Очистка после успешной верификации
+      this.challenges.delete(clientId);
       return true;
     } catch (error) {
       this.logger.error(`Failed to verify TON Proof for clientId ${clientId}: ${(error as Error).message}`);
