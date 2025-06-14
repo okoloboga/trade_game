@@ -14,6 +14,7 @@
             <v-tooltip activator="parent" location="bottom">{{ $t('history') }}</v-tooltip>
           </v-btn>
         </v-col>
+
         <v-col cols="4" class="text-center">
           <v-btn v-if="!isWalletConnected" @click="connectWallet" variant="text" color="primary">
             {{ $t('connect_wallet') }}
@@ -25,6 +26,7 @@
             </v-btn>
           </div>
         </v-col>
+
         <v-col cols="2" class="text-center">
           <v-btn :to="'/wallet'" variant="text" icon class="header-btn">
             <img :src="WalletIcon" class="icon wallet-icon" />
