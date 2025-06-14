@@ -49,6 +49,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async login(data) {
       try {
+        console.log('[login] Sending data:', JSON.stringify(data, null, 2)); // Добавили лог
         const response = await apiService.login(data);
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify(response.user));

@@ -122,7 +122,12 @@ const handleWalletConnect = async (walletData) => {
     }
 
     console.log('[handleWalletConnect] Logging in with address:', walletAddressRaw);
-    await authStore.login({ ton_address: walletAddressRaw, tonProof, account });
+    await authStore.login({
+      ton_address: walletAddressRaw,
+      tonProof,
+      account,
+      clientId: clientId.value
+    });
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();

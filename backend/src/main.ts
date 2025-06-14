@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from './common/pipes/validation.pipe';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import helmet from 'helmet';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { Logger } from '@nestjs/common';
@@ -12,7 +12,19 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   app.use(helmet());
   app.setGlobalPrefix('api', { exclude: ['/socket.io'] });
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => ({
+          property: error.property,
+          constraints: error.constraints,
+        }));
+        logger.error(`Validation failed: ${JSON.stringify(messages, null, 2)}`);
+        return new BadRequestException(messages);
+      },
+    }),
+  );
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.useWebSocketAdapter(new IoAdapter(app));
 
