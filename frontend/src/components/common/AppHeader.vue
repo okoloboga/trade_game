@@ -91,8 +91,8 @@ onMounted(async () => {
 
 async function handleWalletConnect(wallet) {
   try {
+    console.log('Handling wallet:', wallet);
     const walletAddressRaw = wallet.account.address;
-    console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
     // Запрашиваем challenge и устанавливаем его для tonProof
     const challenge = await authStore.generateChallenge(walletAddressRaw);
@@ -102,8 +102,8 @@ async function handleWalletConnect(wallet) {
     console.log('Challenge generated:', challenge);
 
     // Проверяем tonProof
-    const tonProof = wallet.connectItems.tonProof;
-    console.log('TonProof:', wallet.connectItems.tonProof);
+    const tonProof = wallet.connectItems?.tonProof;
+    console.log('TonProof:', wallet.connectItems?.tonProof);
 
     if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
       throw new Error('Invalid tonProof');

@@ -73,7 +73,7 @@ const errorStore = useErrorStore()
 const loading = ref(false)
 
 const currentPrice = computed(() => {
-  console.log('TradeButtons current price:', marketStore.currentPrice);
+  console.log('TradeButtons marketStore:', marketStore);
   return marketStore.currentPrice;
 });
 

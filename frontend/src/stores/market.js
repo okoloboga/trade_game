@@ -14,7 +14,6 @@ export const useMarketStore = defineStore('market', {
       try {
         console.log('Fetching candles for:', symbol, timeframe);
         const response = await apiService.getCandles(symbol, timeframe);
-        console.log('Raw candles response:', JSON.stringify(response, null, 2));
 
         if (!Array.isArray(response)) {
           console.error('Candles response is not an array:', response);
@@ -34,10 +33,6 @@ export const useMarketStore = defineStore('market', {
           }
           return true;
         });
-
-        console.log(`Filtered ${response.length - validCandles.length} invalid candles`);
-        console.log('First 3 valid candles:', validCandles.slice(0, 3));
-        console.log('Last 3 valid candles:', validCandles.slice(-3));
 
         this.candles = validCandles.sort((a, b) => a.timestamp - b.timestamp);
         console.log('Candles after fetch:', this.candles.length);
