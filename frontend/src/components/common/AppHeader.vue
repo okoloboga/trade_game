@@ -160,32 +160,21 @@ onMounted(async () => {
     await recreateProofPayload();
   }
 
-  // Listen for wallet status changes
   console.log('[onMounted] Setting up wallet status change listener');
-  tonConnectUI.onStatusChange(async (walletData) => {
-    console.log('[onStatusChange] Wallet status changed:', JSON.stringify(walletData, null, 2));
-    if (walletData) {
-      console.log('[onStatusChange] Wallet connected, address:', walletData.account.address);
-      const success = await recreateProofPayload();
-      if (success) {
-        console.log('[onStatusChange] Challenge generated successfully, proceeding to handleWalletConnect');
-        await handleWalletConnect(walletData);
+    tonConnectUI.onStatusChange(async (walletData) => {
+      console.log('[onStatusChange] Wallet status changed:', JSON.stringify(walletData, null, 2));
+      if (walletData) {
+        console.log('[onStatusChange] Wallet connected, address:', walletData.account.address);
+        await handleWalletConnect(walletData); // Убрали recreateProofPayload
       } else {
-        console.error('[onStatusChange] Failed to generate challenge, aborting connection');
+        console.log('[onStatusChange] Wallet disconnected');
         authStore.logout();
         walletAddress.value = null;
         clientId.value = null;
+        console.log('[onStatusChange] Resetting connect parameters');
         tonConnectUI.setConnectRequestParameters(null);
       }
-    } else {
-      console.log('[onStatusChange] Wallet disconnected');
-      authStore.logout();
-      walletAddress.value = null;
-      clientId.value = null;
-      console.log('[onStatusChange] Resetting connect parameters');
-      tonConnectUI.setConnectRequestParameters(null);
-    }
-  });
+    });
 });
 
 onUnmounted(() => {
