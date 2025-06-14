@@ -67,18 +67,13 @@ onMounted(async () => {
   console.log('AppHeader mounted, initial wallet:', !!wallet.value);
   await authStore.init();
 
-  // Периодическое обновление tonProof payload
-  await refreshPayload();
-  interval = setInterval(refreshPayload, 20 * 60 * 1000); // Каждые 20 минут
-
-  // Проверка текущего статуса кошелька при монтировании
+  // Проверяем, подключён ли кошелёк
   if (tonConnectUI.connected && wallet.value && !isWalletConnected.value) {
     isWalletConnected.value = true;
     walletAddress.value = wallet.value.account.address;
     await handleWalletConnect(wallet.value);
   }
 
-  // Отслеживание изменений статуса кошелька
   tonConnectUI.onStatusChange(async (newWallet) => {
     console.log('Wallet status changed:', !!newWallet);
     if (newWallet && !isWalletConnected.value) {
@@ -89,6 +84,7 @@ onMounted(async () => {
       isWalletConnected.value = false;
       walletAddress.value = null;
       authStore.logout();
+      clearInterval(interval); // Останавливаем обновление при отключении
     }
   });
 });
@@ -98,22 +94,25 @@ onUnmounted(() => {
   tonConnectUI.onStatusChange(null);
 });
 
-async function refreshPayload() {
+async function refreshPayload(walletAddress) {
   try {
     tonConnectUI.setConnectRequestParameters({ state: 'loading' });
-    const response = await authStore.generateChallenge('temp'); // Временный адрес
+    const response = await authStore.generateChallenge(walletAddress);
     if (response.challenge) {
       tonConnectUI.setConnectRequestParameters({
         state: 'ready',
         value: { tonProof: response.challenge },
       });
       console.log('Payload refreshed:', response.challenge);
+      return response.challenge;
     } else {
       tonConnectUI.setConnectRequestParameters(null);
+      return null;
     }
   } catch (error) {
     console.error('Failed to refresh payload:', error);
     tonConnectUI.setConnectRequestParameters(null);
+    return null;
   }
 }
 
@@ -122,16 +121,30 @@ async function handleWalletConnect(wallet) {
     const walletAddressRaw = wallet.account.address;
     console.log('Handling wallet connect for raw address:', walletAddressRaw);
 
-    // Получаем challenge для конкретного кошелька
-    const { challenge } = await authStore.generateChallenge(walletAddressRaw);
+    // Запрашиваем challenge и устанавливаем его для tonProof
+    const challenge = await refreshPayload(walletAddressRaw);
+    if (!challenge) {
+      throw new Error('Failed to generate challenge');
+    }
     console.log('Challenge generated:', challenge);
 
-    const tonProof = wallet.connectItems?.tonProof;
-    console.log('Wallet after get TonProof:', wallet);
+    // Проверяем tonProof
+    let tonProof = wallet.connectItems?.tonProof;
+    console.log('Wallet after get tonProof:', wallet);
+
     if (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
-      console.warn('Invalid tonProof, refreshing payload and awaiting reconnect');
-      await refreshPayload();
-      throw new Error('Invalid tonProof, please try reconnecting');
+      console.warn('Invalid tonProof, waiting for correct tonProof...');
+      // Даём кошельку время вернуть правильный tonProof
+      let attempts = 3;
+      while (!tonProof || !('proof' in tonProof) || tonProof.proof.payload !== challenge) {
+        if (attempts === 0) {
+          throw new Error('No valid tonProof after attempts');
+        }
+        console.log(`Waiting for valid tonProof, attempts left: ${attempts}`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Ждём 2 секунды
+        tonProof = wallet.connectItems?.tonProof;
+        attempts--;
+      }
     }
 
     console.log('tonProof:', JSON.stringify(tonProof, null, 2));
@@ -161,8 +174,12 @@ async function handleWalletConnect(wallet) {
     walletAddress.value = walletAddressRaw;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();
+
+    // Запускаем периодическое обновление challenge для поддержания сессии
+    interval = setInterval(() => refreshPayload(walletAddressRaw), 15 * 60 * 1000); // Каждые 15 минут
   } catch (error) {
     console.error('Authorization failed:', error);
+    tonConnectUI.setConnectRequestParameters(null);
     isWalletConnected.value = false;
     walletAddress.value = null;
     authStore.logout();
