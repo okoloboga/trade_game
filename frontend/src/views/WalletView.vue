@@ -4,7 +4,7 @@
       <v-card-text>
         <div class="wallet-info mb-4">
           <v-chip color="success" size="small">
-            {{ shortAddress }}&nbsp;
+            {{ shortAddress }}
             <img :src="WalletIcon" class="icon wallet-icon" />
           </v-chip>
         </div>
@@ -14,72 +14,82 @@
         <div class="mb-4">
           <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance.toFixed(2) }}</strong>
         </div>
-        <!-- Первый ряд: Deposit -->
-        <v-row>
-          <v-col cols="12">
-            <v-btn
-              color="success"
-              class="full-width"
-              @click="showDepositDialog = true"
-            >
-              {{ $t('deposit') }}
-            </v-btn>
-          </v-col>
-        </v-row>
-        <!-- Второй ряд: Withdraw TON и Withdraw RUBLE -->
-        <v-row class="mt-2">
-          <v-col cols="6">
-            <v-btn
-              color="primary"
-              class="full-width"
-              @click="showWithdrawDialog = true"
-            >
-              {{ $t('withdraw_ton') }}
-            </v-btn>
-          </v-col>
-          <v-col cols="6">
-            <v-btn
-              color="primary"
-              class="full-width"
-              @click="showWithdrawTokensDialog = true"
-            >
-              {{ $t('withdraw_ruble') }}
-            </v-btn>
-          </v-col>
-        </v-row>
+        <!-- Кнопки без v-row/v-col для теста -->
+        <div class="button-container">
+          <v-btn
+            color="success"
+            class="mb-2"
+            block
+            @click="openDepositDialog"
+          >
+            {{ $t('deposit') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            class="mb-2"
+            block
+            @click="openWithdrawDialog"
+          >
+            {{ $t('withdraw_ton') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            block
+            @click="openWithdrawTokensDialog"
+          >
+            {{ $t('withdraw_ruble') }}
+          </v-btn>
+        </div>
       </v-card-text>
       <DepositDialog v-model="showDepositDialog" />
       <WithdrawDialog v-model="showWithdrawDialog" />
       <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
     </v-card>
+    <v-card v-else color="#1e1e1e" class="pa-4" elevation="4">
+      <v-card-text>
+        <v-alert type="warning" variant="tonal">
+          {{ $t('please_connect_wallet') }}
+        </v-alert>
+      </v-card-text>
+    </v-card>
   </v-container>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useWalletStore } from '@/stores/wallet'
-import { useErrorStore } from '@/stores/error'
-import { formatAddress } from '@/utils/formatters'
-import { useI18n } from 'vue-i18n'
-import DepositDialog from '@/components/wallet/DepositDialog.vue'
-import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue'
-import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue'
-import WalletIcon from '@/assets/wallet-icon.svg'
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useWalletStore } from '@/stores/wallet';
+import { useErrorStore } from '@/stores/error';
+import { formatAddress } from '@/utils/formatters';
+import { useI18n } from 'vue-i18n';
+import DepositDialog from '@/components/wallet/DepositDialog.vue';
+import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue';
+import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue';
+import WalletIcon from '@/assets/wallet-icon.svg';
 
-const { t } = useI18n()
-const authStore = useAuthStore()
-const walletStore = useWalletStore()
-const errorStore = useErrorStore()
-const showDepositDialog = ref(false)
-const showWithdrawDialog = ref(false)
-const showWithdrawTokensDialog = ref(false)
+const { t } = useI18n();
+const authStore = useAuthStore();
+const walletStore = useWalletStore();
+const errorStore = useErrorStore();
+const showDepositDialog = ref(false);
+const showWithdrawDialog = ref(false);
+const showWithdrawTokensDialog = ref(false);
 
-const shortAddress = computed(() => formatAddress(authStore.walletAddress))
+const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
-const openDepositDialog = () => {
-  console.log('[WalletView] Opening DepositDialog, showDepositDialog:', showDepositDialog.value);
+const openDepositDialog = (event) => {
+  console.log('[WalletView] Opening DepositDialog, event:', event);
   showDepositDialog.value = true;
+};
+
+const openWithdrawDialog = (event) => {
+  console.log('[WalletView] Opening WithdrawDialog, event:', event);
+  showWithdrawDialog.value = true;
+};
+
+const openWithdrawTokensDialog = (event) => {
+  console.log('[WalletView] Opening WithdrawTokensDialog, event:', event);
+  showWithdrawTokensDialog.value = true;
 };
 
 onMounted(async () => {
@@ -94,7 +104,6 @@ onMounted(async () => {
     errorStore.setError(t('please_connect_wallet'));
   }
 });
-
 </script>
 
 <style scoped>
