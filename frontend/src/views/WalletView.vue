@@ -1,6 +1,6 @@
 <template>
   <v-container fluid class="wallet-container">
-    <v-card color="#1e1e1e" class="pa-4" elevation="4">
+    <v-card v-if="authStore.isConnected && authStore.user" color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
         <div class="wallet-info mb-4">
           <v-chip color="success" size="small">
@@ -77,11 +77,19 @@ const showWithdrawTokensDialog = ref(false)
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress))
 
-onMounted(() => {
-  if (authStore.isConnected) {
-    walletStore.fetchWalletData()
+onMounted(async () => {
+  if (authStore.isConnected && authStore.user) {
+    walletStore.syncFromAuthStore();
+    try {
+      await walletStore.fetchTonPrice();
+    } catch (error) {
+      errorStore.setError(t('failed_to_fetch_ton_price'));
+    }
+  } else {
+    errorStore.setError(t('please_connect_wallet'));
   }
-})
+});
+
 </script>
 
 <style scoped>
