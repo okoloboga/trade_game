@@ -25,21 +25,6 @@
             {{ $t('deposit') }}
           </v-btn>
           <v-btn
-            color="primary"
-            class="mb-2"
-            block
-            @click="openWithdrawDialog"
-          >
-            {{ $t('withdraw_ton') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            block
-            @click="openWithdrawTokensDialog"
-          >
-            {{ $t('withdraw_ruble') }}
-          </v-btn>
-          <v-btn
             color="warning"
             class="mb-2"
             block
@@ -50,20 +35,6 @@
         </div>
       </v-card-text>
       <DepositDialog v-model="showDepositDialog" />
-      <v-dialog v-model="showWithdrawDialog" max-width="320">
-        <v-card>
-          <v-card-title>Inline Withdraw Dialog</v-card-title>
-          <v-card-text>This is an inline withdraw dialog.</v-card-text>
-          <v-btn @click="showWithdrawDialog = false">Close</v-btn>
-        </v-card>
-      </v-dialog>
-      <v-dialog v-model="showWithdrawTokensDialog" max-width="320">
-        <v-card>
-          <v-card-title>Inline Withdraw Tokens Dialog</v-card-title>
-          <v-card-text>This is an inline withdraw tokens dialog.</v-card-text>
-          <v-btn @click="showWithdrawTokensDialog = false">Close</v-btn>
-        </v-card>
-      </v-dialog>
       <v-dialog v-model="showTestDialog" max-width="320">
         <v-card>
           <v-card-title>Test Dialog</v-card-title>
@@ -90,38 +61,26 @@ import { useErrorStore } from '@/stores/error';
 import { formatAddress } from '@/utils/formatters';
 import { useI18n } from 'vue-i18n';
 import DepositDialog from '@/components/wallet/DepositDialog.vue';
-import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue';
-import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue';
+
 import WalletIcon from '@/assets/wallet-icon.svg';
 
 console.log('[WalletView] Importing DepositDialog:', DepositDialog);
-console.log('[WalletView] Importing WithdrawDialog:', WithdrawDialog);
-console.log('[WalletView] Importing WithdrawTokensDialog:', WithdrawTokensDialog);
+
 
 const { t } = useI18n();
 const authStore = useAuthStore();
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
 const showDepositDialog = ref(false);
-const showWithdrawDialog = ref(false);
-const showWithdrawTokensDialog = ref(false);
+
 const showTestDialog = ref(false);
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
-const openDepositDialog = (event) => {
-  console.log('[WalletView] Opening DepositDialog, event:', event);
-  showDepositDialog.value = true;
-};
-
-const openWithdrawDialog = (event) => {
-  console.log('[WalletView] Opening WithdrawDialog, event:', event);
-  showWithdrawDialog.value = true;
-};
-
-const openWithdrawTokensDialog = (event) => {
-  console.log('[WalletView] Opening WithdrawTokensDialog, event:', event);
-  showWithdrawTokensDialog.value = true;
+const openDepositDialog = () => {
+  console.log('[WalletView] Current showDepositDialog:', showDepositDialog.value);
+  showDepositDialog.value = !showDepositDialog.value; // Переключаем состояние
+  console.log('[WalletView] New showDepositDialog:', showDepositDialog.value);
 };
 
 const openTestDialog = (event) => {
@@ -131,14 +90,6 @@ const openTestDialog = (event) => {
 
 watch(showDepositDialog, (newValue) => {
   console.log('[WalletView] showDepositDialog changed:', newValue);
-});
-
-watch(showWithdrawDialog, (newValue) => {
-  console.log('[WalletView] showWithdrawDialog changed:', newValue);
-});
-
-watch(showWithdrawTokensDialog, (newValue) => {
-  console.log('[WalletView] showWithdrawTokensDialog changed:', newValue);
 });
 
 watch(showTestDialog, (newValue) => {
