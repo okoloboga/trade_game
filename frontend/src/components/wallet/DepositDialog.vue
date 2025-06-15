@@ -1,6 +1,6 @@
 ```vue
 <template>
-  <v-dialog v-model="modelValue" max-width="320" teleport="#app">
+  <v-dialog :value="modelValue" @update:modelValue="$emit('update:modelValue', $event)" max-width="320" teleport="#app">
     <v-card color="black">
       <v-card-title>Deposit Dialog</v-card-title>
       <v-card-text>
