@@ -79,7 +79,7 @@ const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
 const openDepositDialog = () => {
   console.log('[WalletView] Current showDepositDialog:', showDepositDialog.value);
-  showDepositDialog.value = !showDepositDialog.value; // Переключаем состояние
+  showDepositDialog.value = true;
   console.log('[WalletView] New showDepositDialog:', showDepositDialog.value);
 };
 
