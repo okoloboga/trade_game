@@ -77,6 +77,11 @@ const showWithdrawTokensDialog = ref(false)
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress))
 
+const openDepositDialog = () => {
+  console.log('[WalletView] Opening DepositDialog, showDepositDialog:', showDepositDialog.value);
+  showDepositDialog.value = true;
+};
+
 onMounted(async () => {
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();

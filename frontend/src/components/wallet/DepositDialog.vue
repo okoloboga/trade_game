@@ -50,6 +50,8 @@ const walletStore = useWalletStore()
 const errorStore = useErrorStore()
 const amount = ref(0.1)
 
+console.log('[DepositDialog] modelValue:', props.modelValue);
+
 const depositRules = computed(() => [
   v => validateAmount(v, 10) === true || validateAmount(v, 10),
 ])
@@ -69,6 +71,7 @@ const deposit = useDebounceFn(async () => {
 }, 300)
 
 const closeDialog = () => {
+  console.log('[DepositDialog] Closing dialog');
   emit('update:modelValue', false)
   amount.value = 0.1
 }
