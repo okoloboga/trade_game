@@ -3,15 +3,20 @@ import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { useAuthStore } from '@/stores/auth';
 
+
 export const useWalletStore = defineStore('wallet', {
-  state: () => ({
-    balance: 0,
-    tokenBalance: 0,
-    depositAddress: null,
-    tonPrice: 0,
-    transactions: [],
-    isProcessing: false,
-  }),
+  state: () => {
+    const initialState = {
+      balance: 0.0,
+      tokenBalance: 0.0,
+      depositAddress: null,
+      tonPrice: 0.0,
+      transactions: [],
+      isProcessing: false,
+    };
+    console.log('[walletStore] Initial state:', initialState);
+    return initialState;
+  },
   actions: {
     syncFromAuthStore() {
       const authStore = useAuthStore();
@@ -19,6 +24,11 @@ export const useWalletStore = defineStore('wallet', {
         this.balance = parseFloat(authStore.user.balance) || 0.0;
         this.tokenBalance = parseFloat(authStore.user.token_balance) || 0.0;
         this.depositAddress = authStore.user.ton_address;
+        console.log('[walletStore] Synced from authStore:', {
+          balance: this.balance,
+          tokenBalance: this.tokenBalance,
+          depositAddress: this.depositAddress,
+        });
       }
     },
     async fetchTonPrice() {
