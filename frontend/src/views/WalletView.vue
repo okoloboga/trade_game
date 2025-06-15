@@ -21,7 +21,7 @@
             class="mb-2"
             block
             @click="openDepositDialog"
-            @touchstart="handleTouchStart"
+
           >
             {{ $t('deposit') }}
           </v-btn>
@@ -30,7 +30,7 @@
             class="mb-2"
             block
             @click="openWithdrawDialog"
-            @touchstart="handleTouchStart"
+
           >
             {{ $t('withdraw_ton') }}
           </v-btn>
@@ -38,7 +38,7 @@
             color="primary"
             block
             @click="openWithdrawTokensDialog"
-            @touchstart="handleTouchStart"
+
           >
             {{ $t('withdraw_ruble') }}
           </v-btn>
