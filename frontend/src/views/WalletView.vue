@@ -49,18 +49,21 @@
           </v-btn>
         </div>
       </v-card-text>
-      <!-- Временный встроенный диалог для Deposit -->
-      <v-dialog v-model="showDepositDialog" max-width="320">
+      <DepositDialog v-model="showDepositDialog" />
+      <v-dialog v-model="showWithdrawDialog" max-width="320">
         <v-card>
-          <v-card-title>Inline Deposit Dialog</v-card-title>
-          <v-card-text>This is an inline deposit dialog.</v-card-text>
-          <v-btn @click="showDepositDialog = false">Close</v-btn>
+          <v-card-title>Inline Withdraw Dialog</v-card-title>
+          <v-card-text>This is an inline withdraw dialog.</v-card-text>
+          <v-btn @click="showWithdrawDialog = false">Close</v-btn>
         </v-card>
       </v-dialog>
-      <!-- Оригинальный DepositDialog закомментирован для теста -->
-      <!-- <DepositDialog v-model="showDepositDialog" /> -->
-      <WithdrawDialog v-model="showWithdrawDialog" />
-      <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
+      <v-dialog v-model="showWithdrawTokensDialog" max-width="320">
+        <v-card>
+          <v-card-title>Inline Withdraw Tokens Dialog</v-card-title>
+          <v-card-text>This is an inline withdraw tokens dialog.</v-card-text>
+          <v-btn @click="showWithdrawTokensDialog = false">Close</v-btn>
+        </v-card>
+      </v-dialog>
       <v-dialog v-model="showTestDialog" max-width="320">
         <v-card>
           <v-card-title>Test Dialog</v-card-title>
@@ -92,6 +95,8 @@ import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue';
 import WalletIcon from '@/assets/wallet-icon.svg';
 
 console.log('[WalletView] Importing DepositDialog:', DepositDialog);
+console.log('[WalletView] Importing WithdrawDialog:', WithdrawDialog);
+console.log('[WalletView] Importing WithdrawTokensDialog:', WithdrawTokensDialog);
 
 const { t } = useI18n();
 const authStore = useAuthStore();
