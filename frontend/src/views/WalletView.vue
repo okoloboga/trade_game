@@ -1,3 +1,4 @@
+```vue
 <template>
   <v-container fluid class="wallet-container">
     <v-card v-if="authStore.isConnected && authStore.user" color="#1e1e1e" class="pa-4" elevation="4">
@@ -14,13 +15,14 @@
         <div class="mb-4">
           <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance.toFixed(2) }}</strong>
         </div>
-        <!-- Кнопки без v-row/v-col для теста -->
+        <!-- Кнопки без v-row/v-col -->
         <div class="button-container">
           <v-btn
             color="success"
             class="mb-2"
             block
             @click="openDepositDialog"
+            @touchstart="handleTouchStart"
           >
             {{ $t('deposit') }}
           </v-btn>
@@ -29,6 +31,7 @@
             class="mb-2"
             block
             @click="openWithdrawDialog"
+            @touchstart="handleTouchStart"
           >
             {{ $t('withdraw_ton') }}
           </v-btn>
@@ -36,6 +39,7 @@
             color="primary"
             block
             @click="openWithdrawTokensDialog"
+            @touchstart="handleTouchStart"
           >
             {{ $t('withdraw_ruble') }}
           </v-btn>
@@ -56,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
@@ -92,6 +96,22 @@ const openWithdrawTokensDialog = (event) => {
   showWithdrawTokensDialog.value = true;
 };
 
+const handleTouchStart = (event) => {
+  console.log('[WalletView] Touch event detected:', event);
+};
+
+watch(showDepositDialog, (newValue) => {
+  console.log('[WalletView] showDepositDialog changed:', newValue);
+});
+
+watch(showWithdrawDialog, (newValue) => {
+  console.log('[WalletView] showWithdrawDialog changed:', newValue);
+});
+
+watch(showWithdrawTokensDialog, (newValue) => {
+  console.log('[WalletView] showWithdrawTokensDialog changed:', newValue);
+});
+
 onMounted(async () => {
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
@@ -123,8 +143,10 @@ onMounted(async () => {
   text-transform: none;
 }
 
-.full-width {
-  width: 100% !important;
+.button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .wallet-info {
