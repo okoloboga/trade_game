@@ -1,14 +1,13 @@
 ```vue
 <template>
-  <v-dialog :value="modelValue" @update:modelValue="emit('update:modelValue', $event)" max-width="320" teleport="#app">
+  <v-dialog v-model="modelValue" max-width="320" teleport="#app">
     <v-card color="black">
-      <v-card-title>{{ $t('deposit_ton') }}</v-card-title>
+      <v-card-title>Deposit Dialog</v-card-title>
       <v-card-text>
-        <p>Test Deposit Dialog</p>
+        <p>This is a minimal deposit dialog.</p>
       </v-card-text>
       <v-card-actions>
-        <v-spacer />
-        <v-btn @click="closeDialog">{{ $t('cancel') }}</v-btn>
+        <v-btn @click="$emit('update:modelValue', false)">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -16,22 +15,21 @@
 
 <script setup>
 import { watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
-const props = defineProps(['modelValue']);
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true,
+  },
+});
+
 const emit = defineEmits(['update:modelValue']);
 
-console.log('[DepositDialog] Initial modelValue:', props.modelValue);
+console.log('[DepositDialog] Component mounted, initial modelValue:', props.modelValue);
 
 watch(() => props.modelValue, (newValue) => {
   console.log('[DepositDialog] modelValue changed:', newValue);
 });
-
-const closeDialog = () => {
-  console.log('[DepositDialog] Closing dialog');
-  emit('update:modelValue', false);
-};
 </script>
 
 <style scoped>

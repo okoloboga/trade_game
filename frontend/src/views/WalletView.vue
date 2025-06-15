@@ -21,7 +21,6 @@
             class="mb-2"
             block
             @click="openDepositDialog"
-
           >
             {{ $t('deposit') }}
           </v-btn>
@@ -30,7 +29,6 @@
             class="mb-2"
             block
             @click="openWithdrawDialog"
-
           >
             {{ $t('withdraw_ton') }}
           </v-btn>
@@ -38,37 +36,38 @@
             color="primary"
             block
             @click="openWithdrawTokensDialog"
-
           >
             {{ $t('withdraw_ruble') }}
           </v-btn>
-          <!-- Тестовая кнопка -->
           <v-btn
             color="warning"
             class="mb-2"
             block
             @click="openTestDialog"
           >
-            Test Dialog
+            {{ $t('test_dialog') }}
           </v-btn>
         </div>
       </v-card-text>
-      <!-- Телепортация диалогов в body -->
-      <teleport to="body">
-        <DepositDialog v-model="showDepositDialog" />
-        <WithdrawDialog v-model="showWithdrawDialog" />
-        <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
-        <!-- Тестовый диалог -->
-        <v-dialog v-model="showTestDialog" max-width="320">
-          <v-card>
-            <v-card-title>Test Dialog</v-card-title>
-            <v-card-text>This is a test dialog.</v-card-text>
-            <v-card-actions>
-              <v-btn @click="showTestDialog = false">Close</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </teleport>
+      <!-- Временный встроенный диалог для Deposit -->
+      <v-dialog v-model="showDepositDialog" max-width="320">
+        <v-card>
+          <v-card-title>Inline Deposit Dialog</v-card-title>
+          <v-card-text>This is an inline deposit dialog.</v-card-text>
+          <v-btn @click="showDepositDialog = false">Close</v-btn>
+        </v-card>
+      </v-dialog>
+      <!-- Оригинальный DepositDialog закомментирован для теста -->
+      <!-- <DepositDialog v-model="showDepositDialog" /> -->
+      <WithdrawDialog v-model="showWithdrawDialog" />
+      <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
+      <v-dialog v-model="showTestDialog" max-width="320">
+        <v-card>
+          <v-card-title>Test Dialog</v-card-title>
+          <v-card-text>This is a test dialog.</v-card-text>
+          <v-btn @click="showTestDialog = false">Close</v-btn>
+        </v-card>
+      </v-dialog>
     </v-card>
     <v-card v-else color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
@@ -91,6 +90,8 @@ import DepositDialog from '@/components/wallet/DepositDialog.vue';
 import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue';
 import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue';
 import WalletIcon from '@/assets/wallet-icon.svg';
+
+console.log('[WalletView] Importing DepositDialog:', DepositDialog);
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -121,10 +122,6 @@ const openWithdrawTokensDialog = (event) => {
 const openTestDialog = (event) => {
   console.log('[WalletView] Opening TestDialog, event:', event);
   showTestDialog.value = true;
-};
-
-const handleTouchStart = (event) => {
-  console.log('[WalletView] Touch event detected:', event);
 };
 
 watch(showDepositDialog, (newValue) => {
