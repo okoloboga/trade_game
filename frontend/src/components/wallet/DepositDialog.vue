@@ -1,6 +1,6 @@
 ```vue
 <template>
-  <v-dialog :value="modelValue" @update:modelValue="$emit('update:modelValue', $event)" max-width="320" teleport="#app">
+  <v-dialog :value="modelValue" @update:modelValue="$emit('update:modelValue', $event)" max-width="320">
     <v-card color="black">
       <v-card-title>Deposit Dialog</v-card-title>
       <v-card-text>
@@ -27,8 +27,8 @@ const emit = defineEmits(['update:modelValue']);
 
 console.log('[DepositDialog] Component mounted, initial modelValue:', props.modelValue);
 
-watch(() => props.modelValue, (newValue) => {
-  console.log('[DepositDialog] modelValue changed:', newValue);
+watch(() => props.modelValue, (newValue, oldValue) => {
+  console.log('[DepositDialog] modelValue changed:', newValue, 'from:', oldValue);
 });
 </script>
 
