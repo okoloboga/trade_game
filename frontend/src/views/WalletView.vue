@@ -15,7 +15,6 @@
         <div class="mb-4">
           <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance.toFixed(2) }}</strong>
         </div>
-        <!-- Кнопки без v-row/v-col -->
         <div class="button-container">
           <v-btn
             color="success"
@@ -43,11 +42,33 @@
           >
             {{ $t('withdraw_ruble') }}
           </v-btn>
+          <!-- Тестовая кнопка -->
+          <v-btn
+            color="warning"
+            class="mb-2"
+            block
+            @click="openTestDialog"
+          >
+            Test Dialog
+          </v-btn>
         </div>
       </v-card-text>
-      <DepositDialog v-model="showDepositDialog" />
-      <WithdrawDialog v-model="showWithdrawDialog" />
-      <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
+      <!-- Телепортация диалогов в body -->
+      <teleport to="body">
+        <DepositDialog v-model="showDepositDialog" />
+        <WithdrawDialog v-model="showWithdrawDialog" />
+        <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
+        <!-- Тестовый диалог -->
+        <v-dialog v-model="showTestDialog" max-width="320">
+          <v-card>
+            <v-card-title>Test Dialog</v-card-title>
+            <v-card-text>This is a test dialog.</v-card-text>
+            <v-card-actions>
+              <v-btn @click="showTestDialog = false">Close</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </teleport>
     </v-card>
     <v-card v-else color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
@@ -78,6 +99,7 @@ const errorStore = useErrorStore();
 const showDepositDialog = ref(false);
 const showWithdrawDialog = ref(false);
 const showWithdrawTokensDialog = ref(false);
+const showTestDialog = ref(false);
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
@@ -96,6 +118,11 @@ const openWithdrawTokensDialog = (event) => {
   showWithdrawTokensDialog.value = true;
 };
 
+const openTestDialog = (event) => {
+  console.log('[WalletView] Opening TestDialog, event:', event);
+  showTestDialog.value = true;
+};
+
 const handleTouchStart = (event) => {
   console.log('[WalletView] Touch event detected:', event);
 };
@@ -110,6 +137,10 @@ watch(showWithdrawDialog, (newValue) => {
 
 watch(showWithdrawTokensDialog, (newValue) => {
   console.log('[WalletView] showWithdrawTokensDialog changed:', newValue);
+});
+
+watch(showTestDialog, (newValue) => {
+  console.log('[WalletView] showTestDialog changed:', newValue);
 });
 
 onMounted(async () => {

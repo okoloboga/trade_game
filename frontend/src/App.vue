@@ -15,3 +15,9 @@ const options = {
   manifestUrl: `${import.meta.env.VITE_APP_URL}/manifest.json`,
 };
 </script>
+
+<style>
+.v-dialog .v-overlay {
+  z-index: 2000 !important;
+}
+</style>
