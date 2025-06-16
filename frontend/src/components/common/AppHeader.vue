@@ -86,13 +86,9 @@ const recreateProofPayload = async () => {
 
 const handleWalletConnect = async (walletData) => {
   try {
-    if (!walletData?.connectItems?.tonProof || !('proof' in walletData.connectItems.tonProof)) {
-      console.warn('[handleWalletConnect] No tonProof available, proceeding without tonProof verification');
-      // Временная заглушка для тестирования
-    }
-
     const walletAddressRaw = walletData.account.address;
     const walletAddressFriendly = Address.parseRaw(walletAddressRaw).toString({ bounceable: true, testOnly: false });
+    console.log('ADDRESS:', walletAddressFriendly);
     const tonProofPayload = walletData.connectItems.tonProof.proof;
     const tonProof = { proof: tonProofPayload };
     const account = {
@@ -101,7 +97,7 @@ const handleWalletConnect = async (walletData) => {
       chain: walletData.account.chain,
       walletStateInit: walletData.account.walletStateInit || '',
     };
-    console.log('[handleWalletConnect] Logging in with address:', walletAddressRaw);
+    console.log('[handleWalletConnect] Logging in with address:', walletAddressFriendly);
     await authStore.login({
       ton_address: walletAddressRaw,
       tonProof,
