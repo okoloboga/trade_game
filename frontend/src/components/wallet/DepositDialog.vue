@@ -37,7 +37,7 @@ import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useI18n } from 'vue-i18n';
-import { useTonWallet, useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { useTonWallet, useTonConnectUI, useTonAddress } from '@townsquarelabs/ui-vue';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -48,10 +48,10 @@ const walletStore = useWalletStore();
 const errorStore = useErrorStore();
 const { tonConnectUI } = useTonConnectUI();
 const wallet = useTonWallet();
+const userFriendlyAddress = useTonAddress(true); // Для проверки адреса
 const amount = ref(0.01);
 const isProcessing = ref(false);
 
-// Computed для v-model
 const internalModelValue = computed({
   get() {
     return props.modelValue;
@@ -68,7 +68,7 @@ const depositRules = computed(() => [
 const isValid = computed(() => validateAmount(amount.value, Infinity) === true);
 
 const deposit = useDebounceFn(async () => {
-  if (!wallet) {
+  if (!wallet || !userFriendlyAddress.value) {
     errorStore.setError(t('error.connect_wallet'));
     return;
   }
@@ -79,25 +79,34 @@ const deposit = useDebounceFn(async () => {
     const nanoAmount = Math.floor(amount.value * 1_000_000_000).toString();
     const transaction = {
       validUntil: Math.floor(Date.now() / 1000) + 60, // 60 секунд
+      network: '-239', // Mainnet
       messages: [
         {
-          address: import.meta.env.VITE_TON_CENTRAL_WALLET,
+          address: import.meta.env.VITE_TON_CENTRAL_WALLET, // Должен быть user-friendly
           amount: nanoAmount,
         },
       ],
     };
 
+    console.log('[DepositDialog] Sending transaction:', transaction);
+
     // Отправка транзакции через TonConnect
     const result = await tonConnectUI.sendTransaction(transaction);
-    const txHash = result.boc; // Предполагаем, что boc можно использовать как txHash
+    console.log('[DepositDialog] Transaction result:', result);
+    const txHash = result.boc; // Используем boc как txHash
 
     // Вызов deposit с txHash и дополнительными параметрами
     await walletStore.deposit({
       amount: amount.value, // В TON для бэкенда
       txHash,
-      tonProof: wallet.tonProof, // Предполагаем, что tonProof доступен
-      account: wallet.account, // Предполагаем, что account доступен
-      clientId: wallet.device.appName, // Используем appName как clientId
+      tonProof: wallet.connectItems?.tonProof?.proof || null, // Проверяем наличие tonProof
+      account: {
+        address: userFriendlyAddress.value,
+        publicKey: wallet.account.publicKey,
+        chain: wallet.account.chain,
+        walletStateInit: wallet.account.walletStateInit || '',
+      },
+      clientId: wallet.device?.appName || 'unknown', // Безопасный доступ
     });
 
     errorStore.setError(t('error.deposit_initiated'), false);
