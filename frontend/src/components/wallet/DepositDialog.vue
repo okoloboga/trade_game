@@ -52,14 +52,13 @@ const userFriendlyAddress = useTonAddress(true); // User-friendly адрес
 const price = ref(0.01);
 const isProcessing = ref(false);
 
-// Реактивная транзакция, как в демо
+// Реактивная транзакция
 const transaction = ref({
   validUntil: Math.floor(Date.now() / 1000) + 60,
-  network: 'mainnet',
   messages: [
     {
       address: import.meta.env.VITE_TON_CENTRAL_WALLET,
-      amount: '1000000000', // Будет обновляться в deposit
+      amount: '1000000000',
     },
   ],
 });
@@ -108,7 +107,6 @@ const deposit = useDebounceFn(async () => {
     // Обновляем транзакцию
     transaction.value = {
       validUntil: Math.floor(Date.now() / 1000) + 60,
-      network: 'mainnet',
       messages: [
         {
           address: import.meta.env.VITE_TON_CENTRAL_WALLET, // User-friendly адрес
@@ -120,10 +118,19 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] User-friendly address:', userFriendlyAddress.value);
     console.log('[DepositDialog] Wallet:', wallet);
     console.log('[DepositDialog] TonConnectUI wallet:', tonConnectUI.wallet);
+    console.log('[DepositDialog] UniversalLink:', tonConnectUI.wallet?.universalLink);
     console.log('[DepositDialog] TonConnectUI connected:', tonConnectUI.connected);
     console.log('[DepositDialog] Sending transaction:', transaction.value);
 
-    // Отправка транзакции через TonConnect
+    // Пробуем открыть кошелёк (для отладки)
+    try {
+      console.log('[DepositDialog] Opening wallet modal');
+      await tonConnectUI.openModal();
+    } catch (modalError) {
+      console.warn('[DepositDialog] Failed to open modal:', modalError);
+    }
+
+    // Отправка транзакции
     const result = await tonConnectUI.sendTransaction(transaction.value);
     console.log('[DepositDialog] Transaction result:', result);
     const txHash = result.boc; // Используем boc как txHash
