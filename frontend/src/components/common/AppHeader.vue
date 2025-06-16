@@ -92,10 +92,11 @@ const handleWalletConnect = async (walletData) => {
     }
 
     const walletAddressRaw = walletData.account.address;
+    const walletAddressFriendly = Address.parseRaw(walletAddressRaw).toString({ bounceable: true, testOnly: false });
     const tonProofPayload = walletData.connectItems.tonProof.proof;
     const tonProof = { proof: tonProofPayload };
     const account = {
-      address: walletAddressRaw,
+      address: walletAddressFriendly,
       publicKey: walletData.account.publicKey,
       chain: walletData.account.chain,
       walletStateInit: walletData.account.walletStateInit || '',
