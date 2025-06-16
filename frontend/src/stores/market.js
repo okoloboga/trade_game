@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import apiService from '@/services/api';
 import { WebSocketService } from '@/services/websocket';
 import { useErrorStore } from '@/stores/error';
+import { useRouter } from 'vue-router';
 
 export const useMarketStore = defineStore('market', {
   state: () => ({
@@ -43,6 +44,11 @@ export const useMarketStore = defineStore('market', {
       }
     },
     async fetchCurrentPrice(symbol = 'TON-USDT') {
+      const router = useRouter();
+      if (router.currentRoute.value.path !== '/') {
+        console.log(`Skipping fetchCurrentPrice: not on main page (current path: ${router.currentRoute.value.path})`);
+        return;
+      }
       try {
         console.log('Fetching current price for:', symbol);
         const response = await apiService.getCurrentPrice(symbol);
@@ -64,6 +70,11 @@ export const useMarketStore = defineStore('market', {
       }
     },
     startRealTimeUpdates(symbol = 'TON-USDT') {
+      const router = useRouter();
+      if (router.currentRoute.value.path !== '/') {
+        console.log(`Skipping startRealTimeUpdates: not on main page (current path: ${router.currentRoute.value.path})`);
+        return;
+      }
       if (this.ws) return;
       console.log('Starting WebSocket updates for:', symbol);
       this.ws = new WebSocketService();

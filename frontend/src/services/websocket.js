@@ -52,6 +52,14 @@ export class WebSocketService {
     this.socket.on('disconnect', () => {
       console.log('Disconnected from WebSocket server');
     });
+
+    this.socket.on('subscribed', (data) => {
+      console.log('Subscribed to channel:', data);
+    });
+
+    this.socket.on('unsubscribed', (data) => {
+      console.log('Unsubscribed from channel:', data);
+    });
   }
 
   subscribe(channel) {
@@ -61,10 +69,9 @@ export class WebSocketService {
 
     if (this.socket && this.socket.connected) {
       const [type, instId, bar] = channel.split(':');
-      if (type === 'candles') {
-        this.socket.emit('subscribe', { instId: 'TON-USDT', bar: bar || '5m' });
-      } else if (type === 'ticker') {
-        this.socket.emit('subscribe', { instId: 'TON-USDT', bar: '5m' });
+      if (type === 'candles' || type === 'ticker') {
+        console.log(`Subscribing to channel: ${channel}`);
+        this.socket.emit('subscribe', { instId: instId || 'TON-USDT', bar: bar || '5m' });
       }
     }
   }
@@ -74,17 +81,20 @@ export class WebSocketService {
       this.subscriptions.delete(channel);
       if (this.socket && this.socket.connected) {
         const [type, instId, bar] = channel.split(':');
-        this.socket.emit('unsubscribe', { instId: 'TON-USDT', bar: '5m' });
+        console.log(`Unsubscribing from channel: ${channel}`);
+        this.socket.emit('unsubscribe', { instId: instId || 'TON-USDT', bar: bar || '5m' });
       }
     }
   }
 
   close() {
     if (this.socket) {
+      this.subscriptions.forEach(channel => this.unsubscribe(channel));
       this.socket.disconnect();
       this.socket = null;
       this.subscriptions.clear();
       this.reconnectAttempts = 0;
+      console.log('WebSocket connection closed');
     }
   }
 }

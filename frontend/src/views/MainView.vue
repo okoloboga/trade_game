@@ -24,14 +24,12 @@
 
 <script setup>
 import { onMounted, onUnmounted } from 'vue';
-import apiService from '@/services/api';
 import { useMarketStore } from '@/stores/market';
 import { useTradingStore } from '@/stores/trading';
 import { useAuthStore } from '@/stores/auth';
 import { useErrorStore } from '@/stores/error';
 import TradingChart from '@/components/trading/TradingChart.vue';
 import TradeButtons from '@/components/trading/TradeButtons.vue';
-import ActiveTrades from '@/components/trading/ActiveTrades.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -46,8 +44,8 @@ onMounted(async () => {
 
   const loadData = async () => {
     const results = await Promise.allSettled([
-      apiService.getCandles('TON-USDT', '5m').catch(e => console.log('Candles fetch failed:', e.message)),
-      apiService.getCurrentPrice('TON-USDT').catch(e => console.log('Price fetch failed:', e.message)),
+      marketStore.fetchCandles('TON-USDT', '5m').catch(e => console.log('Candles fetch failed:', e.message)),
+      marketStore.fetchCurrentPrice('TON-USDT').catch(e => console.log('Price fetch failed:', e.message)),
       tradingStore.fetchTradeHistory().catch(e => console.log('Trade history fetch failed:', e.message)),
       tradingStore.fetchActiveTrades().catch(e => console.log('Active trades fetch failed:', e.message)),
     ]);
@@ -62,17 +60,15 @@ onMounted(async () => {
   try {
     await authStore.init(); // Восстанавливаем сессию
     await loadData();
-    marketStore.startRealTimeUpdates();
+    marketStore.startRealTimeUpdates('TON-USDT');
   } catch (error) {
     console.error('Data loading failed:', error.message);
-    await loadData(); // Пробуем загрузить данные даже при ошибке
+    await loadData();
   }
 });
 
 onUnmounted(() => {
   console.log('MainView unmounted, cleaning up...');
-  if (marketStore.stopRealTimeUpdates) {
-    marketStore.stopRealTimeUpdates();
-  }
+  marketStore.stopRealTimeUpdates();
 });
 </script>

@@ -69,10 +69,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
+import { useMarketStore } from '@/stores/market';
 import { formatAddress } from '@/utils/formatters';
 import { useI18n } from 'vue-i18n';
 import DepositDialog from '@/components/wallet/DepositDialog.vue';
@@ -84,6 +85,7 @@ const { t } = useI18n();
 const authStore = useAuthStore();
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
+const marketStore = useMarketStore();
 const showDepositDialog = ref(false);
 const showWithdrawDialog = ref(false);
 const showWithdrawTokensDialog = ref(false);
@@ -112,6 +114,7 @@ const openTestDialog = () => {
 };
 
 onMounted(async () => {
+  console.log('[WalletView] Mounted');
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
     try {
@@ -122,6 +125,11 @@ onMounted(async () => {
   } else {
     errorStore.setError(t('please_connect_wallet'));
   }
+});
+
+onUnmounted(() => {
+  console.log('[WalletView] Unmounted, stopping market updates');
+  marketStore.stopRealTimeUpdates();
 });
 </script>
 

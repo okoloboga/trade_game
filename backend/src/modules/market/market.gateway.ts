@@ -37,14 +37,18 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected from WebSocket: ${client.id}`);
-    this.subscriptions.forEach((clients, channel) => {
-      clients.delete(client);
-      if (clients.size === 0) {
-        this.unsubscribeFromOkx(channel);
-        this.subscriptions.delete(channel);
-      }
-    });
+    try {
+      this.logger.log(`Client disconnected from WebSocket: ${client.id}`);
+      this.subscriptions.forEach((clients, channel) => {
+        clients.delete(client);
+        if (clients.size === 0) {
+          this.unsubscribeFromOkx(channel);
+          this.subscriptions.delete(channel);
+        }
+      });
+    } catch (error) {
+      this.logger.error(`Error during disconnect: ${(error as Error).message}`);
+    }
   }
 
   @SubscribeMessage('subscribe')
@@ -87,6 +91,52 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('subscribed', { instId, bar, status: 'subscribed' });
   }
 
+  @SubscribeMessage('unsubscribe')
+  handleUnsubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: { instId: string; bar: string }) {
+    this.logger.log(`Unsubscribe data received: ${JSON.stringify(data)}`);
+    if (!data) {
+      client.emit('error', { error: 'Missing unsubscription data' });
+      return;
+    }
+
+    const { instId, bar } = data;
+
+    if (!instId) {
+      client.emit('error', { error: 'Invalid instId' });
+      return;
+    }
+
+    if (!bar || !this.validBars.includes(bar)) {
+      client.emit('error', { error: 'Invalid bar' });
+      return;
+    }
+
+    const candleChannel = `candle${bar}:${instId}`;
+    this.logger.log(`Client ${client.id} unsubscribed from ${candleChannel}`);
+
+    const clients = this.subscriptions.get(candleChannel);
+    if (clients) {
+      clients.delete(client);
+      if (clients.size === 0) {
+        this.unsubscribeFromOkx(candleChannel);
+        this.subscriptions.delete(candleChannel);
+      }
+    }
+
+    if (bar === '1m') {
+      const tickerChannel = `ticker:${instId}`;
+      const tickerClients = this.subscriptions.get(tickerChannel);
+      if (tickerClients) {
+        tickerClients.delete(client);
+        if (tickerClients.size === 0) {
+          this.subscriptions.delete(tickerChannel);
+        }
+      }
+    }
+
+    client.emit('unsubscribed', { instId, bar, status: 'unsubscribed' });
+  }
+
   private sendTickerUpdate(instId: string, price: number) {
     const tickerChannel = `ticker:${instId}`;
     const clients = this.subscriptions.get(tickerChannel);
@@ -105,27 +155,35 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private subscribeToOkx(channel: string) {
-    const [candle, instId] = channel.split(':');
-    const bar = candle.replace('candle', '');
-    this.okxWs?.send(
-      JSON.stringify({
-        op: 'subscribe',
-        args: [{ channel: `candle${bar}`, instId }],
-      }),
-    );
-    this.logger.log(`Subscribed to OKX ${channel}`);
+    if (this.okxWs?.readyState === WebSocket.OPEN) {
+      const [candle, instId] = channel.split(':');
+      const bar = candle.replace('candle', '');
+      this.okxWs.send(
+        JSON.stringify({
+          op: 'subscribe',
+          args: [{ channel: `candle${bar}`, instId }],
+        }),
+      );
+      this.logger.log(`Subscribed to OKX ${channel}`);
+    } else {
+      this.logger.warn(`Cannot subscribe to OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`);
+    }
   }
 
   private unsubscribeFromOkx(channel: string) {
-    const [candle, instId] = channel.split(':');
-    const bar = candle.replace('candle', '');
-    this.okxWs?.send(
-      JSON.stringify({
-        op: 'unsubscribe',
-        args: [{ channel: `candle${bar}`, instId }],
-      }),
-    );
-    this.logger.log(`Unsubscribed from OKX ${channel}`);
+    if (this.okxWs?.readyState === WebSocket.OPEN) {
+      const [candle, instId] = channel.split(':');
+      const bar = candle.replace('candle', '');
+      this.okxWs.send(
+        JSON.stringify({
+          op: 'unsubscribe',
+          args: [{ channel: `candle${bar}`, instId }],
+        }),
+      );
+      this.logger.log(`Unsubscribed from OKX ${channel}`);
+    } else {
+      this.logger.warn(`Cannot unsubscribe from OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`);
+    }
   }
 
   private connectToOkxWebSocket() {
@@ -134,6 +192,9 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.okxWs.on('open', () => {
       this.logger.log('Connected to OKX WebSocket');
+      this.subscriptions.forEach((_, channel) => {
+        this.subscribeToOkx(channel);
+      });
     });
 
     this.okxWs.on('message', (data: Buffer) => {

@@ -85,7 +85,6 @@ const recreateProofPayload = async () => {
 };
 
 const handleWalletConnect = async (walletData) => {
-  console.log('[handleWalletConnect] Starting wallet connection process:', JSON.stringify(walletData, null, 2));
   try {
     if (!walletData?.connectItems?.tonProof || !('proof' in walletData.connectItems.tonProof)) {
       console.warn('[handleWalletConnect] No tonProof available, proceeding without tonProof verification');
@@ -95,16 +94,12 @@ const handleWalletConnect = async (walletData) => {
     const walletAddressRaw = walletData.account.address;
     const tonProofPayload = walletData.connectItems.tonProof.proof;
     const tonProof = { proof: tonProofPayload };
-    console.log('[handleWalletConnect] tonProof:', JSON.stringify(tonProof, null, 2));
-
     const account = {
       address: walletAddressRaw,
       publicKey: walletData.account.publicKey,
       chain: walletData.account.chain,
       walletStateInit: walletData.account.walletStateInit || '',
     };
-    console.log('[handleWalletConnect] Account:', JSON.stringify(account, null, 2));
-
     console.log('[handleWalletConnect] Logging in with address:', walletAddressRaw);
     await authStore.login({
       ton_address: walletAddressRaw,
@@ -152,7 +147,6 @@ onMounted(async () => {
 
   console.log('[onMounted] Setting up wallet status change listener');
     tonConnectUI.onStatusChange(async (walletData) => {
-      console.log('[onStatusChange] Wallet status changed:', JSON.stringify(walletData, null, 2));
       if (walletData) {
         console.log('[onStatusChange] Wallet connected, address:', walletData.account.address);
         await handleWalletConnect(walletData); // Убрали recreateProofPayload
