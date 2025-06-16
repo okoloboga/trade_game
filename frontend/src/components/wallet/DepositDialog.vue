@@ -68,8 +68,16 @@ const depositRules = computed(() => [
 const isValid = computed(() => validateAmount(price.value, Infinity) === true);
 
 const deposit = useDebounceFn(async () => {
-  if (!wallet || !userFriendlyAddress.value) {
+  if (!wallet || !userFriendlyAddress.value || !tonConnectUI.connected) {
+    console.error('[DepositDialog] Wallet not connected:', { wallet, userFriendlyAddress: userFriendlyAddress.value, connected: tonConnectUI.connected });
     errorStore.setError(t('error.connect_wallet'));
+    try {
+      console.log('[DepositDialog] Attempting to reconnect wallet');
+      await tonConnectUI.connectWallet();
+    } catch (connectError) {
+      console.error('[DepositDialog] Wallet reconnect failed:', connectError);
+      errorStore.setError(t('error.failed_to_connect_wallet'));
+    }
     return;
   }
 
@@ -79,16 +87,19 @@ const deposit = useDebounceFn(async () => {
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
     const transaction = {
       validUntil: Math.floor(Date.now() / 1000) + 60, // 60 секунд
+      network: '-239', // Mainnet
       messages: [
         {
           address: import.meta.env.VITE_TON_CENTRAL_WALLET, // User-friendly адрес
           amount: nanoAmount,
+          stateInit: wallet.account?.walletStateInit || null, // Добавляем для совместимости с @Wallet
         },
       ],
     };
 
     console.log('[DepositDialog] User-friendly address:', userFriendlyAddress.value);
-    console.log('[DepositDialog] Wallet account address:', wallet.account?.address);
+    console.log('[DepositDialog] Wallet account:', wallet.account);
+    console.log('[DepositDialog] TonConnectUI connected:', tonConnectUI.connected);
     console.log('[DepositDialog] Sending transaction:', transaction);
 
     // Отправка транзакции через TonConnect
