@@ -52,6 +52,18 @@ const userFriendlyAddress = useTonAddress(true); // User-friendly адрес
 const price = ref(0.01);
 const isProcessing = ref(false);
 
+// Реактивная транзакция, как в демо
+const transaction = ref({
+  validUntil: Math.floor(Date.now() / 1000) + 60,
+  network: 'mainnet',
+  messages: [
+    {
+      address: import.meta.env.VITE_TON_CENTRAL_WALLET,
+      amount: '1000000000', // Будет обновляться в deposit
+    },
+  ],
+});
+
 const internalModelValue = computed({
   get() {
     return props.modelValue;
@@ -68,42 +80,51 @@ const depositRules = computed(() => [
 const isValid = computed(() => validateAmount(price.value, Infinity) === true);
 
 const deposit = useDebounceFn(async () => {
-  if (!wallet || !userFriendlyAddress.value || !tonConnectUI.connected) {
-    console.error('[DepositDialog] Wallet not connected:', { wallet, userFriendlyAddress: userFriendlyAddress.value, connected: tonConnectUI.connected });
+  if (!tonConnectUI.connected || !userFriendlyAddress.value || !wallet) {
+    console.error('[DepositDialog] Wallet not connected:', {
+      connected: tonConnectUI.connected,
+      userFriendlyAddress: userFriendlyAddress.value,
+      wallet,
+    });
     errorStore.setError(t('error.connect_wallet'));
     try {
       console.log('[DepositDialog] Attempting to reconnect wallet');
-      await tonConnectUI.connectWallet();
+      await tonConnectUI.disconnect(); // Сбрасываем соединение
+      await tonConnectUI.connectWallet(); // Переподключаем
+      if (!tonConnectUI.wallet) {
+        throw new Error('Wallet not available after reconnect');
+      }
     } catch (connectError) {
       console.error('[DepositDialog] Wallet reconnect failed:', connectError);
       errorStore.setError(t('error.failed_to_connect_wallet'));
+      return;
     }
-    return;
   }
 
   isProcessing.value = true;
   try {
     // Конвертация TON в нанотоны (1 TON = 1,000,000,000 нанотонов)
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
-    const transaction = {
-      validUntil: Math.floor(Date.now() / 1000) + 60, // 60 секунд
-      network: '-239', // Mainnet
+    // Обновляем транзакцию
+    transaction.value = {
+      validUntil: Math.floor(Date.now() / 1000) + 60,
+      network: 'mainnet',
       messages: [
         {
           address: import.meta.env.VITE_TON_CENTRAL_WALLET, // User-friendly адрес
           amount: nanoAmount,
-          stateInit: wallet.account?.walletStateInit || null, // Добавляем для совместимости с @Wallet
         },
       ],
     };
 
     console.log('[DepositDialog] User-friendly address:', userFriendlyAddress.value);
-    console.log('[DepositDialog] Wallet account:', wallet.account);
+    console.log('[DepositDialog] Wallet:', wallet);
+    console.log('[DepositDialog] TonConnectUI wallet:', tonConnectUI.wallet);
     console.log('[DepositDialog] TonConnectUI connected:', tonConnectUI.connected);
-    console.log('[DepositDialog] Sending transaction:', transaction);
+    console.log('[DepositDialog] Sending transaction:', transaction.value);
 
     // Отправка транзакции через TonConnect
-    const result = await tonConnectUI.sendTransaction(transaction);
+    const result = await tonConnectUI.sendTransaction(transaction.value);
     console.log('[DepositDialog] Transaction result:', result);
     const txHash = result.boc; // Используем boc как txHash
 
@@ -111,14 +132,14 @@ const deposit = useDebounceFn(async () => {
     await walletStore.deposit({
       amount: price.value, // В TON для бэкенда
       txHash,
-      tonProof: wallet.connectItems?.tonProof?.proof || null,
+      tonProof: wallet?.connectItems?.tonProof?.proof || null,
       account: {
         address: userFriendlyAddress.value,
-        publicKey: wallet.account?.publicKey || '',
-        chain: wallet.account?.chain || '-239',
-        walletStateInit: wallet.account?.walletStateInit || '',
+        publicKey: wallet?.account?.publicKey || '',
+        chain: wallet?.account?.chain || 'mainnet',
+        walletStateInit: wallet?.account?.walletStateInit || '',
       },
-      clientId: wallet.device?.appName || 'unknown',
+      clientId: wallet?.device?.appName || 'unknown',
     });
 
     errorStore.setError(t('error.deposit_initiated'), false);
