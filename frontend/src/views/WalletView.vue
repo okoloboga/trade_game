@@ -75,7 +75,7 @@ import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
 import { formatAddress } from '@/utils/formatters';
 import { useI18n } from 'vue-i18n';
-import DepositDialog from '@/components/walletï¾Âï¾Â/DepositDialog.vue';
+import DepositDialog from '@/components/wallet/DepositDialog.vue';
 import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue';
 import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue';
 import WalletIcon from '@/assets/wallet-icon.svg';
