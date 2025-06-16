@@ -52,9 +52,10 @@ const userFriendlyAddress = useTonAddress(true); // User-friendly адрес
 const price = ref(0.01);
 const isProcessing = ref(false);
 
-// Реактивная транзакция
+// Реактивная транзакция, как в демо
 const transaction = ref({
   validUntil: Math.floor(Date.now() / 1000) + 60,
+  network: 'mainnet',
   messages: [
     {
       address: import.meta.env.VITE_TON_CENTRAL_WALLET,
@@ -86,18 +87,7 @@ const deposit = useDebounceFn(async () => {
       wallet,
     });
     errorStore.setError(t('error.connect_wallet'));
-    try {
-      console.log('[DepositDialog] Attempting to reconnect wallet');
-      await tonConnectUI.disconnect(); // Сбрасываем соединение
-      await tonConnectUI.connectWallet(); // Переподключаем
-      if (!tonConnectUI.wallet) {
-        throw new Error('Wallet not available after reconnect');
-      }
-    } catch (connectError) {
-      console.error('[DepositDialog] Wallet reconnect failed:', connectError);
-      errorStore.setError(t('error.failed_to_connect_wallet'));
-      return;
-    }
+    return;
   }
 
   isProcessing.value = true;
@@ -107,6 +97,7 @@ const deposit = useDebounceFn(async () => {
     // Обновляем транзакцию
     transaction.value = {
       validUntil: Math.floor(Date.now() / 1000) + 60,
+      network: 'mainnet',
       messages: [
         {
           address: import.meta.env.VITE_TON_CENTRAL_WALLET, // User-friendly адрес
@@ -122,12 +113,11 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] TonConnectUI connected:', tonConnectUI.connected);
     console.log('[DepositDialog] Sending transaction:', transaction.value);
 
-    // Пробуем открыть кошелёк (для отладки)
-    try {
-      console.log('[DepositDialog] Opening wallet modal');
-      await tonConnectUI.openModal();
-    } catch (modalError) {
-      console.warn('[DepositDialog] Failed to open modal:', modalError);
+    // Workaround для @Wallet
+    if (wallet?.device?.appName === 'telegram-wallet' && tonConnectUI.wallet?.universalLink) {
+      console.log('[DepositDialog] Triggering universalLink for @Wallet:', tonConnectUI.wallet.universalLink);
+      window.open(tonConnectUI.wallet.universalLink, '_blank');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Ждём 1 сек
     }
 
     // Отправка транзакции
