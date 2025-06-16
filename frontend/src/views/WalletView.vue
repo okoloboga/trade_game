@@ -1,4 +1,3 @@
-```vue
 <template>
   <v-container fluid class="wallet-container">
     <v-card v-if="authStore.isConnected && authStore.user" color="#1e1e1e" class="pa-4" elevation="4">
@@ -16,6 +15,7 @@
           <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance.toFixed(2) }}</strong>
         </div>
         <div class="button-container">
+          <!-- Первый ряд: Deposit (зеленая, полная ширина) -->
           <v-btn
             color="success"
             class="mb-2"
@@ -24,17 +24,32 @@
           >
             {{ $t('deposit') }}
           </v-btn>
-          <v-btn
-            color="warning"
-            class="mb-2"
-            block
-            @click="openTestDialog"
-          >
-            {{ $t('test_dialog') }}
-          </v-btn>
+          <!-- Второй ряд: Withdraw и Withdraw Tokens (синие, по половине ширины) -->
+          <v-row>
+            <v-col cols="6">
+              <v-btn
+                color="primary"
+                block
+                @click="openWithdrawDialog"
+              >
+                {{ $t('withdraw_ton') }}
+              </v-btn>
+            </v-col>
+            <v-col cols="6">
+              <v-btn
+                color="primary"
+                block
+                @click="openWithdrawTokensDialog"
+              >
+                {{ $t('withdraw_ruble') }}
+              </v-btn>
+            </v-col>
+          </v-row>
         </div>
       </v-card-text>
       <DepositDialog v-model="showDepositDialog" />
+      <WithdrawDialog v-model="showWithdrawDialog" />
+      <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
       <v-dialog v-model="showTestDialog" max-width="320">
         <v-card>
           <v-card-title>Test Dialog</v-card-title>
@@ -60,41 +75,41 @@ import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
 import { formatAddress } from '@/utils/formatters';
 import { useI18n } from 'vue-i18n';
-import DepositDialog from '@/components/wallet/DepositDialog.vue';
-
+import DepositDialog from '@/components/walletï¾Âï¾Â/DepositDialog.vue';
+import WithdrawDialog from '@/components/wallet/WithdrawDialog.vue';
+import WithdrawTokensDialog from '@/components/wallet/WithdrawTokensDialog.vue';
 import WalletIcon from '@/assets/wallet-icon.svg';
-
-console.log('[WalletView] Importing DepositDialog:', DepositDialog);
-
 
 const { t } = useI18n();
 const authStore = useAuthStore();
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
 const showDepositDialog = ref(false);
-
+const showWithdrawDialog = ref(false);
+const showWithdrawTokensDialog = ref(false);
 const showTestDialog = ref(false);
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
 const openDepositDialog = () => {
-  console.log('[WalletView] Current showDepositDialog:', showDepositDialog.value);
+  console.log('[WalletView] Opening DepositDialog');
   showDepositDialog.value = true;
-  console.log('[WalletView] New showDepositDialog:', showDepositDialog.value);
 };
 
-const openTestDialog = (event) => {
-  console.log('[WalletView] Opening TestDialog, event:', event);
+const openWithdrawDialog = () => {
+  console.log('[WalletView] Opening WithdrawDialog');
+  showWithdrawDialog.value = true;
+};
+
+const openWithdrawTokensDialog = () => {
+  console.log('[WalletView] Opening WithdrawTokensDialog');
+  showWithdrawTokensDialog.value = true;
+};
+
+const openTestDialog = () => {
+  console.log('[WalletView] Opening TestDialog');
   showTestDialog.value = true;
 };
-
-watch(showDepositDialog, (newValue) => {
-  console.log('[WalletView] showDepositDialog changed:', newValue);
-});
-
-watch(showTestDialog, (newValue) => {
-  console.log('[WalletView] showTestDialog changed:', newValue);
-});
 
 onMounted(async () => {
   if (authStore.isConnected && authStore.user) {

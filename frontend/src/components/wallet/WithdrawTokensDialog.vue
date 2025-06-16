@@ -1,5 +1,5 @@
 <template>
-  <v-dialog :value="modelValue" @update:modelValue="emit('update:modelValue', $event)" max-width="320">
+  <v-dialog v-model="internalModelValue" max-width="320">
     <v-card color="black">
       <v-card-title>{{ $t('withdraw_ruble') }}</v-card-title>
       <v-card-text>
@@ -20,7 +20,7 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-          <v-btn @click="closeDialog">{{ $t('cancel') }}</v-btn>
+        <v-btn @click="closeDialog">{{ $t('cancel') }}</v-btn>
         <v-btn
           color="primary"
           :loading="walletStore.isProcessing"
@@ -35,38 +35,51 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useWalletStore } from '@/stores/wallet'
-import { useErrorStore } from '@/stores/error'
-import { useDebounceFn } from '@vueuse/core'
-import { validateAmount } from '@/utils/validators'
-import { useI18n } from 'vue-i18n'
+import { ref, computed } from 'vue';
+import { useWalletStore } from '@/stores/wallet';
+import { useErrorStore } from '@/stores/error';
+import { useDebounceFn } from '@vueuse/core';
+import { validateAmount } from '@/utils/validators';
+import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n()
-const props = defineProps(['modelValue'])
-const emit = defineEmits(['update:modelValue'])
-const walletStore = useWalletStore()
-const errorStore = useErrorStore()
-const amount = ref(0.1)
+const { t } = useI18n();
+const props = defineProps({
+  modelValue: { type: Boolean, required: true },
+});
+const emit = defineEmits(['update:modelValue']);
+const walletStore = useWalletStore();
+const errorStore = useErrorStore();
+const amount = ref(0.1);
+
+// Computed для v-model
+const internalModelValue = computed({
+  get() {
+    return props.modelValue;
+  },
+  set(value) {
+    emit('update:modelValue', value);
+  },
+});
 
 const withdrawRules = computed(() => [
-  v => validateAmount(v, walletStore.tokenBalance) === true || validateAmount(v, walletStore.tokenBalance),
-])
+  (v) => validateAmount(v, walletStore.tokenBalance) === true || validateAmount(v, walletStore.tokenBalance),
+]);
 
-const isValid = computed(() => validateAmount(amount.value, walletStore.tokenBalance) === true)
+const isValid = computed(() => validateAmount(amount.value, walletStore.tokenBalance) === true);
 
 const withdraw = useDebounceFn(async () => {
   try {
-    await walletStore.withdrawTokens(amount.value)
-    errorStore.setError(t('ruble_withdraw_initiated'), false)
-    closeDialog()
+    await walletStore.withdrawTokens(amount.value);
+    errorStore.setError(t('ruble_withdraw_initiated'), false);
+    closeDialog();
   } catch (error) {
-    errorStore.setError(t('failed_to_initiate_ruble_withdraw'))
+    console.error('[WithdrawTokensDialog] Withdraw error:', error);
+    errorStore.setError(t('failed_to_initiate_ruble_withdraw'));
   }
-}, 300)
+}, 300);
 
 const closeDialog = () => {
-  emit('update:modelValue', false)
-  amount.value = 0.1
-}
+  internalModelValue.value = false;
+  amount.value = 0.1;
+};
 </script>
