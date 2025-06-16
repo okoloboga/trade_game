@@ -2,6 +2,7 @@
   "home": "Home",
   "balance": "Balance: ${amount}",
   "amount_label": "Amount ($)",
+  "amount_ton": "Amount (TON)",
   "amount_label_ruble": "Amount (RUBLE)",
   "deposit": "Deposit",
   "withdraw": "Withdraw",
@@ -65,6 +66,7 @@
     "ruble_withdraw_initiated": "RUBLE withdrawal initiated",
     "failed_to_initiate_ruble_withdraw": "Failed to initiate RUBLE withdrawal",
     "page_not_found": "Page not found",
-    "offline_mode": "Working in offline mode - some features may be limited"
+    "offline_mode": "Working in offline mode - some features may be limited",
+    "invalid_amount": "Invalid amount"
   }
 }

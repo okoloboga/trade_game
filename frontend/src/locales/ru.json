@@ -2,7 +2,8 @@
   "home": "Главная",
   "balance": "Баланс: ${amount}",
   "amount_label": "Сумма ($)",
-  "amount_label_ruble": "Amount (RUBLE)",
+  "amount_ton": "Сумма (TON)",
+  "amount_label_ruble": "Сумма (RUBLE)",
   "deposit": "Пополнить",
   "withdraw": "Вывести",
   "history": "История",
@@ -65,6 +66,7 @@
     "ruble_withdraw_initiated": "Вывод RUBLE инициирован",
     "failed_to_initiate_ruble_withdraw": "Не удалось инициировать вывод RUBLE",
     "page_not_found": "Страница не найдена",
-    "offline_mode": "Работа в офлайн-режиме — некоторые функции могут быть ограничены"
+    "offline_mode": "Работа в офлайн-режиме — некоторые функции могут быть ограничены",
+    "invalid_amount": "Неверная сумма",
   }
 }

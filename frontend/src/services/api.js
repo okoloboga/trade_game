@@ -110,13 +110,15 @@ export default {
       return handleApiError(error);
     }
   },
-  async deposit(amount, txHash) {
+  async deposit({ userId, amount, txHash, tonProof, account, clientId }) {
     try {
-      const authStore = useAuthStore();
       const response = await api.post('/transactions/deposit', {
-        userId: authStore.user?.id,
+        userId,
         amount,
         txHash,
+        tonProof,
+        account,
+        clientId,
       });
       return response.data;
     } catch (error) {

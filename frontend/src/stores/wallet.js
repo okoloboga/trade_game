@@ -3,7 +3,6 @@ import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { useAuthStore } from '@/stores/auth';
 
-
 export const useWalletStore = defineStore('wallet', {
   state: () => {
     const initialState = {
@@ -49,10 +48,18 @@ export const useWalletStore = defineStore('wallet', {
         throw error;
       }
     },
-    async deposit(amount) {
+    async deposit({ amount, txHash, tonProof, account, clientId }) {
       this.isProcessing = true;
       try {
-        const response = await apiService.deposit(amount, 'pending');
+        const authStore = useAuthStore();
+        const response = await apiService.deposit({
+          userId: authStore.user?.id,
+          amount,
+          txHash,
+          tonProof,
+          account,
+          clientId,
+        });
         this.balance = response.user.balance;
         return response;
       } catch (error) {
