@@ -67,6 +67,6 @@
     "failed_to_initiate_ruble_withdraw": "Не удалось инициировать вывод RUBLE",
     "page_not_found": "Страница не найдена",
     "offline_mode": "Работа в офлайн-режиме — некоторые функции могут быть ограничены",
-    "invalid_amount": "Неверная сумма",
+    "invalid_amount": "Неверная сумма"
   }
 }
