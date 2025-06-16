@@ -4,7 +4,7 @@
       <v-card-title>{{ $t('deposit_ton') }}</v-card-title>
       <v-card-text>
         <v-text-field
-          v-model.number="amount"
+          v-model.number="price"
           :label="$t('amount_ton')"
           type="number"
           :min="0.01"
@@ -48,8 +48,8 @@ const walletStore = useWalletStore();
 const errorStore = useErrorStore();
 const { tonConnectUI } = useTonConnectUI();
 const wallet = useTonWallet();
-const userFriendlyAddress = useTonAddress(true); // Для проверки адреса
-const amount = ref(0.01);
+const userFriendlyAddress = useTonAddress(true); // User-friendly адрес
+const price = ref(0.01);
 const isProcessing = ref(false);
 
 const internalModelValue = computed({
@@ -65,7 +65,7 @@ const depositRules = computed(() => [
   (v) => validateAmount(v, Infinity) === true || t('invalid_amount'),
 ]);
 
-const isValid = computed(() => validateAmount(amount.value, Infinity) === true);
+const isValid = computed(() => validateAmount(price.value, Infinity) === true);
 
 const deposit = useDebounceFn(async () => {
   if (!wallet || !userFriendlyAddress.value) {
@@ -76,18 +76,19 @@ const deposit = useDebounceFn(async () => {
   isProcessing.value = true;
   try {
     // Конвертация TON в нанотоны (1 TON = 1,000,000,000 нанотонов)
-    const nanoAmount = Math.floor(amount.value * 1_000_000_000).toString();
+    const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
     const transaction = {
       validUntil: Math.floor(Date.now() / 1000) + 60, // 60 секунд
-      network: '-239', // Mainnet
       messages: [
         {
-          address: import.meta.env.VITE_TON_CENTRAL_WALLET, // Должен быть user-friendly
+          address: import.meta.env.VITE_TON_CENTRAL_WALLET, // User-friendly адрес
           amount: nanoAmount,
         },
       ],
     };
 
+    console.log('[DepositDialog] User-friendly address:', userFriendlyAddress.value);
+    console.log('[DepositDialog] Wallet account address:', wallet.account?.address);
     console.log('[DepositDialog] Sending transaction:', transaction);
 
     // Отправка транзакции через TonConnect
@@ -97,16 +98,16 @@ const deposit = useDebounceFn(async () => {
 
     // Вызов deposit с txHash и дополнительными параметрами
     await walletStore.deposit({
-      amount: amount.value, // В TON для бэкенда
+      amount: price.value, // В TON для бэкенда
       txHash,
-      tonProof: wallet.connectItems?.tonProof?.proof || null, // Проверяем наличие tonProof
+      tonProof: wallet.connectItems?.tonProof?.proof || null,
       account: {
         address: userFriendlyAddress.value,
-        publicKey: wallet.account.publicKey,
-        chain: wallet.account.chain,
-        walletStateInit: wallet.account.walletStateInit || '',
+        publicKey: wallet.account?.publicKey || '',
+        chain: wallet.account?.chain || '-239',
+        walletStateInit: wallet.account?.walletStateInit || '',
       },
-      clientId: wallet.device?.appName || 'unknown', // Безопасный доступ
+      clientId: wallet.device?.appName || 'unknown',
     });
 
     errorStore.setError(t('error.deposit_initiated'), false);
@@ -121,6 +122,6 @@ const deposit = useDebounceFn(async () => {
 
 const closeDialog = () => {
   internalModelValue.value = false;
-  amount.value = 0.01;
+  price.value = 0.01;
 };
 </script>
