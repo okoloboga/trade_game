@@ -43,6 +43,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await apiService.login(data);
         console.log('[login] Response:', JSON.stringify(response, null, 2));
+        console.log('[authStore] Saved token:', response.access_token);
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify({
           ton_address: response.user.ton_address,

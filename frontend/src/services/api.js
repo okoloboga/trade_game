@@ -25,9 +25,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API error:', error.response?.data || error.message);
+    console.error('API error:', error.response?.data || error.message, 'URL:', error.config?.url);
     const errorStore = useErrorStore();
     if (error.response?.status === 401) {
+      console.log('[api] Handling 401, token before logout:', useAuthStore().token);
       const authStore = useAuthStore();
       authStore.logout();
       errorStore.setError('Session expired');
