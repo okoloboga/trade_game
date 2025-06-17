@@ -118,6 +118,7 @@ const deposit = useDebounceFn(async () => {
     };
 
     const result = await tonConnectUI.sendTransaction(transaction.value);
+    const txHash = result?.boc || result?.transactionHash || 'unknown';
 
     console.log('[DepositDialog] Deposit params:', {
       amount: price.value,
