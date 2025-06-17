@@ -23,9 +23,9 @@ export class TransactionsService {
   ) {}
 
   async processDeposit(depositDto: DepositDto) {
-    const { userId, amount, txHash, account, clientId } = depositDto;
+    const { tonAddress, amount, txHash, account, clientId } = depositDto;
 
-    this.logger.log(`Deposit data: ${JSON.stringify({ userId, amount, txHash, account, clientId }, null, 2)}`);
+    this.logger.log(`Deposit data: ${JSON.stringify({ tonAddress, amount, txHash, account, clientId }, null, 2)}`);
 
     if (amount <= 0) {
       throw new BadRequestException('Invalid amount');
@@ -35,7 +35,7 @@ export class TransactionsService {
       throw new BadRequestException('Client ID is required');
     }
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({ where: { ton_address: tonAddress } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -44,14 +44,14 @@ export class TransactionsService {
       this.logger.error(`Address mismatch: ${account.address} != ${user.ton_address}`);
       throw new BadRequestException('Invalid wallet address');
     }
-    
+
     const depositAmount = Number(amount);
-    user.balance += Number(user.balance || 0) + depositAmount;
+    user.balance = Number(user.balance || 0) + depositAmount;
     this.logger.log(`Before save: user.balance=${user.balance}, depositAmount=${depositAmount}`);
     await this.userRepository.save(user);
 
-    this.logger.log(`Processed deposit of ${amount} TON for user ${userId}`);
-    return { user, status: 'confirmed' };
+    this.logger.log(`Processed deposit of ${depositAmount} TON for user ${tonAddress}`);
+    return { user: { ...user, balance: user.balance }, status: 'confirmed' };
   }
 
   async processWithdraw(withdrawDto: WithdrawDto) {

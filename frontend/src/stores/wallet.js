@@ -49,13 +49,15 @@ export const useWalletStore = defineStore('wallet', {
       }
     },
     async fetchBalance() {
+      console.log('[walletStore] Starting fetchBalance');
       try {
         const authStore = useAuthStore();
-        if (!authStore.user?.id) {
-          console.error('[walletStore] No user ID for fetching balance');
+        console.log('[walletStore] authStore.user:', authStore.user);
+        if (!authStore.user?.ton_address) {
+          console.error('[walletStore] No ton_address for fetching balance');
           return;
         }
-        const response = await apiService.getUserBalance(authStore.user.id);
+        const response = await apiService.getUserBalance(authStore.user.ton_address);
         this.balance = Number(response.balance);
         this.tokenBalance = Number(response.token_balance);
         console.log('[walletStore] Fetched balance:', this.balance);
@@ -68,19 +70,23 @@ export const useWalletStore = defineStore('wallet', {
       this.isProcessing = true;
       try {
         const authStore = useAuthStore();
+        console.log('[walletStore] Depositing with ton_address:', authStore.user?.ton_address);
         const response = await apiService.deposit({
-          userId: authStore.user?.id,
+          tonAddress: authStore.user?.ton_address,
           amount,
           txHash,
           account,
           clientId,
         });
-        if (!response.user) {
+        if (!response?.user?.balance) {
+          console.error('[walletStore] Invalid response:', response);
           throw new Error('Invalid response: user data missing');
         }
         this.balance = Number(response.user.balance);
+        console.log('[walletStore] Deposit response:', response);
         return response;
       } catch (error) {
+        console.error('[walletStore] Deposit failed:', error);
         useErrorStore().setError('Deposit failed');
         throw error;
       } finally {

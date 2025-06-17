@@ -10,8 +10,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async getBalance(userId: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  async getBalance(tonAddress: string) {
+    const user = await this.userRepository.findOne({ where: { ton_address: tonAddress } });
     if (!user) {
       throw new NotFoundException('User not found');
     }

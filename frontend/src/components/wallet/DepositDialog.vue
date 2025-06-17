@@ -137,7 +137,7 @@ const deposit = useDebounceFn(async () => {
       account: {
         address: userFriendlyAddress.value,
       },
-      clientId: authStore.user?.id || 'unknown',
+      clientId: authStore.user?.ton_address || 'unknown',
     });
 
     errorStore.setError(t('error.deposit_initiated'), false);

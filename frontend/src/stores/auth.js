@@ -8,13 +8,14 @@ export const useAuthStore = defineStore('auth', {
     user: null,
     walletAddress: null,
     isConnected: false,
+    tonProof: null, // Добавляем tonProof в состояние
   }),
   actions: {
     async init() {
       if (this.token && !this.user) {
         try {
           const response = JSON.parse(localStorage.getItem('user') || '{}');
-          if (response.id && response.ton_address) {
+          if (response.ton_address) { // Проверяем только ton_address
             this.user = response;
             this.walletAddress = response.ton_address;
             this.setConnected(true);
@@ -30,21 +31,29 @@ export const useAuthStore = defineStore('auth', {
     async generateChallenge(clientId) {
       try {
         const response = await apiService.generateChallenge(clientId);
+        console.log('[generateChallenge] Response:', response);
         return response;
       } catch (error) {
-        useErrorStore().setError('Failed to generate challenge');
+        console.error('[generateChallenge] Error:', error);
+        useErrorStore().setError('Failed');
         throw error;
       }
     },
-
     async login(data) {
       try {
         const response = await apiService.login(data);
         console.log('[login] Response:', JSON.stringify(response, null, 2));
         localStorage.setItem('token', response.access_token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        this.token = response.access_token;
-        this.user = response.user;
+        localStorage.setItem('user', JSON.stringify({
+          ton_address: response.user.ton_address,
+          balance: response.user.balance,
+          token_balance: response.user.token_balance,
+        }));
+        this.user = {
+          ton_address: response.user.address,
+          balance: response.user.balance,
+          token_balance: response.user.token_balance,
+        };
         this.walletAddress = response.user.ton_address;
         this.setConnected(true);
         return response;
@@ -54,13 +63,13 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
-
     logout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       this.token = null;
       this.user = null;
       this.walletAddress = null;
+      this.tonProof = null;
       this.setConnected(false);
     },
     setConnected(isConnected) {

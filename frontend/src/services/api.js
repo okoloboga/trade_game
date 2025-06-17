@@ -69,9 +69,9 @@ export default {
       return handleApiError(error);
     }
   },
-  async getUserBalance(userId) {
+  async getUserBalance(tonAddress) {
     try {
-      const response = await api.get(`/users/${userId}/balance`);
+      const response = await api.get(`/users/${tonAddress}/balance`);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -118,10 +118,10 @@ export default {
       return handleApiError(error);
     }
   },
-  async deposit({ userId, amount, txHash, account, clientId }) {
+  async deposit({ tonAddress, amount, txHash, account, clientId }) {
     try {
       const response = await api.post('/transactions/deposit', {
-        userId,
+        tonAddress,
         amount,
         txHash,
         account,

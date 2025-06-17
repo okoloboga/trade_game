@@ -6,9 +6,9 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get(':id/balance')
+  @Get(':tonAddress/balance')
   @UseGuards(JwtAuthGuard)
-  async getBalance(@Param('id') id: string) {
-    return this.usersService.getBalance(id);
+  async getBalance(@Param('tonAddress') tonAddress: string) {
+    return this.usersService.getBalance(tonAddress);
   }
 }

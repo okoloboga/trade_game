@@ -4,7 +4,7 @@ import { DepositAccount } from 'src/types/ton.types';
 export class DepositDto {
   @IsString()
   @IsNotEmpty()
-  userId!: string;
+  tonAddress!: string;
 
   @IsNumber()
   @Min(0.01)
