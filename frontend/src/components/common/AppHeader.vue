@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useTonWallet, useTonConnectUI, TonConnectButton, useTonAddress } from '@townsquarelabs/ui-vue';
 import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
@@ -51,19 +51,19 @@ const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
 
 const wallet = useTonWallet();
-const [tonConnectUI, setOptions] = useTonConnectUI();
+const [tonConnectUI, setOptions] = useTonConnectUI(); // Используем массив, как в DepositDialog.vue
 const walletAddress = ref(null);
 const clientId = ref(null);
-const userFriendlyAddress = useTonAddress(true); // Получаем user-friendly адрес
-const rawAddress = useTonAddress(false); // Для отладки, если нужен raw
+const userFriendlyAddress = useTonAddress(true);
+const rawAddress = useTonAddress(false);
 
 let authStore, walletStore;
 
 const recreateProofPayload = async () => {
   console.log('[recreateProofPayload] Generating challenge');
-  console.log('[recreateProofPayload] tonConnectUI:', tonConnectUI);
-  tonConnectUI.setConnectRequestParameters({ state: 'loading' });
   try {
+    console.log('[recreateProofPayload] tonConnectUI:', tonConnectUI);
+    tonConnectUI.setConnectRequestParameters({ state: 'loading' });
     console.log('[recreateProofPayload] Requesting challenge from backend with clientId:', clientId.value || 'none');
     const payload = await authStore.generateChallenge(clientId.value);
     console.log('[recreateProofPayload] Received payload:', JSON.stringify(payload, null, 2));
@@ -93,7 +93,6 @@ const handleWalletConnect = async (walletData) => {
       console.warn('[handleWalletConnect] No tonProof available, proceeding without tonProof verification');
     }
 
-    // Используем user-friendly адрес из useTonAddress
     const walletAddressFriendly = userFriendlyAddress.value;
     if (!walletAddressFriendly) {
       throw new Error('[handleWalletConnect] User-friendly address not available');
@@ -101,7 +100,7 @@ const handleWalletConnect = async (walletData) => {
     const tonProofPayload = walletData.connectItems.tonProof.proof;
     const tonProof = { proof: tonProofPayload };
     const account = {
-      address: walletAddressFriendly, // User-friendly адрес
+      address: walletAddressFriendly,
       publicKey: walletData.account.publicKey,
       chain: walletData.account.chain,
       walletStateInit: walletData.account.walletStateInit || '',
@@ -111,7 +110,7 @@ const handleWalletConnect = async (walletData) => {
       ton_address: walletAddressFriendly,
       tonProof,
       account,
-      clientId: clientId.value
+      clientId: clientId.value,
     });
     walletAddress.value = walletAddressFriendly;
     authStore.setConnected(true);
@@ -135,15 +134,28 @@ onMounted(async () => {
 
   console.log('[onMounted] Initializing auth store');
   await authStore.init();
-  if (tonConnectUI && tonConnectUI.connected && wallet.value && userFriendlyAddress.value) {
-    console.log('[onMounted] Wallet already connected, address:', userFriendlyAddress.value);
+
+  // Проверяем состояние подключения
+  if (tonConnectUI.connected && wallet.value) {
+    console.log('[onMounted] Wallet already connected, waiting for address');
+    // Ждём, пока адрес станет доступен
+    await new Promise((resolve) => {
+      const unwatch = watch(userFriendlyAddress, (newAddress) => {
+        if (newAddress) {
+          unwatch();
+          resolve();
+        }
+      });
+    });
+    console.log('[onMounted] Address available:', userFriendlyAddress.value);
     walletAddress.value = userFriendlyAddress.value;
     const success = await recreateProofPayload();
     if (success) {
       await handleWalletConnect(wallet.value);
-      console.log('[onMounted] Wallet already connected, synced state');
+      console.log('[onMounted] Wallet synced successfully');
     } else {
-      console.warn('[onMounted] Failed to generate tonProof for existing wallet, logging out');
+      console.warn('[onMounted] Failed to generate tonProof, disconnecting');
+      await tonConnectUI.disconnect();
       authStore.logout();
     }
   } else {
@@ -153,7 +165,20 @@ onMounted(async () => {
 
   console.log('[onMounted] Setting up wallet status change listener');
   tonConnectUI.onStatusChange(async (walletData) => {
-    if (walletData && userFriendlyAddress.value) {
+    if (walletData) {
+      console.log('[onStatusChange] Wallet data received:', walletData);
+      // Ждём адрес, если он ещё не готов
+      if (!userFriendlyAddress.value) {
+        console.log('[onStatusChange] Waiting for user-friendly address');
+        await new Promise((resolve) => {
+          const unwatch = watch(userFriendlyAddress, (newAddress) => {
+            if (newAddress) {
+              unwatch();
+              resolve();
+            }
+          });
+        });
+      }
       console.log('[onStatusChange] Wallet connected, address:', userFriendlyAddress.value);
       await handleWalletConnect(walletData);
     } else {
