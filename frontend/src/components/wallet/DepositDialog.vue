@@ -122,14 +122,8 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] Connection restored:', connectionRestored);
     console.log('[DepositDialog] Sending transaction:', transaction.value);
 
-    // Пробуем с await, но учитываем, что в 2.0.9 результат может отличаться
-    let result;
-    try {
-      result = await tonConnectUI.sendTransaction(transaction.value);
-    } catch (sendError) {
-      console.error('[DepositDialog] Send transaction failed:', sendError);
-      throw sendError;
-    }
+    const result = await tonConnectUI.sendTransaction(transaction.value);
+
     console.log('[DepositDialog] Transaction result:', result);
 
     // В 2.0.9 результат может не содержать boc, проверяем
