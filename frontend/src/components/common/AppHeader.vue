@@ -112,6 +112,7 @@ const handleWalletConnect = async (walletData) => {
       account,
       clientId: clientId.value,
     });
+    authStore.setTonProof(tonProof.proof);
     walletAddress.value = walletAddressFriendly;
     authStore.setConnected(true);
     walletStore.syncFromAuthStore();

@@ -66,5 +66,8 @@ export const useAuthStore = defineStore('auth', {
     setConnected(isConnected) {
       this.isConnected = isConnected;
     },
+    setTonProof(proof) {
+      this.tonProof = proof;
+    },
   },
 });

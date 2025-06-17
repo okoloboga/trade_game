@@ -37,6 +37,7 @@ import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
+import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
 import { useTonWallet, useTonConnectUI, useTonAddress, useIsConnectionRestored, useTonConnectModal } from '@townsquarelabs/ui-vue';
 
@@ -50,6 +51,7 @@ const errorStore = useErrorStore();
 const [tonConnectUI, setOptions] = useTonConnectUI(); // Используем массив
 const { state: modalState, open: openModal, close: closeModal } = useTonConnectModal(); // Для модального окна
 const wallet = useTonWallet();
+const authStore = useAuthStore();
 const userFriendlyAddress = useTonAddress(true);
 const connectionRestored = useIsConnectionRestored();
 const price = ref(0.01);
@@ -132,7 +134,7 @@ const deposit = useDebounceFn(async () => {
     await walletStore.deposit({
       amount: price.value,
       txHash,
-      tonProof: wallet?.connectItems?.tonProof?.proof || null,
+      tonProof: authStore.tonProof || null,
       account: {
         address: userFriendlyAddress.value,
         publicKey: tonConnectUI.wallet?.account?.publicKey || '',
