@@ -62,7 +62,7 @@ export const useWalletStore = defineStore('wallet', {
         if (!response.user) {
           throw new Error('Invalid response: user data missing');
         }
-        this.balance = response.user.balance;
+        this.balance = Number(response.user.balance);
         return response;
       } catch (error) {
         useErrorStore().setError('Deposit failed');

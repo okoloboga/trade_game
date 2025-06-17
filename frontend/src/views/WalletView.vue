@@ -9,7 +9,8 @@
           </v-chip>
         </div>
         <div class="mb-2">
-          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance.toFixed(2) }}</strong>
+          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) :
+            '0.00' }}</strong>
         </div>
         <div class="mb-4">
           <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance.toFixed(2) }}</strong>

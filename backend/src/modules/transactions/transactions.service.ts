@@ -45,7 +45,8 @@ export class TransactionsService {
       throw new BadRequestException('Invalid wallet address');
     }
     
-    user.balance += amount;
+    const depositAmount = Number(amount);
+    user.balance += Number(user.balance) + depositAmount;
     await this.userRepository.save(user);
 
     this.logger.log(`Processed deposit of ${amount} TON for user ${userId}`);
