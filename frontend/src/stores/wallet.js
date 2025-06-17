@@ -22,7 +22,7 @@ export const useWalletStore = defineStore('wallet', {
       if (authStore.user) {
         this.balance = parseFloat(authStore.user.balance) || 0.0;
         this.tokenBalance = parseFloat(authStore.user.token_balance) || 0.0;
-        this.depositAddress = authStore.user.walletAddress;
+        this.depositAddress = authStore.walletAddress;
         console.log('[walletStore] Synced from authStore:', {
           balance: this.balance,
           tokenBalance: this.tokenBalance,
@@ -52,12 +52,12 @@ export const useWalletStore = defineStore('wallet', {
       console.log('[walletStore] Starting fetchBalance');
       try {
         const authStore = useAuthStore();
-        console.log('[walletStore] authStore.user:', authStore.user);
-        if (!authStore.user?.ton_address) {
+        console.log('[walletStore] authStore.user:', authStore.user, 'authStore.walletAddress:', authStore.walletAddress);
+        if (!authStore.walletAddress) {
           console.error('[walletStore] No ton_address for fetching balance');
           return;
         }
-        const response = await apiService.getUserBalance(authStore.user.ton_address);
+        const response = await apiService.getUserBalance(authStore.walletAddress);
         this.balance = Number(response.balance);
         this.tokenBalance = Number(response.token_balance);
         console.log('[walletStore] Fetched balance:', this.balance);
@@ -70,9 +70,9 @@ export const useWalletStore = defineStore('wallet', {
       this.isProcessing = true;
       try {
         const authStore = useAuthStore();
-        console.log('[walletStore] Depositing with ton_address:', authStore.user?.walletAddress);
+        console.log('[walletStore] Depositing with ton_address:', authStore.walletAddress);
         const response = await apiService.deposit({
-          tonAddress: authStore.user?.walletAddress,
+          tonAddress: authStore.walletAddress,
           amount,
           txHash,
         });

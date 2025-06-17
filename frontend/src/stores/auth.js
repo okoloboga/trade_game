@@ -50,9 +50,10 @@ export const useAuthStore = defineStore('auth', {
           token_balance: response.user.token_balance,
         }));
         this.user = {
-          ton_address: response.user.address,
+          ton_address: response.user.ton_address,
           balance: response.user.balance,
           token_balance: response.user.token_balance,
+          walletAddress: response.user.ton_address,
         };
         this.walletAddress = response.user.ton_address;
         this.setConnected(true);
