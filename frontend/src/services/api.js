@@ -118,14 +118,12 @@ export default {
       return handleApiError(error);
     }
   },
-  async deposit({ tonAddress, amount, txHash, account, clientId }) {
+  async deposit({ tonAddress, amount, txHash }) {
     try {
       const response = await api.post('/transactions/deposit', {
         tonAddress,
         amount,
         txHash,
-        account,
-        clientId,
       });
       return response.data;
     } catch (error) {

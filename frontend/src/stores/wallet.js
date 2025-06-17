@@ -66,17 +66,15 @@ export const useWalletStore = defineStore('wallet', {
         useErrorStore().setError('Failed to fetch balance');
       }
     },
-    async deposit({ amount, txHash, account, clientId }) {
+    async deposit({ amount, txHash }) {
       this.isProcessing = true;
       try {
         const authStore = useAuthStore();
-        console.log('[walletStore] Depositing with ton_address:', authStore.user?.ton_address);
+        console.log('[walletStore] Depositing with ton_address:', authStore.user?.walletAddress);
         const response = await apiService.deposit({
-          tonAddress: authStore.user?.ton_address,
+          tonAddress: authStore.user?.walletAddress,
           amount,
           txHash,
-          account,
-          clientId,
         });
         if (!response?.user?.balance) {
           console.error('[walletStore] Invalid response:', response);

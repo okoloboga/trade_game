@@ -13,7 +13,3 @@ export interface Account {
   chain: string;
   walletStateInit?: string;
 }
-
-export interface DepositAccount {
-  address: string;
-}

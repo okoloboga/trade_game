@@ -123,21 +123,13 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] Deposit params:', {
       amount: price.value,
       txHash,
-      account: {
-        address: userFriendlyAddress.value,
-      },
-      clientId: authStore.user?.ton_address || 'unknown',
     });
-    console.log('[DepositDialog] ClientId:', authStore.user?.ton_address || 'unknown');
+    console.log('[DepositDialog] Wallet Address:', authStore.user?.walletAddress || 'unknown');
     console.log('[DepositDialog] Transaction result:', result);
 
     await walletStore.deposit({
       amount: price.value,
       txHash,
-      account: {
-        address: userFriendlyAddress.value,
-      },
-      clientId: authStore.user?.ton_address || 'unknown',
     });
 
     errorStore.setError(t('error.deposit_initiated'), false);
