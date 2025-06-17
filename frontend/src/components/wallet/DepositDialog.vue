@@ -131,9 +131,6 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] ClientId:', authStore.user?.id || 'unknown');
     console.log('[DepositDialog] Transaction result:', result);
 
-    // В 2.0.9 результат может не содержать boc, проверяем
-    const txHash = result?.boc || result?.transactionHash || 'unknown';
-
     await walletStore.deposit({
       amount: price.value,
       txHash,
