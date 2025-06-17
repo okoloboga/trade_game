@@ -169,20 +169,6 @@ export class TonService {
     }
   }
 
-  async checkTransactionStatus(txHash: string): Promise<'pending' | 'confirmed' | 'failed'> {
-    if (!this.client) {
-      throw new BadRequestException('TON client not initialized');
-    }
-    try {
-      // Placeholder: Use TonClient's getTransaction for status check
-      this.logger.warn(`Transaction status check not fully implemented for txHash: ${txHash}`);
-      return 'pending';
-    } catch (error) {
-      this.logger.error(`Failed to check transaction status: ${(error as AxiosError).message}`);
-      return 'failed';
-    }
-  }
-
   async getWalletData(userAddress: string): Promise<{ balance: string; tokenBalance: string; address: string; depositAddress: string }> {
     if (!this.client) {
       throw new BadRequestException('TON client not initialized');
@@ -202,42 +188,6 @@ export class TonService {
     } catch (error) {
       this.logger.error(`Failed to get wallet data: ${(error as AxiosError).message}`);
       throw new BadRequestException('Failed to fetch wallet data');
-    }
-  }
-  async verifyTransaction(address: string, amount: string, txHash: string): Promise<boolean> {
-    if (!this.client) {
-      throw new BadRequestException('TON client not initialized');
-    }
-    try {
-      const addr = Address.parse(address);
-      const state = await this.client.getContractState(addr);
-      if (!state.lastTransaction) {
-        this.logger.error(`No transactions found for address ${address}`);
-        return false;
-      }
-
-      const tx = await this.client.getTransaction(
-        addr,
-        state.lastTransaction.lt,
-        state.lastTransaction.hash
-      );
-      if (!tx || tx.hash().toString('hex') !== txHash) {
-        this.logger.error(`Transaction ${txHash} not found for address ${address}`);
-        return false;
-      }
-
-      const expectedAmount = toNano(amount);
-      const accountBalance = state.balance;
-      if (accountBalance < expectedAmount) {
-        this.logger.error(`Account balance ${accountBalance} less than expected ${expectedAmount}`);
-        return false;
-      }
-
-      this.logger.log(`Verified transaction ${txHash} for address ${address}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`Failed to verify transaction ${txHash}: ${(error as AxiosError).message}`);
-      return false;
     }
   }
 }

@@ -25,6 +25,8 @@ export class TransactionsService {
   async processDeposit(depositDto: DepositDto) {
     const { userId, amount, txHash, account, clientId } = depositDto;
 
+    this.logger.log(`Deposit data: ${JSON.stringify({ userId, amount, txHash, account, clientId }, null, 2)}`);
+
     if (amount <= 0) {
       throw new BadRequestException('Invalid amount');
     }
@@ -42,12 +44,7 @@ export class TransactionsService {
       this.logger.error(`Address mismatch: ${account.address} != ${user.ton_address}`);
       throw new BadRequestException('Invalid wallet address');
     }
-
-    const isTransactionValid = await this.verifyTonTransaction(user.ton_address, amount, txHash);
-    if (!isTransactionValid) {
-      throw new BadRequestException('Invalid transaction');
-    }
-
+    
     user.balance += amount;
     await this.userRepository.save(user);
 
@@ -81,15 +78,6 @@ export class TransactionsService {
     } catch (error) {
       this.logger.error(`Error withdrawing ${amount} TON: ${(error as AxiosError).message}`);
       throw new BadRequestException('Failed to process withdrawal');
-    }
-  }
-
-  private async verifyTonTransaction(tonAddress: string, amount: number, txHash: string): Promise<boolean> {
-    try {
-      return await this.tonService.verifyTransaction(tonAddress, amount.toString(), txHash);
-    } catch (error) {
-      this.logger.error(`Error verifying transaction ${txHash}: ${(error as AxiosError).message}`);
-      return false;
     }
   }
 }
