@@ -51,7 +51,7 @@ const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
 
 const wallet = useTonWallet();
-const { tonConnectUI } = useTonConnectUI();
+const tonConnectUI = useTonConnectUI();
 const walletAddress = ref(null);
 const clientId = ref(null);
 const userFriendlyAddress = useTonAddress(true); // Получаем user-friendly адрес
