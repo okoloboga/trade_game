@@ -110,13 +110,12 @@ export default {
       return handleApiError(error);
     }
   },
-  async deposit({ userId, amount, txHash, tonProof, account, clientId }) {
+  async deposit({ userId, amount, txHash, account, clientId }) {
     try {
       const response = await api.post('/transactions/deposit', {
         userId,
         amount,
         txHash,
-        tonProof,
         account,
         clientId,
       });

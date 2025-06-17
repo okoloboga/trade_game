@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsNotEmpty, Min } from 'class-validator';
-import { TonProof, Account } from 'src/types/ton.types';
+import { DepositAccount } from 'src/types/ton.types';
 
 export class DepositDto {
   @IsString()
@@ -15,10 +15,7 @@ export class DepositDto {
   txHash!: string;
 
   @IsNotEmpty()
-  tonProof!: TonProof;
-
-  @IsNotEmpty()
-  account!: Account;
+  account!: DepositAccount;  
 
   @IsString()
   @IsNotEmpty()

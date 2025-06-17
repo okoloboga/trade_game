@@ -11,5 +11,9 @@ export interface Account {
   address: string;
   publicKey: string;
   chain: string;
-  walletStateInit?: string; // Для совместимости с challenge.service.ts
+  walletStateInit?: string;
+}
+
+export interface DepositAccount {
+  address: string;
 }

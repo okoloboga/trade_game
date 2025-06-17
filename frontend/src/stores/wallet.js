@@ -48,7 +48,7 @@ export const useWalletStore = defineStore('wallet', {
         throw error;
       }
     },
-    async deposit({ amount, txHash, tonProof, account, clientId }) {
+    async deposit({ amount, txHash, account, clientId }) {
       this.isProcessing = true;
       try {
         const authStore = useAuthStore();
@@ -56,7 +56,6 @@ export const useWalletStore = defineStore('wallet', {
           userId: authStore.user?.id,
           amount,
           txHash,
-          tonProof,
           account,
           clientId,
         });

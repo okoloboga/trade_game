@@ -9,7 +9,6 @@ import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { DepositDto } from './dto/deposit.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
-import { ChallengeService } from '../challenge/challenge.service';
 import { TonService } from '../ton/ton.service';
 import { AxiosError } from 'axios';
 
@@ -20,12 +19,11 @@ export class TransactionsService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly challengeService: ChallengeService,
     private readonly tonService: TonService
   ) {}
 
   async processDeposit(depositDto: DepositDto) {
-    const { userId, amount, txHash, tonProof, account, clientId } = depositDto;
+    const { userId, amount, txHash, account, clientId } = depositDto;
 
     if (amount <= 0) {
       throw new BadRequestException('Invalid amount');
@@ -40,9 +38,9 @@ export class TransactionsService {
       throw new NotFoundException('User not found');
     }
 
-    const isProofValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
-    if (!isProofValid) {
-      throw new BadRequestException('Invalid TON proof');
+    if (account.address !== user.ton_address) {
+      this.logger.error(`Address mismatch: ${account.address} != ${user.ton_address}`);
+      throw new BadRequestException('Invalid wallet address');
     }
 
     const isTransactionValid = await this.verifyTonTransaction(user.ton_address, amount, txHash);

@@ -117,15 +117,17 @@ const deposit = useDebounceFn(async () => {
       ],
     };
 
-    console.log('[DepositDialog] User-friendly address:', userFriendlyAddress.value);
-    console.log('[DepositDialog] Wallet:', wallet);
-    console.log('[DepositDialog] TonConnectUI wallet:', tonConnectUI.wallet);
-    console.log('[DepositDialog] UniversalLink:', tonConnectUI.wallet?.universalLink);
-    console.log('[DepositDialog] Connection restored:', connectionRestored);
-    console.log('[DepositDialog] Sending transaction:', transaction.value);
-
     const result = await tonConnectUI.sendTransaction(transaction.value);
 
+    console.log('[DepositDialog] Deposit params:', {
+      amount: price.value,
+      txHash,
+      account: {
+        address: userFriendlyAddress.value,
+      },
+      clientId: authStore.user?.id || 'unknown',
+    });
+    console.log('[DepositDialog] ClientId:', authStore.user?.id || 'unknown');
     console.log('[DepositDialog] Transaction result:', result);
 
     // В 2.0.9 результат может не содержать boc, проверяем
@@ -134,14 +136,10 @@ const deposit = useDebounceFn(async () => {
     await walletStore.deposit({
       amount: price.value,
       txHash,
-      tonProof: authStore.tonProof || null,
       account: {
         address: userFriendlyAddress.value,
-        publicKey: tonConnectUI.wallet?.account?.publicKey || '',
-        chain: tonConnectUI.wallet?.account?.chain || '-239',
-        walletStateInit: tonConnectUI.wallet?.account?.walletStateInit || '',
       },
-      clientId: wallet?.device?.appName || 'unknown',
+      clientId: authStore.user?.id || 'unknown',
     });
 
     errorStore.setError(t('error.deposit_initiated'), false);
@@ -156,6 +154,6 @@ const deposit = useDebounceFn(async () => {
 
 const closeDialog = () => {
   internalModelValue.value = false;
-  price.value = 0.01;
+  price.value = 1;
 };
 </script>
