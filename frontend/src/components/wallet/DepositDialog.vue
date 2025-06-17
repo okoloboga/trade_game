@@ -122,9 +122,6 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] Connection restored:', connectionRestored);
     console.log('[DepositDialog] Sending transaction:', transaction.value);
 
-    console.log('[DepositDialog] Opening modal for transaction confirmation');
-    await openModal(); // Используем openModal из useTonConnectModal
-
     // Пробуем с await, но учитываем, что в 2.0.9 результат может отличаться
     let result;
     try {
