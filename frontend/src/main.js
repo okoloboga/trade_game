@@ -7,7 +7,6 @@ import * as directives from 'vuetify/directives'
 import { createPinia } from 'pinia'
 import { router } from './router'
 import WebApp from '@twa-dev/sdk'
-import { TonConnectUIPlugin } from '@townsquarelabs/ui-vue'
 import { createI18n } from 'vue-i18n'
 import { Buffer } from 'buffer';
 
@@ -74,10 +73,6 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 app.use(vuetify)
-app.use(TonConnectUIPlugin, {
-  manifestUrl: import.meta.env.VITE_APP_URL
-})
-app.use(i18n)
 
 // Монтируем приложение
 app.mount('#app')
