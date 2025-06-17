@@ -126,9 +126,9 @@ const deposit = useDebounceFn(async () => {
       account: {
         address: userFriendlyAddress.value,
       },
-      clientId: authStore.user?.id || 'unknown',
+      clientId: authStore.user?.ton_address || 'unknown',
     });
-    console.log('[DepositDialog] ClientId:', authStore.user?.id || 'unknown');
+    console.log('[DepositDialog] ClientId:', authStore.user?.ton_address || 'unknown');
     console.log('[DepositDialog] Transaction result:', result);
 
     await walletStore.deposit({

@@ -22,7 +22,7 @@ export const useWalletStore = defineStore('wallet', {
       if (authStore.user) {
         this.balance = parseFloat(authStore.user.balance) || 0.0;
         this.tokenBalance = parseFloat(authStore.user.token_balance) || 0.0;
-        this.depositAddress = authStore.user.ton_address;
+        this.depositAddress = authStore.user.walletAddress;
         console.log('[walletStore] Synced from authStore:', {
           balance: this.balance,
           tokenBalance: this.tokenBalance,
