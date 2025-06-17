@@ -1,6 +1,5 @@
 {
   "url": "https://trade.ruble.website",
   "name": "Ruble Trade Game",
-  "iconUrl": "https://trade.ruble.website/icon.png",
-  "networks": ["mainnet", "testnet"]
+  "iconUrl": "https://trade.ruble.website/icon.png"
 }

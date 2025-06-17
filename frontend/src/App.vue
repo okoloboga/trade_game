@@ -15,7 +15,7 @@ import Notification from '@/components/common/Notification.vue';
 import { TonConnectUIProvider } from '@townsquarelabs/ui-vue';
 
 const options = {
-  manifestUrl: import.meta.env.VITE_APP_URL,
+  manifestUrl: `${import.meta.env.VITE_APP_URL}/tonconnect-manifest.json`,
 };
 </script>
 

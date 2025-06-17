@@ -1,3 +1,4 @@
+```vue
 <template>
   <v-dialog v-model="internalModelValue" max-width="320">
     <v-card color="#1e1e1e">
@@ -37,7 +38,7 @@ import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useI18n } from 'vue-i18n';
-import { useTonWallet, useTonConnectUI, useTonAddress, useIsConnectionRestored } from '@townsquarelabs/ui-vue';
+import { useTonWallet, useTonConnectUI, useTonAddress, useIsConnectionRestored, useTonConnectModal } from '@townsquarelabs/ui-vue';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -46,7 +47,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
-const { tonConnectUI } = useTonConnectUI();
+const [tonConnectUI, setOptions] = useTonConnectUI(); // Используем массив
+const { state: modalState, open: openModal, close: closeModal } = useTonConnectModal(); // Для модального окна
 const wallet = useTonWallet();
 const userFriendlyAddress = useTonAddress(true);
 const connectionRestored = useIsConnectionRestored();
@@ -89,7 +91,7 @@ const deposit = useDebounceFn(async () => {
     errorStore.setError(t('error.connect_wallet'));
     try {
       console.log('[DepositDialog] Opening modal for wallet connection');
-      await tonConnectUI.openModal();
+      await openModal();
       if (!tonConnectUI.connected) {
         throw new Error('Wallet not connected after modal');
       }
@@ -120,13 +122,21 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] Connection restored:', connectionRestored);
     console.log('[DepositDialog] Sending transaction:', transaction.value);
 
-    // Открываем модальное окно перед транзакцией, как в примере
     console.log('[DepositDialog] Opening modal for transaction confirmation');
-    await tonConnectUI.openModal();
+    await openModal(); // Используем openModal из useTonConnectModal
 
-    const result = await tonConnectUI.sendTransaction(transaction.value);
+    // Пробуем с await, но учитываем, что в 2.0.9 результат может отличаться
+    let result;
+    try {
+      result = await tonConnectUI.sendTransaction(transaction.value);
+    } catch (sendError) {
+      console.error('[DepositDialog] Send transaction failed:', sendError);
+      throw sendError;
+    }
     console.log('[DepositDialog] Transaction result:', result);
-    const txHash = result.boc;
+
+    // В 2.0.9 результат может не содержать boc, проверяем
+    const txHash = result?.boc || result?.transactionHash || 'unknown';
 
     await walletStore.deposit({
       amount: price.value,
