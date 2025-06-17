@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { envConfig } from './common/config/env.config';
 import { postgresConfig } from './common/config/postgres.config';
 import { RedisConfigModule } from './common/config/redis.config';
+import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MarketModule } from './modules/market/market.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
@@ -26,6 +27,7 @@ import { HealthController } from './health/health.controller';
     envConfig,
     postgresConfig,
     RedisConfigModule,
+    UsersModule,
     AuthModule,
     MarketModule,
     TransactionsModule,

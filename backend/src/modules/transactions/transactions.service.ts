@@ -46,7 +46,8 @@ export class TransactionsService {
     }
     
     const depositAmount = Number(amount);
-    user.balance += Number(user.balance) + depositAmount;
+    user.balance += Number(user.balance || 0) + depositAmount;
+    this.logger.log(`Before save: user.balance=${user.balance}, depositAmount=${depositAmount}`);
     await this.userRepository.save(user);
 
     this.logger.log(`Processed deposit of ${amount} TON for user ${userId}`);

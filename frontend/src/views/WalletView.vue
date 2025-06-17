@@ -9,55 +9,32 @@
           </v-chip>
         </div>
         <div class="mb-2">
-          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) :
-            '0.00' }}</strong>
+          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}</strong>
         </div>
         <div class="mb-4">
-          <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance.toFixed(2) }}</strong>
+          <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ? walletStore.tokenBalance.toFixed(2) : '0.00' }}</strong>
         </div>
         <div class="button-container">
-          <!-- Первый ряд: Deposit (зеленая, полная ширина) -->
-          <v-btn
-            color="success"
-            class="mb-2"
-            block
-            @click="openDepositDialog"
-          >
+          <v-btn color="success" class="mb-2" block @click="openDepositDialog">
             {{ $t('deposit') }}
           </v-btn>
-          <!-- Второй ряд: Withdraw и Withdraw Tokens (синие, по половине ширины) -->
           <v-row>
             <v-col cols="6">
-              <v-btn
-                color="primary"
-                block
-                @click="openWithdrawDialog"
-              >
+              <v-btn color="primary" block @click="openWithdrawDialog">
                 {{ $t('withdraw_ton') }}
               </v-btn>
             </v-col>
             <v-col cols="6">
-              <v-btn
-                color="primary"
-                block
-                @click="openWithdrawTokensDialog"
-              >
+              <v-btn color="primary" block @click="openWithdrawTokensDialog">
                 {{ $t('withdraw_ruble') }}
               </v-btn>
             </v-col>
           </v-row>
         </div>
       </v-card-text>
-      <DepositDialog v-model="showDepositDialog" />
+      <DepositDialog v-model="showDepositDialog" @deposit-success="walletStore.fetchBalance" />
       <WithdrawDialog v-model="showWithdrawDialog" />
       <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
-      <v-dialog v-model="showTestDialog" max-width="320">
-        <v-card>
-          <v-card-title>Test Dialog</v-card-title>
-          <v-card-text>This is a test dialog.</v-card-text>
-          <v-btn @click="showTestDialog = false">Close</v-btn>
-        </v-card>
-      </v-dialog>
     </v-card>
     <v-card v-else color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
@@ -109,15 +86,10 @@ const openWithdrawTokensDialog = () => {
   showWithdrawTokensDialog.value = true;
 };
 
-const openTestDialog = () => {
-  console.log('[WalletView] Opening TestDialog');
-  showTestDialog.value = true;
-};
-
 onMounted(async () => {
   console.log('[WalletView] Mounted');
   if (authStore.isConnected && authStore.user) {
-    walletStore.syncFromAuthStore();
+    walletStore.syncFromAuthStore(); // Уже вызывает fetchBalance
     try {
       await walletStore.fetchTonPrice();
     } catch (error) {

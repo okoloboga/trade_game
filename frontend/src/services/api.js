@@ -69,6 +69,14 @@ export default {
       return handleApiError(error);
     }
   },
+  async getUserBalance(userId) {
+    try {
+      const response = await api.get(`/users/${userId}/balance`);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
   async getCandles(instId = 'TON-USDT', bar = '5m') {
     try {
       const response = await api.get('/market/candles', {

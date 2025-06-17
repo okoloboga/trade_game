@@ -48,6 +48,22 @@ export const useWalletStore = defineStore('wallet', {
         throw error;
       }
     },
+    async fetchBalance() {
+      try {
+        const authStore = useAuthStore();
+        if (!authStore.user?.id) {
+          console.error('[walletStore] No user ID for fetching balance');
+          return;
+        }
+        const response = await apiService.getUserBalance(authStore.user.id);
+        this.balance = Number(response.balance);
+        this.tokenBalance = Number(response.token_balance);
+        console.log('[walletStore] Fetched balance:', this.balance);
+      } catch (error) {
+        console.error('[walletStore] Failed to fetch balance:', error);
+        useErrorStore().setError('Failed to fetch balance');
+      }
+    },
     async deposit({ amount, txHash, account, clientId }) {
       this.isProcessing = true;
       try {
