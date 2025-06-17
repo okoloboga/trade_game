@@ -37,7 +37,7 @@ import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useI18n } from 'vue-i18n';
-import { useTonWallet, useTonConnectUI, useTonAddress } from '@townsquarelabs/ui-vue';
+import { useTonWallet, useTonConnectUI, useTonAddress, useIsConnectionRestored } from '@townsquarelabs/ui-vue';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -48,14 +48,13 @@ const walletStore = useWalletStore();
 const errorStore = useErrorStore();
 const { tonConnectUI } = useTonConnectUI();
 const wallet = useTonWallet();
-const userFriendlyAddress = useTonAddress(true); // User-friendly адрес
+const userFriendlyAddress = useTonAddress(true);
+const connectionRestored = useIsConnectionRestored();
 const price = ref(0.01);
 const isProcessing = ref(false);
 
-// Реактивная транзакция, как в демо
 const transaction = ref({
   validUntil: Math.floor(Date.now() / 1000) + 60,
-  network: 'mainnet',
   messages: [
     {
       address: import.meta.env.VITE_TON_CENTRAL_WALLET,
@@ -85,22 +84,30 @@ const deposit = useDebounceFn(async () => {
       connected: tonConnectUI.connected,
       userFriendlyAddress: userFriendlyAddress.value,
       wallet,
+      connectionRestored,
     });
     errorStore.setError(t('error.connect_wallet'));
-    return;
+    try {
+      console.log('[DepositDialog] Opening modal for wallet connection');
+      await tonConnectUI.openModal();
+      if (!tonConnectUI.connected) {
+        throw new Error('Wallet not connected after modal');
+      }
+    } catch (connectError) {
+      console.error('[DepositDialog] Modal open failed:', connectError);
+      errorStore.setError(t('error.failed_to_connect_wallet'));
+      return;
+    }
   }
 
   isProcessing.value = true;
   try {
-    // Конвертация TON в нанотоны (1 TON = 1,000,000,000 нанотонов)
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
-    // Обновляем транзакцию
     transaction.value = {
       validUntil: Math.floor(Date.now() / 1000) + 60,
-      network: 'mainnet',
       messages: [
         {
-          address: import.meta.env.VITE_TON_CENTRAL_WALLET, // User-friendly адрес
+          address: import.meta.env.VITE_TON_CENTRAL_WALLET,
           amount: nanoAmount,
         },
       ],
@@ -110,31 +117,26 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] Wallet:', wallet);
     console.log('[DepositDialog] TonConnectUI wallet:', tonConnectUI.wallet);
     console.log('[DepositDialog] UniversalLink:', tonConnectUI.wallet?.universalLink);
-    console.log('[DepositDialog] TonConnectUI connected:', tonConnectUI.connected);
+    console.log('[DepositDialog] Connection restored:', connectionRestored);
     console.log('[DepositDialog] Sending transaction:', transaction.value);
 
-    // Workaround для @Wallet
-    if (wallet?.device?.appName === 'telegram-wallet' && tonConnectUI.wallet?.universalLink) {
-      console.log('[DepositDialog] Triggering universalLink for @Wallet:', tonConnectUI.wallet.universalLink);
-      window.open(tonConnectUI.wallet.universalLink, '_blank');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Ждём 1 сек
-    }
+    // Открываем модальное окно перед транзакцией, как в примере
+    console.log('[DepositDialog] Opening modal for transaction confirmation');
+    await tonConnectUI.openModal();
 
-    // Отправка транзакции
     const result = await tonConnectUI.sendTransaction(transaction.value);
     console.log('[DepositDialog] Transaction result:', result);
-    const txHash = result.boc; // Используем boc как txHash
+    const txHash = result.boc;
 
-    // Вызов deposit с txHash и дополнительными параметрами
     await walletStore.deposit({
-      amount: price.value, // В TON для бэкенда
+      amount: price.value,
       txHash,
       tonProof: wallet?.connectItems?.tonProof?.proof || null,
       account: {
         address: userFriendlyAddress.value,
-        publicKey: wallet?.account?.publicKey || '',
-        chain: wallet?.account?.chain || 'mainnet',
-        walletStateInit: wallet?.account?.walletStateInit || '',
+        publicKey: tonConnectUI.wallet?.account?.publicKey || '',
+        chain: tonConnectUI.wallet?.account?.chain || '-239',
+        walletStateInit: tonConnectUI.wallet?.account?.walletStateInit || '',
       },
       clientId: wallet?.device?.appName || 'unknown',
     });

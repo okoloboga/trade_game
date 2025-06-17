@@ -75,7 +75,7 @@ app.use(pinia)
 app.use(router)
 app.use(vuetify)
 app.use(TonConnectUIPlugin, {
-  manifestUrl: `${import.meta.env.VITE_APP_URL}/manifest.json`
+  manifestUrl: import.meta.env.VITE_APP_URL
 })
 app.use(i18n)
 
