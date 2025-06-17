@@ -61,7 +61,7 @@ let authStore, walletStore;
 
 const recreateProofPayload = async () => {
   console.log('[recreateProofPayload] Generating challenge');
-  tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+  // tonConnectUI.setConnectRequestParameters({ state: 'loading' });
   try {
     console.log('[recreateProofPayload] Requesting challenge from backend with clientId:', clientId.value || 'none');
     const payload = await authStore.generateChallenge(clientId.value);
