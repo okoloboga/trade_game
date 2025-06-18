@@ -24,6 +24,7 @@ let candleSeries = null;
 
 const initChart = async () => {
   try {
+    console.log('Starting chart initialization');
     error.value = '';
     if (!chartContainer.value) {
       throw new Error('Chart container not found');
@@ -31,10 +32,11 @@ const initChart = async () => {
 
     await nextTick();
     const rect = chartContainer.value.getBoundingClientRect();
+    console.log('Container rect:', rect);
     if (rect.width === 0 || rect.height === 0) {
       throw new Error('Container has zero dimensions');
     }
-
+    console.log('Creating chart...');
     if (chart) {
       chart.remove();
       chart = null;
