@@ -14,8 +14,9 @@ export const useAuthStore = defineStore('auth', {
     async init() {
       if (this.token && !this.user) {
         try {
+          console.log('[authStore] Initializing, token:', this.token, 'localStorage.token:', localStorage.getItem('token'));
           const response = JSON.parse(localStorage.getItem('user') || '{}');
-          if (response.ton_address) { // Проверяем только ton_address
+          if (response.ton_address) {
             this.user = response;
             this.walletAddress = response.ton_address;
             this.setConnected(true);
