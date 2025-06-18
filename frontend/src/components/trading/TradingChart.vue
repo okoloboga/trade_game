@@ -187,10 +187,19 @@ watch(
 );
 
 onMounted(async () => {
-  await nextTick();
-  await marketStore.fetchCandles(); // Явный вызов
-  await marketStore.fetchCurrentPrice(); // Явный вызов
-  initChart();
+  try {
+    console.log('onMounted started');
+    await nextTick();
+    console.log('After nextTick');
+    await marketStore.fetchCandles();
+    console.log('After fetchCandles');
+    await marketStore.fetchCurrentPrice();
+    console.log('After fetchCurrentPrice');
+    await initChart();
+    console.log('After initChart');
+  } catch (err) {
+    console.error('onMounted error:', err);
+  }
 });
 </script>
 
