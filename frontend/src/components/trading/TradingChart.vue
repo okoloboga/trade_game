@@ -60,8 +60,7 @@ const initChart = async () => {
       },
     });
 
-    candleSeries = chart.addCandlestickSeri
-    marketStore.setMainPage(false);es({
+    candleSeries = chart.addCandlestickSeries({
       upColor: '#4caf50',
       downColor: '#f44336',
       borderVisible: false,
