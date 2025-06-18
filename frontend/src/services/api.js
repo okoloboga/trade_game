@@ -10,12 +10,22 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore();
-    console.log('[api] Adding token to request:', authStore.token, 'URL:', config.url);
+    console.log('[api] Adding token to request:', {
+      token: authStore.token,
+      url: config.url,
+      method: config.method,
+      headersBefore: config.headers,
+    });
     if (authStore.token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${authStore.token}`;
       console.log('[api] Added Authorization header:', config.headers.Authorization);
-      config.headers.Authorization = `Bearer ${authStore.token}`;
     }
+    console.log('[api] Final request config:', {
+      url: config.url,
+      headers: config.headers,
+      data: config.data,
+    });
     return config;
   },
   (error) => Promise.reject(error)

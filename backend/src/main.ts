@@ -25,6 +25,12 @@ async function bootstrap() {
       },
     }),
   );
+  app.enableCors({
+    origin: 'https://trade.ruble.website',
+    methods: 'GET,POST,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+  });
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.useWebSocketAdapter(new IoAdapter(app));
 

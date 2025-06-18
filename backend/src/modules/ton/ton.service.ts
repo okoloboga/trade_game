@@ -12,7 +12,7 @@ import {
 } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import * as nacl from 'tweetnacl';
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 
 @Injectable()
 export class TonService {
@@ -150,25 +150,36 @@ export class TonService {
         secretKey: Buffer.from(this.keyPair.secretKey),
         messages: [internalMessage],
       });
-
+  
       const externalMessage = external({
         to: this.centralWallet.address,
         body,
       });
 
       const externalMessageCell = beginCell().store(storeMessage(externalMessage)).endCell();
-      // const signedTransaction = externalMessageCell.toBoc().toString('base64');
-
-      const signedTransaction = externalMessageCell.toBoc();
-      await this.client.sendFile(signedTransaction); 
-
+      const signedTransaction = externalMessageCell.toBoc().toString('base64');
+ 
+      const response = await axios.post(
+        'https://toncenter.com/api/v2/sendBoc',
+        { boc: signedTransaction },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': this.configService.get<string>('TON_API_KEY'),
+          },
+        }
+      );
+ 
+      if (!response.data.result) {
+        throw new Error('Failed to send transaction');
+      }
 
       const txHash = externalMessageCell.hash().toString('hex');
       this.logger.log(`Sent ${amount} TON to ${recipientAddress}, txHash: ${txHash}`);
       return txHash;
     } catch (error) {
-      this.logger.error(`Failed to send TON: ${(error as AxiosError).message}`);
-      throw new BadRequestException('Failed to send TON');
+      this.logger.error(`Failed to send TON: ${(error as Error).message}`);
+      throw new BadRequestException(`Failed to send TON: ${(error as Error).message}`);
     }
   }
 
