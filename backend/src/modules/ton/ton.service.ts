@@ -49,7 +49,7 @@ export class TonService {
   }
 
   private initializeClient() {
-    const tonEndpoint = this.configService.get<string>('TON_ENDPOINT') || 'https://toncenter.com/api/v2/jsonRPC';
+    const tonEndpoint = 'https://toncenter.com/api/v2/jsonRPC';
     const apiKey = this.configService.get<string>('TON_API_KEY');
     if (!apiKey) {
       throw new BadRequestException('TON_API_KEY is not defined in .env');
