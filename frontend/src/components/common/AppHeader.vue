@@ -125,6 +125,7 @@ onMounted(async () => {
 
   console.log('[onMounted] Initializing auth store');
   await authStore.init();
+  console.log('[onMounted] authStore after init:', authStore.token, authStore.user);
 
   if (tonConnectUI.connected && wallet.value) {
     console.log('[onMounted] Wallet already connected');

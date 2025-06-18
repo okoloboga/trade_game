@@ -26,12 +26,14 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API error:', error.response?.data || error.message, 'URL:', error.config?.url);
-    const errorStore = useErrorStore();
     if (error.response?.status === 401) {
-      console.log('[api] Handling 401 URL:', error.config?.url, 'token before logout:', useAuthStore().token);
+      console.log('[api] Handling 401, URL:', error.config?.url, 'token before logout:', useAuthStore().token);
       const authStore = useAuthStore();
-      authStore.logout();
-      errorStore.setError('Session expired');
+      // Избегаем logout для /auth/login
+      if (error.config?.url !== '/auth/login') {
+        authStore.logout();
+        useErrorStore().setError('Session expired');
+      }
     }
     return Promise.reject(error);
   }

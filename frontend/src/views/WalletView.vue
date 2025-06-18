@@ -91,11 +91,11 @@ onMounted(async () => {
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
     // await walletStore.fetchBalance();
-    try {
-      await walletStore.fetchTonPrice();
-    } catch (error) {
-      errorStore.setError(t('failed_to_fetch_ton_price'));
-    }
+    // try {
+    //   await walletStore.fetchTonPrice();
+    // } catch (error) {
+    //   errorStore.setError(t('failed_to_fetch_ton_price'));
+    // }
   } else {
     errorStore.setError(t('please_connect_wallet'));
   }
