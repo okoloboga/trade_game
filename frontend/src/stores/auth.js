@@ -12,9 +12,9 @@ export const useAuthStore = defineStore('auth', {
   }),
   actions: {
     async init() {
+      console.log('[authStore] Initializing, token:', this.token, 'localStorage.token:', localStorage.getItem('token'));
       if (this.token && !this.user) {
         try {
-          console.log('[authStore] Initializing, token:', this.token, 'localStorage.token:', localStorage.getItem('token'));
           const response = JSON.parse(localStorage.getItem('user') || '{}');
           if (response.ton_address) {
             this.user = response;
