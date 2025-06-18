@@ -60,7 +60,8 @@ const initChart = async () => {
       },
     });
 
-    candleSeries = chart.addCandlestickSeries({
+    candleSeries = chart.addCandlestickSeri
+    marketStore.setMainPage(false);es({
       upColor: '#4caf50',
       downColor: '#f44336',
       borderVisible: false,
@@ -89,7 +90,7 @@ const initChart = async () => {
       }
     });
 
-    updateChartData();
+    // updateChartData();
     chart.timeScale().fitContent();
     console.log('Chart initialized successfully');
   } catch (err) {
@@ -150,6 +151,7 @@ const updateChartData = () => {
     console.log('Chart data:', chartData.slice(0, 3)); // Отладка
     candleSeries.setData(chartData);
     chart.timeScale().fitContent();
+    error.value = '',
     console.log('Chart data updated successfully');
   } catch (err) {
     console.error('Error updating chart data:', err);
