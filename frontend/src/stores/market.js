@@ -2,15 +2,18 @@ import { defineStore } from 'pinia';
 import apiService from '@/services/api';
 import { WebSocketService } from '@/services/websocket';
 import { useErrorStore } from '@/stores/error';
-import { useRouter } from 'vue-router';
 
 export const useMarketStore = defineStore('market', {
   state: () => ({
     candles: [],
     currentPrice: null,
     ws: null,
+    isMainPage: true, // Новый флаг
   }),
   actions: {
+    setMainPage(isMain) {
+      this.isMainPage = isMain;
+    },
     async fetchCandles(symbol = 'TON-USDT', timeframe = '5m') {
       try {
         console.log('Fetching candles for:', symbol, timeframe);
@@ -44,9 +47,8 @@ export const useMarketStore = defineStore('market', {
       }
     },
     async fetchCurrentPrice(symbol = 'TON-USDT') {
-      const router = useRouter();
-      if (router.currentRoute.value.path !== '/') {
-        console.log(`Skipping fetchCurrentPrice: not on main page (current path: ${router.currentRoute.value.path})`);
+      if (!this.isMainPage) {
+        console.log(`Skipping fetchCurrentPrice: not on main page`);
         return;
       }
       try {
@@ -70,9 +72,8 @@ export const useMarketStore = defineStore('market', {
       }
     },
     startRealTimeUpdates(symbol = 'TON-USDT') {
-      const router = useRouter();
-      if (router.currentRoute.value.path !== '/') {
-        console.log(`Skipping startRealTimeUpdates: not on main page (current path: ${router.currentRoute.value.path})`);
+      if (!this.isMainPage) {
+        console.log(`Skipping startRealTimeUpdates: not on main page`);
         return;
       }
       if (this.ws) return;

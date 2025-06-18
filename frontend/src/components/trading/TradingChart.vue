@@ -160,6 +160,10 @@ const updateChartData = () => {
 watch(
   () => marketStore.candles,
   (newCandles) => {
+    if (!chart || !candleSeries) {
+      console.log('Skipping chart update: chart not initialized');
+      return;
+    }
     console.log('Market candles updated:', newCandles?.length);
     updateChartData();
   },
@@ -191,12 +195,12 @@ onMounted(async () => {
     console.log('onMounted started');
     await nextTick();
     console.log('After nextTick');
+    await initChart(); // Сначала инициализируем чарт
+    console.log('After initChart');
     await marketStore.fetchCandles();
     console.log('After fetchCandles');
     await marketStore.fetchCurrentPrice();
     console.log('After fetchCurrentPrice');
-    await initChart();
-    console.log('After initChart');
   } catch (err) {
     console.error('onMounted error:', err);
   }

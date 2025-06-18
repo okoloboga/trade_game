@@ -59,6 +59,7 @@ onMounted(async () => {
 
   try {
     await authStore.init(); // Восстанавливаем сессию
+    marketStore.setMainPage(true);
     await loadData();
     marketStore.startRealTimeUpdates('TON-USDT');
   } catch (error) {
@@ -69,6 +70,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   console.log('MainView unmounted, cleaning up...');
+  marketStore.setMainPage(false);
   marketStore.stopRealTimeUpdates();
 });
 </script>
