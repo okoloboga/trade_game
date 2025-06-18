@@ -152,7 +152,7 @@ onMounted(async () => {
 
   tonConnectUI.onStatusChange(async (walletData) => {
     if (walletData) {
-      console.log('[onStatusChange] Wallet data received:', walletData);
+      console.log('[onStatusChange] Wallet data received:', walletData, 'connected:', tonConnectUI.connected);
       if (!userFriendlyAddress.value) {
         console.log('[onStatusChange] Waiting for user-friendly address');
         await new Promise((resolve) => {
@@ -167,7 +167,7 @@ onMounted(async () => {
       console.log('[onStatusChange] Wallet connected, address:', userFriendlyAddress.value);
       await handleWalletConnect(walletData);
     } else {
-      console.log('[onStatusChange] Wallet disconnected');
+      console.log('[onStatusChange] Wallet disconnected, token before logout:', authStore.token);
       authStore.logout();
       walletAddress.value = null;
       clientId.value = null;

@@ -89,7 +89,8 @@ const openWithdrawTokensDialog = () => {
 onMounted(async () => {
   console.log('[WalletView] Mounted');
   if (authStore.isConnected && authStore.user) {
-    walletStore.syncFromAuthStore(); // Уже вызывает fetchBalance
+    walletStore.syncFromAuthStore();
+    await walletStore.fetchBalance();
     try {
       await walletStore.fetchTonPrice();
     } catch (error) {
