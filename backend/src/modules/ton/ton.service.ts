@@ -12,7 +12,7 @@ import {
 } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import * as nacl from 'tweetnacl';
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 @Injectable()
 export class TonService {
@@ -23,12 +23,33 @@ export class TonService {
   private keyPair: nacl.SignKeyPair | null = null;
 
   constructor(private readonly configService: ConfigService) {
+    axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+      this.logger.debug(`Sending HTTP request: ${config.method?.toUpperCase()} ${config.url}`);
+      this.logger.debug(`Request headers: ${JSON.stringify(config.headers, null, 2)}`);
+      this.logger.debug(`Request data: ${JSON.stringify(config.data, null, 2)}`);
+      return config;
+    });
+    axios.interceptors.response.use(
+      (response) => {
+        this.logger.debug(`Response status: ${response.status}`);
+        this.logger.debug(`Response data: ${JSON.stringify(response.data, null, 2)}`);
+        return response;
+      },
+      (error) => {
+        this.logger.error(`Response error: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Error status: ${error.response.status}`);
+          this.logger.error(`Error data: ${JSON.stringify(error.response.data, null, 2)}`);
+        }
+        return Promise.reject(error);
+      }
+    );
     this.initializeClient();
     this.initializeWallet();
   }
 
   private initializeClient() {
-    const tonEndpoint = 'https://toncenter.com/api/v2/';
+    const tonEndpoint = this.configService.get<string>('TON_ENDPOINT') || 'https://toncenter.com/api/v2/jsonRPC';
     const apiKey = this.configService.get<string>('TON_API_KEY');
     if (!apiKey) {
       throw new BadRequestException('TON_API_KEY is not defined in .env');
