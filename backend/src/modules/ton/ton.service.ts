@@ -137,12 +137,13 @@ export class TonService {
     this.logger.log(`Preparing to send ${amount} TON to ${recipientAddress}`);
 
     try {
-      const wallet = this.client.open(this.centralWallet);
+      const wallet = this.centralWallet;
+      const contract = this.client.open(wallet)
       this.logger.log(`Opened wallet: ${this.centralWallet.address.toString()}`);
 
       let seqno: number;
       try {
-        seqno = await wallet.getSeqno();
+        seqno = await contract.getSeqno();
         this.logger.log(`Retrieved seqno: ${seqno}`);
       } catch (seqnoError) {
         this.logger.error(`Failed to retrieve seqno: ${(seqnoError as Error).message}`);
