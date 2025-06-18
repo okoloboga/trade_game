@@ -90,7 +90,7 @@ onMounted(async () => {
   console.log('[WalletView] Mounted');
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
-    await walletStore.fetchBalance();
+    // await walletStore.fetchBalance();
     try {
       await walletStore.fetchTonPrice();
     } catch (error) {
