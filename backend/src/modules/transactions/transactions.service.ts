@@ -74,9 +74,10 @@ export class TransactionsService {
 
       this.logger.log(`Initiated withdrawal of ${amount} TON (transfer: ${transferAmount} TON, fee: ${fee} TON) for user ${tonAddress}, txHash: ${txHash}`);
       return { user, txHash, fee };
-    } catch (error) {
-      this.logger.error(`Error withdrawing ${amount} TON: ${(error as Error).message}`);
-      throw new BadRequestException(`Failed to process withdrawal: ${(error as Error).message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error withdrawing ${amount} TON: ${errorMessage}`);
+      throw new BadRequestException(`Failed to process withdrawal: ${errorMessage}`);
     }
   }
 }

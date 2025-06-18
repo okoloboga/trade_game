@@ -129,7 +129,7 @@ export class TonService {
     }
   }
 
-async sendTon(recipientAddress: string, amount: string): Promise<string> {
+  async sendTon(recipientAddress: string, amount: string): Promise<string> {
     if (!this.centralWallet || !this.keyPair || !this.client) {
       throw new BadRequestException('Central wallet or client not initialized');
     }
@@ -140,8 +140,14 @@ async sendTon(recipientAddress: string, amount: string): Promise<string> {
       const wallet = this.client.open(this.centralWallet);
       this.logger.log(`Opened wallet: ${this.centralWallet.address.toString()}`);
 
-      const seqno = await wallet.getSeqno();
-      this.logger.log(`Retrieved seqno: ${seqno}`);
+      let seqno: number;
+      try {
+        seqno = await wallet.getSeqno();
+        this.logger.log(`Retrieved seqno: ${seqno}`);
+      } catch (seqnoError) {
+        this.logger.error(`Failed to retrieve seqno: ${(seqnoError as Error).message}`);
+        throw seqnoError;
+      }
 
       const internalMessage = internal({
         to: Address.parse(recipientAddress),
@@ -173,7 +179,7 @@ async sendTon(recipientAddress: string, amount: string): Promise<string> {
 
       try {
         const response = await axios.post(
-          'https://toncenter.com/api/v2/sendBoc',
+          'https://toncenter.com/api/v2/sendBocReturnHash', // Пробуем альтернативный эндпоинт
           { boc: signedTransaction },
           {
             headers: {
@@ -182,7 +188,7 @@ async sendTon(recipientAddress: string, amount: string): Promise<string> {
             },
           }
         );
-        this.logger.log(`SendBoc response: ${JSON.stringify(response.data)}`);
+        this.logger.log(`SendBoc response: ${JSON.stringify(response.data, null, 2)}`);
 
         if (!response.data.result) {
           throw new Error(`SendBoc failed: ${JSON.stringify(response.data)}`);
@@ -192,25 +198,25 @@ async sendTon(recipientAddress: string, amount: string): Promise<string> {
           this.logger.error(`Axios error: ${error.message}`);
           if (error.response) {
             this.logger.error(`Response status: ${error.response.status}`);
-            this.logger.error(`Response data: ${JSON.stringify(error.response.data)}`);
+            this.logger.error(`Response data: ${JSON.stringify(error.response.data, null, 2)}`);
           }
           throw error;
         }
         this.logger.error(`Non-Axios error in axios.post: ${(error as Error).message}`);
         throw error;
       }
+
       const txHash = externalMessageCell.hash().toString('hex');
       this.logger.log(`Sent ${amount} TON to ${recipientAddress}, txHash: ${txHash}`);
       return txHash;
-    } catch (error) {
-      this.logger.error(`Failed to send TON: ${(error as AxiosError).message}`);
-      if ((error as AxiosError).response) {
-        this.logger.error(`Error response: ${JSON.stringify((error as AxiosError).response)}`);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to send TON: ${(error as Error).message}`);
+      if (error instanceof AxiosError && error.response) {
+        this.logger.error(`Error response: ${JSON.stringify(error.response.data, null, 2)}`);
       }
-      throw new BadRequestException(`Failed to send TON: ${(error as AxiosError).message}`);
+      throw new BadRequestException(`Failed to send TON: ${(error as Error).message}`);
     }
   }
-
   async getWalletData(userAddress: string): Promise<{ balance: string; tokenBalance: string; address: string; depositAddress: string }> {
     if (!this.client) {
       throw new BadRequestException('TON client not initialized');
