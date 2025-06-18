@@ -129,14 +129,19 @@ export class TonService {
     }
   }
 
-  async sendTon(recipientAddress: string, amount: string): Promise<string> {
+async sendTon(recipientAddress: string, amount: string): Promise<string> {
     if (!this.centralWallet || !this.keyPair || !this.client) {
       throw new BadRequestException('Central wallet or client not initialized');
     }
 
+    this.logger.log(`Preparing to send ${amount} TON to ${recipientAddress}`);
+
     try {
       const wallet = this.client.open(this.centralWallet);
+      this.logger.log(`Opened wallet: ${this.centralWallet.address.toString()}`);
+
       const seqno = await wallet.getSeqno();
+      this.logger.log(`Retrieved seqno: ${seqno}`);
 
       const internalMessage = internal({
         to: Address.parse(recipientAddress),
@@ -144,42 +149,65 @@ export class TonService {
         bounce: true,
         body: beginCell().endCell(),
       });
+      this.logger.log(`Created internal message for ${amount} TON to ${recipientAddress}`);
 
       const body = this.centralWallet.createTransfer({
         seqno,
         secretKey: Buffer.from(this.keyPair.secretKey),
         messages: [internalMessage],
       });
-  
+      this.logger.log(`Created transfer body with seqno ${seqno}`);
+
       const externalMessage = external({
         to: this.centralWallet.address,
         body,
       });
+      this.logger.log(`Created external message`);
 
       const externalMessageCell = beginCell().store(storeMessage(externalMessage)).endCell();
       const signedTransaction = externalMessageCell.toBoc().toString('base64');
- 
-      const response = await axios.post(
-        'https://toncenter.com/api/v2/sendBoc',
-        { boc: signedTransaction },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': this.configService.get<string>('TON_API_KEY'),
-          },
-        }
-      );
- 
-      if (!response.data.result) {
-        throw new Error('Failed to send transaction');
-      }
+      this.logger.log(`Serialized transaction to BOC (base64): ${signedTransaction.substring(0, 50)}...`);
 
+      const apiKey = this.configService.get<string>('TON_API_KEY');
+      this.logger.log(`Using API key: ${apiKey ? 'present' : 'missing'}`);
+
+      try {
+        const response = await axios.post(
+          'https://toncenter.com/api/v2/sendBoc',
+          { boc: signedTransaction },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': apiKey,
+            },
+          }
+        );
+        this.logger.log(`SendBoc response: ${JSON.stringify(response.data)}`);
+
+        if (!response.data.result) {
+          throw new Error(`SendBoc failed: ${JSON.stringify(response.data)}`);
+        }
+      } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+          this.logger.error(`Axios error: ${error.message}`);
+          if (error.response) {
+            this.logger.error(`Response status: ${error.response.status}`);
+            this.logger.error(`Response data: ${JSON.stringify(error.response.data)}`);
+          }
+          throw error;
+        }
+        this.logger.error(`Non-Axios error in axios.post: ${(error as Error).message}`);
+        throw error;
+      }
       const txHash = externalMessageCell.hash().toString('hex');
       this.logger.log(`Sent ${amount} TON to ${recipientAddress}, txHash: ${txHash}`);
       return txHash;
     } catch (error) {
-      this.logger.error(`Failed to send TON: ${(error as Error).message}`);
-      throw new BadRequestException(`Failed to send TON: ${(error as Error).message}`);
+      this.logger.error(`Failed to send TON: ${(error as AxiosError).message}`);
+      if ((error as AxiosError).response) {
+        this.logger.error(`Error response: ${JSON.stringify((error as AxiosError).response)}`);
+      }
+      throw new BadRequestException(`Failed to send TON: ${(error as AxiosError).message}`);
     }
   }
 
