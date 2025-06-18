@@ -28,7 +28,7 @@ export class TonService {
   }
 
   private initializeClient() {
-    const tonEndpoint = this.configService.get<string>('TON_ENDPOINT') || 'https://toncenter.com/api/v2/jsonRPC';
+    const tonEndpoint = 'https://toncenter.com/api/v2/';
     const apiKey = this.configService.get<string>('TON_API_KEY');
     if (!apiKey) {
       throw new BadRequestException('TON_API_KEY is not defined in .env');
@@ -157,8 +157,11 @@ export class TonService {
       });
 
       const externalMessageCell = beginCell().store(storeMessage(externalMessage)).endCell();
+      // const signedTransaction = externalMessageCell.toBoc().toString('base64');
+
       const signedTransaction = externalMessageCell.toBoc();
-      await this.client.sendFile(signedTransaction);
+      await this.client.sendFile(signedTransaction); 
+
 
       const txHash = externalMessageCell.hash().toString('hex');
       this.logger.log(`Sent ${amount} TON to ${recipientAddress}, txHash: ${txHash}`);

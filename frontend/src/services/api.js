@@ -13,6 +13,8 @@ api.interceptors.request.use(
     console.log('[api] Adding token to request:', authStore.token, 'URL:', config.url);
     if (authStore.token) {
       config.headers.Authorization = `Bearer ${authStore.token}`;
+      console.log('[api] Added Authorization header:', config.headers.Authorization);
+      config.headers.Authorization = `Bearer ${authStore.token}`;
     }
     return config;
   },

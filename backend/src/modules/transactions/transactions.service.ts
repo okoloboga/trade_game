@@ -10,7 +10,7 @@ import { User } from '../../entities/user.entity';
 import { DepositDto } from './dto/deposit.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { TonService } from '../ton/ton.service';
-import { AxiosError } from 'axios';
+// import { AxiosError } from 'axios';
 
 @Injectable()
 export class TransactionsService {
@@ -47,8 +47,8 @@ export class TransactionsService {
 
   async processWithdraw(withdrawDto: WithdrawDto) {
     const { tonAddress, amount } = withdrawDto;
-    const fee = 0.1; // Фиксированная комиссия 0.1 TON
-    const transferAmount = amount - fee; // Сумма для отправки
+    const fee = 0.1;
+    const transferAmount = amount - fee;
 
     if (amount < 0.11) {
       throw new BadRequestException('Amount must be at least 0.11 TON (including 0.1 TON fee)');
@@ -57,7 +57,7 @@ export class TransactionsService {
     if (transferAmount <= 0) {
       throw new BadRequestException('Invalid amount after fee deduction');
     }
- 
+
     const user = await this.userRepository.findOne({ where: { ton_address: tonAddress } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -69,14 +69,14 @@ export class TransactionsService {
 
     try {
       const txHash = await this.tonService.sendTon(tonAddress, transferAmount.toString());
-      user.balance = Number(user.balance || 0) - amount; // Списываем полную сумму
+      user.balance = Number(user.balance || 0) - amount;
       await this.userRepository.save(user);
 
       this.logger.log(`Initiated withdrawal of ${amount} TON (transfer: ${transferAmount} TON, fee: ${fee} TON) for user ${tonAddress}, txHash: ${txHash}`);
       return { user, txHash, fee };
     } catch (error) {
-      this.logger.error(`Error withdrawing ${amount} TON: ${(error as AxiosError).message}`);
-      throw new BadRequestException('Failed to process withdrawal');
+      this.logger.error(`Error withdrawing ${amount} TON: ${(error as Error).message}`);
+      throw new BadRequestException(`Failed to process withdrawal: ${(error as Error).message}`);
     }
   }
 }
