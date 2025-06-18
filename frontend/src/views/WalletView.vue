@@ -33,7 +33,7 @@
         </div>
       </v-card-text>
       <DepositDialog v-model="showDepositDialog" @deposit-success="walletStore.fetchBalance" />
-      <WithdrawDialog v-model="showWithdrawDialog" />
+      <WithdrawDialog v-model="showWithdrawDialog" @withdraw-success="walletStore.fetchBalance" />
       <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
     </v-card>
     <v-card v-else color="#1e1e1e" class="pa-4" elevation="4">

@@ -83,7 +83,6 @@ const depositRules = computed(() => [
 const isValid = computed(() => validateAmount(price.value, Infinity) === true);
 
 const deposit = useDebounceFn(async () => {
-  console.log('[DepositDialog] authStore.token depisit clic:', authStore.token);
   if (!tonConnectUI.connected || !userFriendlyAddress.value || !wallet) {
     console.error('[DepositDialog] Wallet not connected:', {
       connected: tonConnectUI.connected,
@@ -93,7 +92,6 @@ const deposit = useDebounceFn(async () => {
     });
     errorStore.setError(t('error.connect_wallet'));
     try {
-      console.log('[DepositDialog] Opening modal for wallet connection');
       await openModal();
       if (!tonConnectUI.connected) {
         throw new Error('Wallet not connected after modal');
@@ -120,13 +118,6 @@ const deposit = useDebounceFn(async () => {
 
     const result = await tonConnectUI.sendTransaction(transaction.value);
     const txHash = result?.boc || result?.transactionHash || 'unknown';
-
-    console.log('[DepositDialog] Deposit params:', {
-      amount: price.value,
-      txHash,
-    });
-    console.log('[DepositDialog] Wallet Address:', userFriendlyAddress.value || 'unknown');
-    console.log('[DepositDialog] Transaction result:', result);
 
     await walletStore.deposit({
       amount: price.value,

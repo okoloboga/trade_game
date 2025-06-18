@@ -94,20 +94,38 @@ export const useWalletStore = defineStore('wallet', {
     async withdraw(amount) {
       this.isProcessing = true;
       try {
-        const response = await apiService.withdraw(amount);
-        this.balance = response.user.balance;
+        const authStore = useAuthStore();
+        const fee = 0.1; // Фиксированная комиссия
+        console.log('[walletStore] Withdrawing with ton_address:', authStore.walletAddress, 'amount:', amount, 'fee:', fee);
+        if (amount < 0.11) {
+          throw new Error('Amount must be at least 0.11 TON (including 0.1 TON fee)');
+        }
+        const response = await apiService.withdraw({
+          tonAddress: authStore.walletAddress,
+          amount,
+        });
+        if (!response?.user?.balance) {
+          console.error('[walletStore] Invalid response:', response);
+          throw new Error('Invalid response: user data missing');
+        }
+        this.balance = Number(response.user.balance);
+        console.log('[walletStore] Withdraw response:', response, 'transferred:', amount - fee);
         return response;
       } catch (error) {
+        console.error('[walletStore] Withdraw failed:', error);
         useErrorStore().setError('Withdrawal failed');
         throw error;
       } finally {
         this.isProcessing = false;
       }
     },
-    async withdrawTokens(amount) {
+    async withdrawTokens({ tonAddress, amount }) {
       this.isProcessing = true;
       try {
-        const response = await apiService.withdrawTokens(amount);
+        const response = await apiService.withdrawTokens({
+          tonAddress: tonAddress,
+          amount: amount
+        });
         this.tokenBalance = response.user.token_balance;
         return response;
       } catch (error) {

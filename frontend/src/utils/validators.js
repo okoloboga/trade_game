@@ -30,3 +30,4 @@ export const validateTradeType = (type) => {
   }
   return true;
 };
+

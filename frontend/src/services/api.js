@@ -134,23 +134,23 @@ export default {
       return handleApiError(error);
     }
   },
-  async withdraw(amount) {
+  async withdraw({ tonAddress, amount }) {
     try {
-      const authStore = useAuthStore();
+      console.log('[apiService] Withdrawing:', { tonAddress, amount });
       const response = await api.post('/transactions/withdraw', {
-        userId: authStore.user?.id,
+        tonAddress,
         amount,
       });
+      console.log('[apiService] Withdraw response:', response.data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
     }
   },
-  async withdrawTokens(amount) {
+  async withdrawTokens({ tonAddress, amount }) {
     try {
-      const authStore = useAuthStore();
       const response = await api.post('/tokens/withdraw', {
-        userId: authStore.user?.id,
+        tonAddress,
         amount,
       });
       return response.data;

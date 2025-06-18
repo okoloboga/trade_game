@@ -39,6 +39,8 @@
   "withdraw": "Withdraw",
   "withdraw_ton": "Withdraw TON",
   "withdraw_ruble": "Withdraw RUBLE",
+  "withdraw_info": "You will receive: {receive} TON",
+  "fee": "Fee",
   "to_your_wallet": "to your wallet",
   "disconnect": "Disconnect",
   "cancel": "Cancel",
@@ -67,6 +69,7 @@
     "failed_to_initiate_ruble_withdraw": "Failed to initiate RUBLE withdrawal",
     "page_not_found": "Page not found",
     "offline_mode": "Working in offline mode - some features may be limited",
-    "invalid_amount": "Invalid amount"
+    "invalid_amount": "Invalid amount",
+    "invalid_amount_withdraw": "Amount must be at least 0.11 TON (including 0.1 TON fee)"
   }
 }

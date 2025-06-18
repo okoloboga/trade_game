@@ -39,6 +39,8 @@
   "withdraw": "Вывести",
   "withdraw_ton": "Вывести TON",
   "withdraw_ruble": "Вывести RUBLE",
+  "withdraw_info": "Вы получите: {receive} TON",
+  "fee": "Комиссияс",
   "to_your_wallet": "на ваш кошелёк",
   "disconnect": "Отключиться",
   "cancel": "Отмена",
@@ -67,6 +69,7 @@
     "failed_to_initiate_ruble_withdraw": "Не удалось инициировать вывод RUBLE",
     "page_not_found": "Страница не найдена",
     "offline_mode": "Работа в офлайн-режиме — некоторые функции могут быть ограничены",
-    "invalid_amount": "Неверная сумма"
+    "invalid_amount": "Неверная сумма",
+    "invalid_amount_withdraw": "Сумма должна быть не менее 0.11 TON (включает 0.1 TON комиссии)"
   }
 }

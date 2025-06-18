@@ -36,11 +36,6 @@ export class TransactionsService {
       throw new NotFoundException('User not found');
     }
 
-    if (tonAddress !== user.ton_address) {
-      this.logger.error(`Address mismatch: ${tonAddress} != ${user.ton_address}`);
-      throw new BadRequestException('Invalid wallet address');
-    }
-
     const depositAmount = Number(amount);
     user.balance = Number(user.balance || 0) + depositAmount;
     this.logger.log(`Before save: user.balance=${user.balance}, depositAmount=${depositAmount}`);
@@ -51,13 +46,19 @@ export class TransactionsService {
   }
 
   async processWithdraw(withdrawDto: WithdrawDto) {
-    const { userId, amount } = withdrawDto;
+    const { tonAddress, amount } = withdrawDto;
+    const fee = 0.1; // Фиксированная комиссия 0.1 TON
+    const transferAmount = amount - fee; // Сумма для отправки
 
-    if (amount <= 0) {
-      throw new BadRequestException('Invalid amount');
+    if (amount < 0.11) {
+      throw new BadRequestException('Amount must be at least 0.11 TON (including 0.1 TON fee)');
     }
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (transferAmount <= 0) {
+      throw new BadRequestException('Invalid amount after fee deduction');
+    }
+ 
+    const user = await this.userRepository.findOne({ where: { ton_address: tonAddress } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -67,12 +68,12 @@ export class TransactionsService {
     }
 
     try {
-      const txHash = await this.tonService.sendTon(user.ton_address, amount.toString());
-      user.balance -= amount;
+      const txHash = await this.tonService.sendTon(tonAddress, transferAmount.toString());
+      user.balance = Number(user.balance || 0) - amount; // Списываем полную сумму
       await this.userRepository.save(user);
 
-      this.logger.log(`Initiated withdrawal of ${amount} TON for user ${userId}, txHash: ${txHash}`);
-      return { user, txHash };
+      this.logger.log(`Initiated withdrawal of ${amount} TON (transfer: ${transferAmount} TON, fee: ${fee} TON) for user ${tonAddress}, txHash: ${txHash}`);
+      return { user, txHash, fee };
     } catch (error) {
       this.logger.error(`Error withdrawing ${amount} TON: ${(error as AxiosError).message}`);
       throw new BadRequestException('Failed to process withdrawal');
