@@ -21,11 +21,13 @@
 import { computed, ref, onMounted } from 'vue'
 import { useTradingStore } from '@/stores/trading'
 import { useErrorStore } from '@/stores/error'
+import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 const tradingStore = useTradingStore()
 const errorStore = useErrorStore()
+const authStore = useAuthStore()
 const loading = ref(false)
 const { t } = useI18n()
 

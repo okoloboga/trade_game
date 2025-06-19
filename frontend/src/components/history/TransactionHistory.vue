@@ -19,11 +19,13 @@
 import { computed, ref, onMounted } from 'vue'
 import { useWalletStore } from '@/stores/wallet'
 import { useErrorStore } from '@/stores/error'
+import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { formatCurrency, formatDate } from '@/utils/formatters'
 
 const walletStore = useWalletStore()
 const errorStore = useErrorStore()
+const authStore = useAuthStore()
 const loading = ref(false)
 const { t } = useI18n()
 
