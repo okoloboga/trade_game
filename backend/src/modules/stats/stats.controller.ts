@@ -21,6 +21,13 @@ export class StatsController {
     return this.statsService.getTradeHistory(statsDto);
   }
 
+  @Get('transactions')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getTransactionHistory(@Query() statsDto: StatsDto) {
+    return this.statsService.getTransactionHistory(statsDto);
+  }
+
   @Get('summary')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

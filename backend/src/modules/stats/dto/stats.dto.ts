@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty } from 'class-validator';
 export class StatsDto {
   @IsString()
   @IsNotEmpty()
-  userId!: string;
+  ton_address!: string;
 
   @IsString()
   @IsNotEmpty()

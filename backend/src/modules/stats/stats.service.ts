@@ -2,6 +2,8 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { Trade } from 'src/entities/trade.entity';
+import { Transaction } from 'src/entities/transaction.entity';
+import { User } from 'src/entities/user.entity';
 import { StatsDto } from './dto/stats.dto';
 import { MarketService } from '../market/market.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -15,20 +17,27 @@ export class StatsService {
   constructor(
     @InjectRepository(Trade)
     private readonly tradeRepository: Repository<Trade>,
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly marketService: MarketService,
-    @InjectRedis() private readonly redis: Redis
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   async getTradeHistory(statsDto: StatsDto) {
-    const { userId, period } = statsDto;
+    const { ton_address, period } = statsDto;
 
-    // Валидация периода
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
       throw new BadRequestException('Invalid period. Use 1d or 1w');
     }
 
-    // Определение даты начала
+    const user = await this.userRepository.findOne({ where: { ton_address } });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
     const now = new Date();
     const startDate = new Date();
     if (period === '1d') {
@@ -37,10 +46,9 @@ export class StatsService {
       startDate.setDate(now.getDate() - 7);
     }
 
-    // Запрос сделок
     const trades = await this.tradeRepository.find({
       where: {
-        user: { id: userId },
+        user: { ton_address },
         created_at: MoreThanOrEqual(startDate),
       },
       order: { created_at: 'DESC' },
@@ -48,26 +56,27 @@ export class StatsService {
     });
 
     if (!trades.length) {
-      this.logger.log(`No trades found for user ${userId} in period ${period}`);
+      this.logger.log(`No trades found for user ${ton_address} in period ${period}`);
       return { trades: [] };
     }
 
-    this.logger.log(
-      `Fetched ${trades.length} trades for user ${userId} in period ${period}`
-    );
+    this.logger.log(`Fetched ${trades.length} trades for user ${ton_address} in period ${period}`);
     return { trades };
   }
 
-  async getSummary(statsDto: StatsDto) {
-    const { userId, period } = statsDto;
+  async getTransactionHistory(statsDto: StatsDto) {
+    const { ton_address, period } = statsDto;
 
-    // Валидация периода
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
       throw new BadRequestException('Invalid period. Use 1d or 1w');
     }
 
-    // Определение даты начала
+    const user = await this.userRepository.findOne({ where: { ton_address } });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
     const now = new Date();
     const startDate = new Date();
     if (period === '1d') {
@@ -76,27 +85,64 @@ export class StatsService {
       startDate.setDate(now.getDate() - 7);
     }
 
-    // Запрос сделок
+    const transactions = await this.transactionRepository.find({
+      where: {
+        user: { ton_address },
+        status: 'completed',
+        created_at: MoreThanOrEqual(startDate),
+      },
+      order: { created_at: 'DESC' },
+      relations: ['user'],
+    });
+
+    if (!transactions.length) {
+      this.logger.log(`No transactions found for user ${ton_address} in period ${period}`);
+      return { transactions: [] };
+    }
+
+    this.logger.log(`Fetched ${transactions.length} transactions for user ${ton_address} in period ${period}`);
+    return { transactions };
+  }
+
+  async getSummary(statsDto: StatsDto) {
+    const { ton_address, period } = statsDto;
+
+    const validPeriods = ['1d', '1w'];
+    if (!validPeriods.includes(period)) {
+      throw new BadRequestException('Invalid period. Use 1d or 1w');
+    }
+
+    const user = await this.userRepository.findOne({ where: { ton_address } });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const now = new Date();
+    const startDate = new Date();
+    if (period === '1d') {
+      startDate.setDate(now.getDate() - 1);
+    } else if (period === '1w') {
+      startDate.setDate(now.getDate() - 7);
+    }
+
     const trades = await this.tradeRepository.find({
       where: {
-        user: { id: userId },
+        user: { ton_address },
         created_at: MoreThanOrEqual(startDate),
       },
       relations: ['user'],
     });
 
-    // Расчёт статистики
     let totalVolumeTon = 0;
     let totalProfitLossTon = 0;
 
     for (const trade of trades) {
       totalVolumeTon += trade.amount;
-      if (trade.status === 'canceled' && trade.profit_loss !== null) {
+      if (trade.status === 'closed' && trade.profit_loss !== null) {
         totalProfitLossTon += trade.profit_loss;
       }
     }
 
-    // Конвертация в USD
     const tonPriceUsd = await this.getTonPrice();
     const totalVolumeUsd = totalVolumeTon * tonPriceUsd;
     const totalProfitLossUsd = totalProfitLossTon * tonPriceUsd;
@@ -113,7 +159,7 @@ export class StatsService {
       period,
     };
 
-    this.logger.log(`Generated summary for user ${userId} in period ${period}`);
+    this.logger.log(`Generated summary for user ${ton_address} in period ${period}`);
     return summary;
   }
 
@@ -131,10 +177,8 @@ export class StatsService {
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch TON price: ${(error as AxiosError).message}`
-      );
-      return 5.0; // Fallback
+      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).message}`);
+      return 5.0;
     }
   }
 }

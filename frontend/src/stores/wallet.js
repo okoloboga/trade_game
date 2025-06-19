@@ -34,16 +34,26 @@ export const useWalletStore = defineStore('wallet', {
       try {
         const response = await apiService.getTonPrice();
         this.tonPrice = response.price;
+        console.log('[walletStore] TON price fetched:', this.tonPrice);
       } catch (error) {
+        console.error('[walletStore] Failed to fetch TON price:', error);
         useErrorStore().setError('Failed to fetch TON price');
         throw error;
       }
     },
-    async fetchTransactions() {
+    async fetchTransactions(period = '1w') {
       try {
-        const response = await apiService.getTransactions();
+        const authStore = useAuthStore();
+        if (!authStore.isConnected || !authStore.user?.ton_address) {
+          useErrorStore().setError('Please connect wallet');
+          throw new Error('Not connected');
+        }
+        console.log('[walletStore] Fetching transactions for:', authStore.user.ton_address, 'period:', period);
+        const response = await apiService.getTransactions(period);
         this.transactions = response.transactions;
+        console.log('[walletStore] Transactions fetched:', this.transactions.length);
       } catch (error) {
+        console.error('[walletStore] Failed to fetch transactions:', error);
         useErrorStore().setError('Failed to fetch transactions');
         throw error;
       }
@@ -95,7 +105,7 @@ export const useWalletStore = defineStore('wallet', {
       this.isProcessing = true;
       try {
         const authStore = useAuthStore();
-        const fee = 0.1; // Фиксированная комиссия
+        const fee = 0.1;
         console.log('[walletStore] Withdrawing with ton_address:', authStore.walletAddress, 'amount:', amount, 'fee:', fee);
         if (amount < 0.11) {
           throw new Error('Amount must be at least 0.11 TON (including 0.1 TON fee)');
@@ -124,11 +134,13 @@ export const useWalletStore = defineStore('wallet', {
       try {
         const response = await apiService.withdrawTokens({
           tonAddress: tonAddress,
-          amount: amount
+          amount: amount,
         });
         this.tokenBalance = response.user.token_balance;
+        console.log('[walletStore] Token withdraw response:', response);
         return response;
       } catch (error) {
+        console.error('[walletStore] Token withdrawal failed:', error);
         useErrorStore().setError('RUBLE withdrawal failed');
         throw error;
       } finally {

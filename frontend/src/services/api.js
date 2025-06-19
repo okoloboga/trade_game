@@ -123,11 +123,36 @@ export default {
       return handleApiError(error);
     }
   },
-  async getTransactions() {
+  async getTradeHistory(period = '1w') {
     try {
       const authStore = useAuthStore();
+      console.log('[api] Fetching trade history for ton_address:', authStore.user?.ton_address);
       const response = await api.get('/stats/trades', {
-        params: { userId: authStore.user?.id, period: '1w' },
+        params: { ton_address: authStore.user?.ton_address, period },
+      });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  async getSummary(period = '1d') {
+    try {
+      const authStore = useAuthStore();
+      console.log('[api] Fetching summary for ton_address:', authStore.user?.ton_address);
+      const response = await api.get('/stats/summary', {
+        params: { ton_address: authStore.user?.ton_address, period },
+      });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  async getTransactions(period = '1w') {
+    try {
+      const authStore = useAuthStore();
+      console.log('[api] Fetching transactions for ton_address:', authStore.user?.ton_address);
+      const response = await api.get('/stats/transactions', {
+        params: { ton_address: authStore.user?.ton_address, period },
       });
       return response.data;
     } catch (error) {
