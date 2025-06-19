@@ -35,6 +35,9 @@ const headers = computed(() => [
 ])
 
 onMounted(async () => {
+  console.log('authStore.isConnected:', authStore.isConnected);
+  console.log('authStore.user:', authStore.user);
+  console.log('authStore.user.ton_address:', authStore.user?.ton_address);
   loading.value = true
   try {
     await walletStore.fetchTransactions()
