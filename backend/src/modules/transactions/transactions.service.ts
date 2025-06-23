@@ -84,7 +84,6 @@ export class TransactionsService {
       const txHash = await this.tonService.sendTon(tonAddress, transferAmount.toString());
       user.balance = Number(user.balance || 0) - amount;
 
-      // Создаём запись о транзакции
       const transaction = this.transactionRepository.create({
         user,
         type: 'withdraw',

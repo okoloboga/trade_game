@@ -1,4 +1,3 @@
-```vue
 <template>
   <v-dialog v-model="internalModelValue" max-width="320">
     <v-card color="#1e1e1e">
@@ -14,6 +13,9 @@
           color="white"
           :rules="depositRules"
         />
+        <div class="text-body-2 text-white mt-2">
+          {{ $t('deposit_address') }}: {{ walletStore.depositAddress }}
+        </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -39,60 +41,33 @@ import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
-import { useTonWallet, useTonConnectUI, useTonAddress, useIsConnectionRestored, useTonConnectModal } from '@townsquarelabs/ui-vue';
+import { useTonConnectUI } from '@townsquarelabs/ui-vue';
+import apiService from '@/services/api';
 
 const { t } = useI18n();
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
 });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'deposit-success']);
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
-const [tonConnectUI, setOptions] = useTonConnectUI(); // Используем массив
-const { state: modalState, open: openModal, close: closeModal } = useTonConnectModal(); // Для модального окна
-const wallet = useTonWallet();
 const authStore = useAuthStore();
-const userFriendlyAddress = useTonAddress(true);
-const connectionRestored = useIsConnectionRestored();
+const [tonConnectUI] = useTonConnectUI();
 const price = ref(0.01);
 const isProcessing = ref(false);
 
-const transaction = ref({
-  validUntil: Math.floor(Date.now() / 1000) + 60,
-  messages: [
-    {
-      address: import.meta.env.VITE_TON_CENTRAL_WALLET,
-      amount: '1000000000',
-    },
-  ],
-});
-
-const internalModelValue = computed({
-  get() {
-    return props.modelValue;
-  },
-  set(value) {
-    emit('update:modelValue', value);
-  },
-});
-
 const depositRules = computed(() => [
-  (v) => validateAmount(v, Infinity) === true || t('invalid_amount'),
+  (v) => validateAmount(v, Infinity, 0.01) === true || t('error.invalid_amount'),
 ]);
 
-const isValid = computed(() => validateAmount(price.value, Infinity) === true);
+const isValid = computed(() => validateAmount(price.value, Infinity, 0.01) === true);
 
 const deposit = useDebounceFn(async () => {
-  if (!tonConnectUI.connected || !userFriendlyAddress.value || !wallet) {
-    console.error('[DepositDialog] Wallet not connected:', {
-      connected: tonConnectUI.connected,
-      userFriendlyAddress: userFriendlyAddress.value,
-      wallet,
-      connectionRestored,
-    });
+  if (!tonConnectUI.connected) {
+    console.log('[DepositDialog] Wallet not connected, opening modal');
     errorStore.setError(t('error.connect_wallet'));
     try {
-      await openModal();
+      await tonConnectUI.openModal();
       if (!tonConnectUI.connected) {
         throw new Error('Wallet not connected after modal');
       }
@@ -103,28 +78,39 @@ const deposit = useDebounceFn(async () => {
     }
   }
 
+  if (!walletStore.depositAddress) {
+    console.error('[DepositDialog] No deposit address available');
+    errorStore.setError(t('error.no_deposit_address'));
+    return;
+  }
+
   isProcessing.value = true;
   try {
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
-    transaction.value = {
-      validUntil: Math.floor(Date.now() / 1000) + 60,
+    const transaction = {
+      validUntil: Math.floor(Date.now() / 1000) + 600, // Увеличено до 10 минут
       messages: [
         {
-          address: import.meta.env.VITE_TON_CENTRAL_WALLET,
+          address: walletStore.depositAddress, // Используем depositAddress
           amount: nanoAmount,
         },
       ],
     };
 
-    const result = await tonConnectUI.sendTransaction(transaction.value);
-    const txHash = result?.boc || result?.transactionHash || 'unknown';
+    console.log('[DepositDialog] Sending transaction:', transaction);
+    const result = await tonConnectUI.sendTransaction(transaction);
+    console.log('[DepositDialog] Transaction result:', result);
+    const txHash = result.boc; // Используем boc как txHash
 
-    await walletStore.deposit({
+    const response = await apiService.deposit({
+      tonAddress: authStore.user.ton_address,
       amount: price.value,
       txHash,
     });
 
-    errorStore.setError(t('error.deposit_initiated'), false);
+    console.log('[DepositDialog] Deposit response:', response);
+    await walletStore.fetchBalances();
+    errorStore.setError(t('deposit_success'), false);
     emit('deposit-success');
     closeDialog();
   } catch (error) {
@@ -137,6 +123,15 @@ const deposit = useDebounceFn(async () => {
 
 const closeDialog = () => {
   internalModelValue.value = false;
-  price.value = 1;
+  price.value = 0.01;
 };
+
+const internalModelValue = computed({
+  get() {
+    return props.modelValue;
+  },
+  set(value) {
+    emit('update:modelValue', value);
+  },
+});
 </script>

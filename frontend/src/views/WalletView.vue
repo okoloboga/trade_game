@@ -9,10 +9,10 @@
           </v-chip>
         </div>
         <div class="mb-2">
-          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}</strong>
+          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }} TON</strong>
         </div>
         <div class="mb-4">
-          <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ? walletStore.tokenBalance.toFixed(2) : '0.00' }}</strong>
+          <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ? walletStore.tokenBalance.toFixed(2) : '0.00' }} RUBLE</strong>
         </div>
         <div class="button-container">
           <v-btn color="success" class="mb-2" block @click="openDepositDialog">
@@ -32,8 +32,8 @@
           </v-row>
         </div>
       </v-card-text>
-      <DepositDialog v-model="showDepositDialog" @deposit-success="walletStore.fetchBalance" />
-      <WithdrawDialog v-model="showWithdrawDialog" @withdraw-success="walletStore.fetchBalance" />
+      <DepositDialog v-model="showDepositDialog" @deposit-success="walletStore.fetchBalances" />
+      <WithdrawDialog v-model="showWithdrawDialog" @withdraw-success="walletStore.fetchBalances" />
       <WithdrawTokensDialog v-model="showWithdrawTokensDialog" />
     </v-card>
     <v-card v-else color="#1e1e1e" class="pa-4" elevation="4">
@@ -67,7 +67,6 @@ const marketStore = useMarketStore();
 const showDepositDialog = ref(false);
 const showWithdrawDialog = ref(false);
 const showWithdrawTokensDialog = ref(false);
-const showTestDialog = ref(false);
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
@@ -90,12 +89,12 @@ onMounted(async () => {
   console.log('[WalletView] Mounted');
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
-    await walletStore.fetchBalance();
-    // try {
-    //   await walletStore.fetchTonPrice();
-    // } catch (error) {
-    //   errorStore.setError(t('failed_to_fetch_ton_price'));
-    // }
+    try {
+      await walletStore.fetchBalances();
+    } catch (error) {
+      console.error('[WalletView] Failed to fetch balances:', error);
+      errorStore.setError(t('error.failed_to_fetch_balances'));
+    }
   } else {
     errorStore.setError(t('please_connect_wallet'));
   }

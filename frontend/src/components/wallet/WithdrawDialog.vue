@@ -42,6 +42,7 @@ import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
+import apiService from '@/services/api';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -70,26 +71,33 @@ const withdrawRules = computed(() => [
 const isValid = computed(() => validateAmount(amount.value, walletStore.balance, 0.11) === true);
 
 const withdraw = useDebounceFn(async () => {
-  if (!authStore.walletAddress) {
-    console.error('[WithdrawDialog] Wallet not connected:', authStore.walletAddress);
+  if (!authStore.isConnected || !authStore.user?.ton_address) {
+    console.error('[WithdrawDialog] Wallet not connected:', authStore.user?.ton_address);
     errorStore.setError(t('error.connect_wallet'));
     return;
   }
 
   isProcessing.value = true;
   try {
-    console.log('[WithdrawDialog] Withdraw params:', { amount: amount.value, receive: amount.value - 0.1 });
-    console.log('[WithdrawDialog] Wallet Address:', authStore.walletAddress);
+    console.log('[WithdrawDialog] Withdraw params:', {
+      tonAddress: authStore.user.ton_address,
+      amount: amount.value,
+      receive: amount.value - 0.1,
+    });
 
-    const result = await walletStore.withdraw(amount.value);
-    console.log('[WithdrawDialog] Transaction result:', result);
+    const response = await apiService.withdraw({
+      tonAddress: authStore.user.ton_address,
+      amount: amount.value,
+    });
 
-    errorStore.setError(t('withdraw_initiated'), false);
+    console.log('[WithdrawDialog] Transaction result:', response);
+    walletStore.updateBalances(response.user);
+    errorStore.setError(t('withdraw_success'), false);
     emit('withdraw-success');
     closeDialog();
   } catch (error) {
     console.error('[WithdrawDialog] Withdraw error:', error);
-    errorStore.setError(t('failed_to_initiate_withdraw'));
+    errorStore.setError(t('error.failed_to_initiate_withdraw'));
   } finally {
     isProcessing.value = false;
   }
