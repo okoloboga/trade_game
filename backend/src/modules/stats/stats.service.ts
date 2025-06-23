@@ -27,6 +27,7 @@ export class StatsService {
 
   async getTradeHistory(statsDto: StatsDto) {
     const { ton_address, period } = statsDto;
+    this.logger.log(`Fetching trades for ton_address: ${ton_address}, period: ${period}`);
 
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
@@ -35,8 +36,10 @@ export class StatsService {
 
     const user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
+      this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new BadRequestException('User not found');
     }
+    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
 
     const now = new Date();
     const startDate = new Date();
@@ -45,6 +48,7 @@ export class StatsService {
     } else if (period === '1w') {
       startDate.setDate(now.getDate() - 7);
     }
+    this.logger.log(`Searching trades from: ${startDate.toISOString()}`);
 
     const trades = await this.tradeRepository.find({
       where: {
@@ -66,6 +70,7 @@ export class StatsService {
 
   async getTransactionHistory(statsDto: StatsDto) {
     const { ton_address, period } = statsDto;
+    this.logger.log(`Fetching transactions for ton_address: ${ton_address}, period: ${period}`);
 
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
@@ -74,8 +79,10 @@ export class StatsService {
 
     const user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
+      this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new BadRequestException('User not found');
     }
+    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
 
     const now = new Date();
     const startDate = new Date();
@@ -84,6 +91,7 @@ export class StatsService {
     } else if (period === '1w') {
       startDate.setDate(now.getDate() - 7);
     }
+    this.logger.log(`Searching transactions from: ${startDate.toISOString()}`);
 
     const transactions = await this.transactionRepository.find({
       where: {
@@ -106,6 +114,7 @@ export class StatsService {
 
   async getSummary(statsDto: StatsDto) {
     const { ton_address, period } = statsDto;
+    this.logger.log(`Generating summary for ton_address: ${ton_address}, period: ${period}`);
 
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
@@ -114,8 +123,10 @@ export class StatsService {
 
     const user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
+      this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new BadRequestException('User not found');
     }
+    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
 
     const now = new Date();
     const startDate = new Date();
@@ -124,6 +135,7 @@ export class StatsService {
     } else if (period === '1w') {
       startDate.setDate(now.getDate() - 7);
     }
+    this.logger.log(`Searching trades for summary from: ${startDate.toISOString()}`);
 
     const trades = await this.tradeRepository.find({
       where: {

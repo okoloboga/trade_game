@@ -19,7 +19,7 @@ import { AxiosError } from 'axios';
 @Injectable()
 export class TradesService {
   private readonly logger = new Logger(TradesService.name);
-  private readonly maxAmountUsd = 1; // Максимум $1
+  private readonly maxAmountUsd = 1;
 
   constructor(
     @InjectRepository(Trade)
@@ -28,39 +28,35 @@ export class TradesService {
     private readonly userRepository: Repository<User>,
     private readonly marketService: MarketService,
     private readonly tokensService: TokensService,
-    @InjectRedis() private readonly redis: Redis
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   async placeTrade(placeTradeDto: PlaceTradeDto) {
     const { instrument, type, amount, userId } = placeTradeDto;
+    this.logger.log(`Placing trade for userId: ${userId}, instrument: ${instrument}, type: ${type}, amount: ${amount}`);
 
-    // Получение пользователя
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
+      this.logger.error(`User not found for userId: ${userId}`);
       throw new UnauthorizedException('User not found');
     }
+    this.logger.log(`Found user with ton_address: ${user.ton_address}`);
 
-    // Проверка баланса
     if (user.balance < amount) {
       throw new BadRequestException('Insufficient balance');
     }
 
-    // Получение текущей цены TON/USDT
     const tonPriceUsd = await this.getTonPrice();
     const amountUsd = amount * tonPriceUsd;
     if (amountUsd > this.maxAmountUsd) {
-      throw new BadRequestException(
-        `Trade exceeds $${this.maxAmountUsd} limit`
-      );
+      throw new BadRequestException(`Trade exceeds $${this.maxAmountUsd} limit`);
     }
 
-    // Получение текущей рыночной цены
     const currentPrice = await this.getCurrentPrice(instrument);
     if (!currentPrice) {
       throw new BadRequestException('Failed to fetch market price');
     }
 
-    // Создание сделки
     const trade = this.tradeRepository.create({
       user,
       instrument,
@@ -72,57 +68,52 @@ export class TradesService {
     });
     await this.tradeRepository.save(trade);
 
-    // Начисление токенов
     const tokensAccrued = await this.tokensService.accrueTokens(trade);
 
-    // Обновление баланса
     user.balance -= amount;
     await this.userRepository.save(user);
 
     this.logger.log(
-      `Trade placed: ${type} ${amount} TON on ${instrument} for user ${user.id}, accrued ${tokensAccrued} RUBLE`
+      `Trade placed: ${type} ${amount} TON on ${instrument} for user ${user.id}, ton_address: ${user.ton_address}, accrued ${tokensAccrued} RUBLE`,
     );
     return { trade, user, tokensAccrued };
   }
 
   async cancelTrade(cancelTradeDto: CancelTradeDto) {
     const { tradeId, userId } = cancelTradeDto;
+    this.logger.log(`Canceling trade: ${tradeId} for userId: ${userId}`);
 
-    // Получение сделки
     const trade = await this.tradeRepository.findOne({
       where: { id: tradeId, user: { id: userId } },
       relations: ['user'],
     });
     if (!trade) {
+      this.logger.error(`Trade not found for tradeId: ${tradeId}, userId: ${userId}`);
       throw new BadRequestException('Trade not found');
     }
     if (trade.status !== 'open') {
       throw new BadRequestException('Trade is not open');
     }
 
-    // Получение текущей цены
     const currentPrice = await this.getCurrentPrice(trade.instrument);
     if (!currentPrice) {
       throw new BadRequestException('Failed to fetch market price');
     }
 
-    // Расчёт прибыли/убытка
     const profitLoss = this.calculateProfitLoss(trade, currentPrice);
 
-    // Обновление сделки
     trade.status = 'canceled';
     trade.exit_price = currentPrice;
     trade.profit_loss = profitLoss;
     trade.closed_at = new Date();
     await this.tradeRepository.save(trade);
 
-    // Обновление баланса
     const user = trade.user;
     user.balance += trade.amount + profitLoss;
     await this.userRepository.save(user);
 
     this.logger.log(
-      `Trade canceled: ${trade.id} for user ${user.id}, P/L: ${profitLoss} TON`
+      `Trade canceled: ${trade.id} for user ${user.id}, ton_address: ${user.ton_address}, P/L: ${profitLoss} TON`,
     );
     return { trade, user };
   }
@@ -141,9 +132,7 @@ export class TradesService {
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch TON price: ${(error as AxiosError).message}`
-      );
+      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).message}`);
       return 5.0;
     }
   }
@@ -153,9 +142,7 @@ export class TradesService {
       const response = await this.marketService.getCurrentPrice(instrument);
       return response;
     } catch (error) {
-      this.logger.error(
-        `Failed to fetch price for ${instrument}: ${(error as AxiosError).message}`
-      );
+      this.logger.error(`Failed to fetch price for ${instrument}: ${(error as AxiosError).message}`);
       return 0;
     }
   }
