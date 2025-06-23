@@ -63,8 +63,9 @@ export const useTradingStore = defineStore('trading', {
               symbol,
             }));
         this.tradeHistory.push(response.trade);
-        authStore.updateUser(response.user); // Обновляем authStore
-        walletStore.updateBalances(response.user); // Обновляем walletStore
+        // Обновляем балансы
+        walletStore.updateBalances(response.user);
+        await walletStore.fetchBalances(); // Синхронизация с сервером
         useErrorStore().setError('Trade executed successfully', false);
       } catch (error) {
         console.error('[tradingStore] Failed to execute trade:', error);

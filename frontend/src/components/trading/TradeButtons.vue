@@ -9,7 +9,7 @@
         </v-col>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('usdt_balance') }}: {{ wallet.usdt_balance ? walletStore.usdt_balance.toFixed(2) : '0.00' }}
+            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ? walletStore.usdt_balance.toFixed(2) : '0.00' }}
           </div>
         </v-col>
       </v-row>
