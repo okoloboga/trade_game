@@ -1,16 +1,3 @@
-export const validateAmount = (value, max, min = 0.01) => {
-  if (typeof value !== 'number' || isNaN(value)) {
-    return 'Amount must be a valid number';
-  }
-  if (value < min) {
-    return `Amount must be at least ${min}`;
-  }
-  if (value > max) {
-    return `Amount cannot exceed ${max}`;
-  }
-  return true;
-};
-
 export const validateWalletAddress = (address) => {
   if (!address || typeof address !== 'string') {
     return 'Wallet address is required';
