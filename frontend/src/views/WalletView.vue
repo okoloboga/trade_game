@@ -2,18 +2,18 @@
   <v-container fluid class="wallet-container">
     <v-card v-if="authStore.isConnected && authStore.user" color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
-        <div class="wallet-info mb-4">
-          <v-chip color="success" size="small">
-            {{ shortAddress }}
-            <img :src="WalletIcon" class="icon wallet-icon" />
-          </v-chip>
-        </div>
-        <div class="mb-2">
-          <strong>{{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }} TON</strong>
-        </div>
-        <div class="mb-4">
-          <strong>{{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ? walletStore.tokenBalance.toFixed(2) : '0.00' }} RUBLE</strong>
-        </div>
+        <v-row>
+          <v-col cols="6">
+            <div class="text-body-1 text-white">
+              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}
+            </div>
+          </v-col>
+          <v-col cols="6">
+            <div class="text-body-1 text-white">
+              {{ $t('usdt_balance') }}: {{ wallet.usdt_balance ? walletStore.usdt_balance.toFixed(2) : '0.00' }}
+            </div>
+          </v-col>
+        </v-row>
         <div class="button-container">
           <v-btn color="success" class="mb-2" block @click="openDepositDialog">
             {{ $t('deposit') }}

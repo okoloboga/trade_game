@@ -13,9 +13,6 @@
           color="white"
           :rules="depositRules"
         />
-        <div class="text-body-2 text-white mt-2">
-          {{ $t('deposit_address') }}: {{ walletStore.depositAddress }}
-        </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />

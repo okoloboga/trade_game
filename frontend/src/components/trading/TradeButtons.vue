@@ -3,6 +3,18 @@
     <v-card-text>
       <v-row>
         <v-col cols="6">
+          <div class="text-body-1 text-white">
+            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}
+          </div>
+        </v-col>
+        <v-col cols="6">
+          <div class="text-body-1 text-white">
+            {{ $t('usdt_balance') }}: {{ wallet.usdt_balance ? walletStore.usdt_balance.toFixed(2) : '0.00' }}
+          </div>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="6">
           <v-text-field
             v-model.number="amount"
             :label="$t('amount_label')"
@@ -18,16 +30,6 @@
         <v-col cols="6">
           <div class="text-h6 text-white">
             ${{ currentPrice.toFixed(2) ?? '--' }}
-          </div>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12">
-          <div class="text-body-2 text-white">
-            {{ $t('ton_balance') }}: {{ walletStore.balance.toFixed(2) }} TON
-          </div>
-          <div class="text-body-2 text-white">
-            {{ $t('usdt_balance') }}: ${{ walletStore.usdt_balance.toFixed(2) }}
           </div>
         </v-col>
       </v-row>
