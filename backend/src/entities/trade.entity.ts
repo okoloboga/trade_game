@@ -28,6 +28,6 @@ export class Trade {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at!: Date;
 
-  @Index('idx_trades_type_created_at')
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   type_created_at!: string; // Для поиска предыдущей buy
 }
