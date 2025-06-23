@@ -7,7 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
-import { Transaction } from '../../entities/transaction.entity';
 import { DepositDto } from './dto/deposit.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { TonService } from '../ton/ton.service';
@@ -19,9 +18,7 @@ export class TransactionsService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Transaction)
-    private readonly transactionRepository: Repository<Transaction>,
-    private readonly tonService: TonService,
+    private readonly tonService: TonService
   ) {}
 
   async processDeposit(depositDto: DepositDto) {
@@ -41,21 +38,10 @@ export class TransactionsService {
     const depositAmount = Number(amount);
     user.balance = Number(user.balance || 0) + depositAmount;
     this.logger.log(`Before save: user.balance=${user.balance}, depositAmount=${depositAmount}`);
-
-    // Создаём запись о транзакции
-    const transaction = this.transactionRepository.create({
-      user,
-      type: 'deposit',
-      amount: depositAmount,
-      ton_tx_hash: txHash,
-      status: 'completed',
-    });
-
     await this.userRepository.save(user);
-    await this.transactionRepository.save(transaction);
 
-    this.logger.log(`Processed deposit of ${depositAmount} TON for user ${tonAddress}, transaction ID: ${transaction.id}`);
-    return { user: { ...user, balance: user.balance }, status: 'confirmed', transaction };
+    this.logger.log(`Processed deposit of ${depositAmount} TON for user ${tonAddress}`);
+    return { user: { ...user, balance: user.balance }, status: 'confirmed' };
   }
 
   async processWithdraw(withdrawDto: WithdrawDto) {
@@ -83,23 +69,10 @@ export class TransactionsService {
     try {
       const txHash = await this.tonService.sendTon(tonAddress, transferAmount.toString());
       user.balance = Number(user.balance || 0) - amount;
-
-      // Создаём запись о транзакции
-      const transaction = this.transactionRepository.create({
-        user,
-        type: 'withdraw',
-        amount,
-        ton_tx_hash: txHash,
-        status: 'completed',
-      });
-
       await this.userRepository.save(user);
-      await this.transactionRepository.save(transaction);
 
-      this.logger.log(
-        `Initiated withdrawal of ${amount} TON (transfer: ${transferAmount} TON, fee: ${fee} TON) for user ${tonAddress}, txHash: ${txHash}, transaction ID: ${transaction.id}`,
-      );
-      return { user, txHash, fee, transaction };
+      this.logger.log(`Initiated withdrawal of ${amount} TON (transfer: ${transferAmount} TON, fee: ${fee} TON) for user ${tonAddress}, txHash: ${txHash}`);
+      return { user, txHash, fee };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Error withdrawing ${amount} TON: ${errorMessage}`);
