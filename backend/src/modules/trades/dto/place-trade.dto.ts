@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, Min, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsPositive } from 'class-validator';
 
 export class PlaceTradeDto {
   @IsString()
@@ -7,14 +7,13 @@ export class PlaceTradeDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['buy', 'sell'])
   type!: 'buy' | 'sell';
 
   @IsNumber()
-  @Min(0.01)
+  @IsPositive()
   amount!: number;
 
   @IsString()
   @IsNotEmpty()
-  userId!: string;
+  ton_address!: string;
 }

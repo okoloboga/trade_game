@@ -32,15 +32,15 @@ export class TradesService {
   ) {}
 
   async placeTrade(placeTradeDto: PlaceTradeDto) {
-    const { instrument, type, amount, userId } = placeTradeDto;
-    this.logger.log(`Placing trade for userId: ${userId}, instrument: ${instrument}, type: ${type}, amount: ${amount}`);
+    const { instrument, type, amount, ton_address } = placeTradeDto;
+    this.logger.log(`Placing trade for ton_address: ${ton_address}, instrument: ${instrument}, type: ${type}, amount: ${amount}`);
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
-      this.logger.error(`User not found for userId: ${userId}`);
+      this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new UnauthorizedException('User not found');
     }
-    this.logger.log(`Found user with ton_address: ${user.ton_address}`);
+    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
 
     if (user.balance < amount) {
       throw new BadRequestException('Insufficient balance');
@@ -80,15 +80,15 @@ export class TradesService {
   }
 
   async cancelTrade(cancelTradeDto: CancelTradeDto) {
-    const { tradeId, userId } = cancelTradeDto;
-    this.logger.log(`Canceling trade: ${tradeId} for userId: ${userId}`);
+    const { tradeId, ton_address } = cancelTradeDto;
+    this.logger.log(`Canceling trade: ${tradeId} for ton_address: ${ton_address}`);
 
     const trade = await this.tradeRepository.findOne({
-      where: { id: tradeId, user: { id: userId } },
+      where: { id: tradeId, user: { ton_address } },
       relations: ['user'],
     });
     if (!trade) {
-      this.logger.error(`Trade not found for tradeId: ${tradeId}, userId: ${userId}`);
+      this.logger.error(`Trade not found for tradeId: ${tradeId}, ton_address: ${ton_address}`);
       throw new BadRequestException('Trade not found');
     }
     if (trade.status !== 'open') {

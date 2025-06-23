@@ -7,5 +7,5 @@ export class CancelTradeDto {
 
   @IsString()
   @IsNotEmpty()
-  userId!: string;
+  ton_address!: string;
 }
