@@ -32,6 +32,7 @@ export class AuthService {
       const newUser: Partial<User> = {
         ton_address,
         balance: 0.0,
+        usdt_balance: 0.0,
         token_balance: 0.0,
       };
       user = this.userRepository.create(newUser);

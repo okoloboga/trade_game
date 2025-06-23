@@ -30,10 +30,12 @@
   "loading_chart": "Загрузка данных графика...",
   "buy": "КУПИТЬ",
   "sell": "ПРОДАТЬ",
+  "trade_executed": "Сделка исполнена успешно",
   "deposit_ton": "Пополнить TON",
   "deposit": "Пополнить",
   "send": "отправить",
   "to": "на",
+  "usdt_balance": "Баланс USDT",
   "ton_balance": "Баланс TON",
   "ruble_balance": "Баланс RUBLE",
   "withdraw": "Вывести",
@@ -70,6 +72,10 @@
     "page_not_found": "Страница не найдена",
     "offline_mode": "Работа в офлайн-режиме — некоторые функции могут быть ограничены",
     "invalid_amount": "Неверная сумма",
-    "invalid_amount_withdraw": "Сумма должна быть не менее 0.11 TON (включает 0.1 TON комиссии)"
+    "invalid_amount_withdraw": "Сумма должна быть не менее 0.11 TON (включает 0.1 TON комиссии)",
+    "insufficient_usdt_balance": "Недостаточно USDT",
+    "insufficient_ton_balance": "Недостаточно TON",
+    "failed_to_execute_trade": "Не удалось совершить сделку",
+    "failed_to_fetch_balances": "Не удалось получить баланс"
   }
 }

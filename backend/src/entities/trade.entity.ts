@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  Index,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Index } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('trades')
@@ -17,29 +11,23 @@ export class Trade {
   user!: User;
 
   @Column({ type: 'varchar' })
-  instrument!: string; // Например, BTC-USD
+  instrument!: string; // Например, TON-USDT
 
   @Column({ type: 'varchar' })
   type!: 'buy' | 'sell';
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amount!: number; // Сумма в TON
+  amount!: number; // TON
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  entry_price!: number; // Цена входа
+  usdt_price!: number; // Курс TON/USDT на момент сделки
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  exit_price!: number | null; // Цена выхода (null, если сделка активна)
-
-  @Column({ type: 'varchar' })
-  status!: 'open' | 'closed' | 'canceled';
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  profit_loss!: number; // USD
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at!: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  closed_at!: Date | null;
-
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  profit_loss!: number; // Прибыль/убыток в TON
+  @Index('idx_trades_type_created_at')
+  type_created_at!: string; // Для поиска предыдущей buy
 }

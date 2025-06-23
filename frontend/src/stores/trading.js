@@ -2,33 +2,15 @@ import { defineStore } from 'pinia';
 import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { useAuthStore } from '@/stores/auth';
+import { useWalletStore } from '@/stores/wallet';
 import { validateTradeType, validateAmount } from '@/utils/validators';
 
 export const useTradingStore = defineStore('trading', {
   state: () => ({
-    activeTrades: [],
     tradeHistory: [],
     isPlacingTrade: false,
-    isProcessing: false,
   }),
   actions: {
-    async fetchActiveTrades() {
-      const authStore = useAuthStore();
-      if (!authStore.isConnected || !authStore.user?.ton_address) {
-        useErrorStore().setError('Please connect wallet');
-        throw new Error('Not connected');
-      }
-      try {
-        console.log('[tradingStore] Fetching active trades for:', authStore.user.ton_address);
-        const response = await apiService.getTradeHistory('1w');
-        this.activeTrades = response.trades.filter(t => t.status === 'open');
-        console.log('[tradingStore] Active trades fetched:', this.activeTrades.length);
-      } catch (error) {
-        console.error('[tradingStore] Failed to fetch active trades:', error);
-        useErrorStore().setError('Failed to fetch active trades');
-        throw error;
-      }
-    },
     async fetchTradeHistory(period = '1w') {
       const authStore = useAuthStore();
       if (!authStore.isConnected || !authStore.user?.ton_address) {
@@ -46,8 +28,9 @@ export const useTradingStore = defineStore('trading', {
         throw error;
       }
     },
-    async placeTrade({ type, amount, symbol }) {
+    async executeTrade(type, amount, symbol) {
       const authStore = useAuthStore();
+      const walletStore = useWalletStore();
       if (!authStore.isConnected || !authStore.user?.ton_address) {
         useErrorStore().setError('Please connect wallet');
         throw new Error('Not connected');
@@ -57,7 +40,7 @@ export const useTradingStore = defineStore('trading', {
         useErrorStore().setError(typeValidation);
         throw new Error(typeValidation);
       }
-      const amountValidation = validateAmount(amount, Number.MAX_SAFE_INTEGER, 0.01);
+      const amountValidation = validateAmount(amount, 10, 0.01);
       if (amountValidation !== true) {
         useErrorStore().setError(amountValidation);
         throw new Error(amountValidation);
@@ -68,38 +51,27 @@ export const useTradingStore = defineStore('trading', {
       }
       this.isPlacingTrade = true;
       try {
-        const response = await apiService.placeTrade({ type, amount, symbol });
-        this.activeTrades.push(response.trade);
-        useErrorStore().setError('Trade placed successfully', false);
+        const response = await (type === 'buy'
+          ? apiService.buyTrade({
+              ton_address: authStore.user.ton_address,
+              amount,
+              symbol,
+            })
+          : apiService.sellTrade({
+              ton_address: authStore.user.ton_address,
+              amount,
+              symbol,
+            }));
+        this.tradeHistory.push(response.trade);
+        authStore.updateUser(response.user); // Обновляем authStore
+        walletStore.updateBalances(response.user); // Обновляем walletStore
+        useErrorStore().setError('Trade executed successfully', false);
       } catch (error) {
-        console.error('[tradingStore] Failed to place trade:', error);
-        useErrorStore().setError('Failed to place trade');
+        console.error('[tradingStore] Failed to execute trade:', error);
+        useErrorStore().setError('Failed to execute trade');
         throw error;
       } finally {
         this.isPlacingTrade = false;
-      }
-    },
-    async cancelTrade(tradeId) {
-      const authStore = useAuthStore();
-      if (!authStore.isConnected || !authStore.user?.ton_address) {
-        useErrorStore().setError('Please connect wallet');
-        throw new Error('Not connected');
-      }
-      if (!tradeId) {
-        useErrorStore().setError('Trade ID is required');
-        throw new Error('Trade ID is required');
-      }
-      this.isProcessing = true;
-      try {
-        const response = await apiService.cancelTrade(tradeId);
-        this.activeTrades = this.activeTrades.filter(t => t.id !== tradeId);
-        useErrorStore().setError('Trade cancelled successfully', false);
-      } catch (error) {
-        console.error('[tradingStore] Failed to cancel trade:', error);
-        useErrorStore().setError('Failed to cancel trade');
-        throw error;
-      } finally {
-        this.isProcessing = false;
       }
     },
   },

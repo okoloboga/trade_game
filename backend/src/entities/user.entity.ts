@@ -10,8 +10,11 @@ export class User {
   ton_address!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  balance!: number;
+  balance!: number; // TON
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  token_balance!: number;
+  usdt_balance!: number; // USDT
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  token_balance!: number; // RUBLE
 }

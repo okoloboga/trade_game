@@ -41,7 +41,6 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.log('[api] Handling 401, URL:', error.config?.url, 'token before logout:', useAuthStore().token);
       const authStore = useAuthStore();
-      // Избегаем logout для /auth/login
       if (error.config?.url !== '/auth/login') {
         authStore.logout();
         useErrorStore().setError('Session expired');
@@ -190,6 +189,34 @@ export default {
         tonAddress,
         amount,
       });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  async buyTrade({ ton_address, amount, symbol }) {
+    try {
+      console.log('[apiService] Buying:', { ton_address, amount, symbol });
+      const response = await api.post('/trades/buy', {
+        ton_address,
+        amount,
+        symbol,
+      });
+      console.log('[apiService] Buy response:', response.data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  async sellTrade({ ton_address, amount, symbol }) {
+    try {
+      console.log('[apiService] Selling:', { ton_address, amount, symbol });
+      const response = await api.post('/trades/sell', {
+        ton_address,
+        amount,
+        symbol,
+      });
+      console.log('[apiService] Sell response:', response.data);
       return response.data;
     } catch (error) {
       return handleApiError(error);

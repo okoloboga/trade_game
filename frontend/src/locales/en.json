@@ -30,10 +30,12 @@
   "loading_chart": "Loading chart data...",
   "buy": "BUY",
   "sell": "SELL",
+  "trade_executed": "Trade executed successfully",
   "deposit_ton": "Deposit TON",
   "deposit": "Deposit",
   "send": "send",
   "to": "to",
+  "usdt_balance": "USDT Balance",
   "ton_balance": "TON Balance",
   "ruble_balance": "RUBLE Balance",
   "withdraw": "Withdraw",
@@ -70,6 +72,10 @@
     "page_not_found": "Page not found",
     "offline_mode": "Working in offline mode - some features may be limited",
     "invalid_amount": "Invalid amount",
-    "invalid_amount_withdraw": "Amount must be at least 0.11 TON (including 0.1 TON fee)"
+    "invalid_amount_withdraw": "Amount must be at least 0.11 TON (including 0.1 TON fee)",
+    "insufficient_usdt_balance": "Insufficient USDT balance",
+    "insufficient_ton_balance": "Insufficient TON balance",
+    "failed_to_execute_trade": "Failed to execute trade",
+    "failed_to_fetch_balances": "Failed to fetch balances"
   }
 }

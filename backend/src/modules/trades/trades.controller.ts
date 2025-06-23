@@ -7,25 +7,24 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { TradesService } from './trades.service';
-import { PlaceTradeDto } from './dto/place-trade.dto';
-import { CancelTradeDto } from './dto/cancel-trade.dto';
+import { TradeDto } from './dto/trade.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Controller('trades')
 export class TradesController {
   constructor(private readonly tradesService: TradesService) {}
 
-  @Post('place')
+  @Post('buy')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async placeTrade(@Body() placeTradeDto: PlaceTradeDto) {
-    return this.tradesService.placeTrade(placeTradeDto);
+  async buyTrade(@Body() tradeDto: TradeDto) {
+    return this.tradesService.buyTrade(tradeDto);
   }
 
-  @Post('cancel')
+  @Post('sell')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async cancelTrade(@Body() cancelTradeDto: CancelTradeDto) {
-    return this.tradesService.cancelTrade(cancelTradeDto);
+  async sellTrade(@Body() tradeDto: TradeDto) {
+    return this.tradesService.sellTrade(tradeDto);
   }
 }

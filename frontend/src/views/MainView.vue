@@ -47,7 +47,6 @@ onMounted(async () => {
       marketStore.fetchCandles('TON-USDT', '5m').catch(e => console.log('Candles fetch failed:', e.message)),
       marketStore.fetchCurrentPrice('TON-USDT').catch(e => console.log('Price fetch failed:', e.message)),
       tradingStore.fetchTradeHistory().catch(e => console.log('Trade history fetch failed:', e.message)),
-      tradingStore.fetchActiveTrades().catch(e => console.log('Active trades fetch failed:', e.message)),
     ]);
 
     const failures = results.filter(r => r.status === 'rejected').length;

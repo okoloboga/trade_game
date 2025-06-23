@@ -24,10 +24,14 @@ export const validateWalletAddress = (address) => {
   return true;
 };
 
-export const validateTradeType = (type) => {
-  if (!['long', 'short'].includes(type)) {
-    return 'Trade type must be "long" or "short"';
-  }
+export function validateAmount(value, max = Number.MAX_SAFE_INTEGER, min = 0) {
+  if (!value || isNaN(value)) return 'Amount is required';
+  if (value < min) return `Amount must be at least ${min}`;
+  if (value > max) return `Amount cannot exceed ${max}`;
   return true;
-};
+}
 
+export function validateTradeType(value) {
+  if (!['buy', 'sell'].includes(value)) return 'Invalid trade type';
+  return true;
+}

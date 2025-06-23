@@ -7,7 +7,7 @@
             v-model.number="amount"
             :label="$t('amount_label')"
             type="number"
-            :max="1"
+            :max="10"
             :min="0.01"
             step="0.01"
             variant="outlined"
@@ -21,15 +21,25 @@
           </div>
         </v-col>
       </v-row>
+      <v-row>
+        <v-col cols="12">
+          <div class="text-body-2 text-white">
+            {{ $t('ton_balance') }}: {{ walletStore.balance.toFixed(2) }} TON
+          </div>
+          <div class="text-body-2 text-white">
+            {{ $t('usdt_balance') }}: ${{ walletStore.usdt_balance.toFixed(2) }}
+          </div>
+        </v-col>
+      </v-row>
       <v-row class="mt-4">
         <v-col cols="6">
           <v-btn
             block
             size="large"
             color="green"
-            :loading="loading"
-            @click="placeTrade('long')"
-            :disabled="!canTrade"
+            :loading="loading || walletStore.isFetchingBalances"
+            @click="executeTrade('buy')"
+            :disabled="!canTrade('buy')"
           >
             {{ $t('buy') }}
           </v-btn>
@@ -39,38 +49,35 @@
             block
             size="large"
             color="red"
-            :loading="loading"
-            @click="placeTrade('short')"
-            :disabled="!canTrade"
+            :loading="loading || walletStore.isFetchingBalances"
+            @click="executeTrade('sell')"
+            :disabled="!canTrade('sell')"
           >
             {{ $t('sell') }}
           </v-btn>
         </v-col>
       </v-row>
-      <!-- <ActiveTrades class="mt-4" /> -->
     </v-card-text>
   </v-card>
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent } from 'vue'
-import { useMarketStore } from '@/stores/market'
-import { useTradingStore } from '@/stores/trading'
-import { useWalletStore } from '@/stores/wallet'
-import { useErrorStore } from '@/stores/error'
-import { useDebounceFn } from '@vueuse/core'
-import { validateAmount } from '@/utils/validators'
-import { useI18n } from 'vue-i18n'
+import { ref, computed, onMounted } from 'vue';
+import { useMarketStore } from '@/stores/market';
+import { useTradingStore } from '@/stores/trading';
+import { useWalletStore } from '@/stores/wallet';
+import { useErrorStore } from '@/stores/error';
+import { useDebounceFn } from '@vueuse/core';
+import { validateAmount } from '@/utils/validators';
+import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n()
-const ActiveTrades = defineAsyncComponent(() => import('./ActiveTrades.vue'))
-
-const amount = ref(0.1)
-const marketStore = useMarketStore()
-const tradingStore = useTradingStore()
-const walletStore = useWalletStore()
-const errorStore = useErrorStore()
-const loading = ref(false)
+const { t } = useI18n();
+const amount = ref(0.1);
+const marketStore = useMarketStore();
+const tradingStore = useTradingStore();
+const walletStore = useWalletStore();
+const errorStore = useErrorStore();
+const loading = ref(false);
 
 const currentPrice = computed(() => {
   console.log('TradeButtons marketStore:', marketStore);
@@ -78,30 +85,41 @@ const currentPrice = computed(() => {
 });
 
 const amountRules = computed(() => [
-  v => validateAmount(v, 1) === true || validateAmount(v, 1),
-  v => (v <= walletStore.balance || t('insufficient_balance')),
-])
+  (v) => validateAmount(v, 10) === true || validateAmount(v, 10),
+  (v) => v <= walletStore.usdt_balance || t('error.insufficient_usdt_balance'),
+  (v) => (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
+]);
 
-const canTrade = computed(() => {
-  return validateAmount(amount.value, 1) === true && amount.value <= walletStore.balance
-})
-
-const placeTrade = useDebounceFn(async (type) => {
-  loading.value = true
-  try {
-    await tradingStore.placeTrade({
-      type,
-      amount: amount.value,
-      symbol: 'TON-USDT',
-    })
-    errorStore.setError(t('trade_placed'), false)
-    amount.value = 0.1
-  } catch (error) {
-    errorStore.setError(t("failed_to_place_trade"))
-  } finally {
-    loading.value = false
+const canTrade = (type) => {
+  const isValidAmount = validateAmount(amount.value, 10) === true;
+  if (type === 'buy') {
+    return isValidAmount && amount.value <= walletStore.usdt_balance;
   }
-}, 300)
+  return isValidAmount && (amount.value / currentPrice.value) <= walletStore.balance;
+};
+
+const executeTrade = useDebounceFn(async (type) => {
+  loading.value = true;
+  try {
+    await tradingStore.executeTrade(type, amount.value, 'TON-USDT');
+    errorStore.setError(t('trade_executed'), false);
+    amount.value = 0.1;
+  } catch (error) {
+    errorStore.setError(t('error.failed_to_execute_trade'));
+  } finally {
+    loading.value = false;
+  }
+}, 300);
+
+onMounted(async () => {
+  console.log('[TradeButtons] Mounted, fetching balances');
+  walletStore.syncFromAuthStore(); // Начальная синхронизация
+  try {
+    await walletStore.fetchBalances(); // Запрос балансов с сервера
+  } catch (error) {
+    console.error('[TradeButtons] Failed to fetch balances on mount:', error);
+  }
+});
 </script>
 
 <style scoped>
@@ -110,10 +128,10 @@ const placeTrade = useDebounceFn(async (type) => {
 }
 
 .v-text-field :deep(.v-field__outline) {
-  border-radius: 8px; /* Для outlined варианта */
+  border-radius: 8px;
 }
 
 .v-btn {
-  border-radius: 8px; /* Для кнопок Buy и Sell */
+  border-radius: 8px;
 }
 </style>

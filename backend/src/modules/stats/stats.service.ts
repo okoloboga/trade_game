@@ -146,18 +146,17 @@ export class StatsService {
     });
 
     let totalVolumeTon = 0;
-    let totalProfitLossTon = 0;
+    let totalVolumeUsd = 0;
+    let totalProfitLossUsd = 0;
 
     for (const trade of trades) {
       totalVolumeTon += trade.amount;
-      if (trade.status === 'closed' && trade.profit_loss !== null) {
-        totalProfitLossTon += trade.profit_loss;
-      }
+      totalVolumeUsd += trade.amount * trade.usdt_price;
+      totalProfitLossUsd += trade.profit_loss;
     }
 
     const tonPriceUsd = await this.getTonPrice();
-    const totalVolumeUsd = totalVolumeTon * tonPriceUsd;
-    const totalProfitLossUsd = totalProfitLossTon * tonPriceUsd;
+    const totalProfitLossTon = totalProfitLossUsd / tonPriceUsd;
 
     const summary = {
       totalVolume: {
