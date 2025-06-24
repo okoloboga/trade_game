@@ -3,14 +3,9 @@
     <v-card v-if="authStore.isConnected && authStore.user" color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
         <v-row>
-          <v-col cols="6">
+          <v-col cols="12">
             <div class="text-body-1 text-white">
               {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}
-            </div>
-          </v-col>
-          <v-col cols="6">
-            <div class="text-body-1 text-white">
-              {{ $t('usdt_balance') }}: {{ wallet.usdt_balance ? walletStore.usdt_balance.toFixed(2) : '0.00' }}
             </div>
           </v-col>
         </v-row>
