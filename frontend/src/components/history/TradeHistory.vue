@@ -7,8 +7,8 @@
     class="elevation-1"
   >
     <template v-slot:item.profit_loss="{ item }">
-      <span :class="item.profit_loss > 0 ? 'green--text' : 'red--text'">
-        {{ formatCurrency(item.profit_loss) }}
+      <span :class="Number(item.profit_loss) > 0 ? 'green--text' : 'red--text'">
+        {{ formatCurrency(Number(item.profit_loss)) }}
       </span>
     </template>
     <template v-slot:item.created_at="{ item }">
