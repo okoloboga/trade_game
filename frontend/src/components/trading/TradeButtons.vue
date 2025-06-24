@@ -4,12 +4,14 @@
       <v-row>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}
+            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) :
+            '0.00000' }}
           </div>
         </v-col>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ? walletStore.usdt_balance.toFixed(2) : '0.00' }}
+            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ?
+            walletStore.usdt_balance.toFixed(5) : '0.00000' }}
           </div>
         </v-col>
       </v-row>
@@ -29,7 +31,7 @@
         </v-col>
         <v-col cols="6">
           <div class="text-h6 text-white">
-            ${{ currentPrice.toFixed(2) ?? '--' }}
+            ${{ currentPrice.toFixed(5) ?? '--' }}
           </div>
         </v-col>
       </v-row>

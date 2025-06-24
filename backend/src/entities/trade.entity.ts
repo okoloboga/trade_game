@@ -16,13 +16,13 @@ export class Trade {
   @Column({ type: 'varchar' })
   type!: 'buy' | 'sell';
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 5 })
   amount!: number; // TON
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 5 })
   usdt_price!: number; // Курс TON/USDT на момент сделки
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 5, default: 0 })
   profit_loss!: number; // USD
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

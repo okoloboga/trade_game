@@ -162,12 +162,12 @@ export class StatsService {
 
     const summary = {
       totalVolume: {
-        ton: Number(totalVolumeTon.toFixed(2)),
-        usd: Number(totalVolumeUsd.toFixed(2)),
+        ton: Number(totalVolumeTon.toFixed(5)),
+        usd: Number(totalVolumeUsd.toFixed(5)),
       },
       totalProfitLoss: {
-        ton: Number(totalProfitLossTon.toFixed(2)),
-        usd: Number(totalProfitLossUsd.toFixed(2)),
+        ton: Number(totalProfitLossTon.toFixed(5)),
+        usd: Number(totalProfitLossUsd.toFixed(5)),
       },
       period,
     };

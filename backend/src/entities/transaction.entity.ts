@@ -19,7 +19,7 @@ export class Transaction {
   @Column({ type: 'varchar' })
   type!: 'deposit' | 'withdraw';
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 5 })
   amount!: number;
 
   @Column({ type: 'varchar' })

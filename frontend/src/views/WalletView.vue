@@ -5,7 +5,8 @@
         <v-row>
           <v-col cols="12">
             <div class="text-body-1 text-white">
-              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(2) : '0.00' }}
+              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) :
+              '0.00000' }}
             </div>
           </v-col>
         </v-row>
