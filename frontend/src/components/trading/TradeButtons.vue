@@ -88,7 +88,6 @@ const currentPrice = computed(() => {
 
 const amountRules = computed(() => [
   (v) => validateAmount(v, 10) === true || validateAmount(v, 10),
-  (v) => v <= walletStore.usdt_balance || t('error.insufficient_usdt_balance'),
   (v) => (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
 ]);
 

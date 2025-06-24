@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', {
     user: null,
     walletAddress: null,
     isConnected: false,
-    tonProof: null, // Добавляем tonProof в состояние
+    tonProof: null,
   }),
   actions: {
     async init() {
@@ -43,19 +43,20 @@ export const useAuthStore = defineStore('auth', {
     async login(data) {
       try {
         const response = await apiService.login(data);
-        console.log('[login] Response:', JSON.stringify(response, null, 2));
+        console.log('[authStore] Login response:', JSON.stringify(response, null, 2));
         console.log('[authStore] Saved token:', response.access_token);
         this.token = response.access_token;
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify({
-
           ton_address: response.user.ton_address,
           balance: response.user.balance,
+          usdt_balance: response.user.usdt_balance,
           token_balance: response.user.token_balance,
         }));
         this.user = {
           ton_address: response.user.ton_address,
           balance: response.user.balance,
+          usdt_balance: response.user.usdt_balance,
           token_balance: response.user.token_balance,
           walletAddress: response.user.ton_address,
         };
@@ -63,7 +64,7 @@ export const useAuthStore = defineStore('auth', {
         this.setConnected(true);
         return response;
       } catch (error) {
-        console.error('[login] Error:', error);
+        console.error('[authStore] Login error:', error);
         useErrorStore().setError('Login failed');
         throw error;
       }
