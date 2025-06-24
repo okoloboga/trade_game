@@ -109,6 +109,8 @@ export class TradesService {
       order: { created_at: 'DESC' },
     });
 
+    this.logger.log(`prevBuy found: ${!!prevBuy}, prevBuy: ${JSON.stringify(prevBuy)}`);
+
     let profitLoss = 0;
     if (prevBuy) {
       profitLoss = (usdtPrice - Number(prevBuy.usdt_price)) * tonAmount; // USD

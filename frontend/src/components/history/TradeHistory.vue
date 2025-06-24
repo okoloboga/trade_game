@@ -42,6 +42,7 @@ onMounted(async () => {
   console.log('authStore.isConnected:', authStore.isConnected);
   console.log('authStore.user:', authStore.user);
   console.log('authStore.user.ton_address:', authStore.user?.ton_address);
+  console.log('[TradeHistory] tradeHistory:', tradingStore.tradeHistory);
   loading.value = true
   try {
     await tradingStore.fetchTradeHistory()
