@@ -7,7 +7,8 @@
     class="elevation-1"
   >
     <template v-slot:item.profit_loss="{ item }">
-      <span :class="Number(item.profit_loss) > 0 ? 'green--text' : 'red--text'">
+      <span v-if="item.type === 'buy'">-</span>
+      <span v-else :class="Number(item.profit_loss) > 0 ? 'green--text' : 'red--text'">
         {{ formatCurrency(Number(item.profit_loss)) }}
       </span>
     </template>
