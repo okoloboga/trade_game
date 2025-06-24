@@ -34,7 +34,6 @@ const { t } = useI18n()
 const headers = computed(() => [
   { title: t('trade_headers.type'), key: 'type' },
   { title: t('trade_headers.amount'), key: 'amount' },
-  { title: t('trade_headers.entry_price'), key: 'entry_price' },
   { title: t('trade_headers.profit_loss'), key: 'profit_loss' },
   { title: t('trade_headers.date'), key: 'created_at' },
 ])

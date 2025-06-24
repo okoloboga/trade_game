@@ -150,27 +150,29 @@ export class StatsService {
     let totalProfitLossUsd = 0;
 
     for (const trade of trades) {
-      totalVolumeTon += trade.amount;
-      totalVolumeUsd += trade.amount * trade.usdt_price;
-      totalProfitLossUsd += trade.profit_loss;
+      totalVolumeTon += Number(trade.amount);
+      totalVolumeUsd += Number(trade.amount) * Number(trade.usdt_price);
+      totalProfitLossUsd += Number(trade.profit_loss);
     }
+
+    this.logger.log(`Calculated: totalVolumeTon=${totalVolumeTon}, totalVolumeUsd=${totalVolumeUsd}, totalProfitLossUsd=${totalProfitLossUsd}`);
 
     const tonPriceUsd = await this.getTonPrice();
     const totalProfitLossTon = totalProfitLossUsd / tonPriceUsd;
 
     const summary = {
       totalVolume: {
-        ton: parseFloat(totalVolumeTon.toFixed(2)),
-        usd: parseFloat(totalVolumeUsd.toFixed(2)),
+        ton: Number(totalVolumeTon.toFixed(2)),
+        usd: Number(totalVolumeUsd.toFixed(2)),
       },
       totalProfitLoss: {
-        ton: parseFloat(totalProfitLossTon.toFixed(2)),
-        usd: parseFloat(totalProfitLossUsd.toFixed(2)),
+        ton: Number(totalProfitLossTon.toFixed(2)),
+        usd: Number(totalProfitLossUsd.toFixed(2)),
       },
       period,
     };
 
-    this.logger.log(`Generated summary for user ${ton_address} in period ${period}`);
+    this.logger.log(`Generated summary for user ${ton_address} in period ${period}: ${JSON.stringify(summary)}`);
     return summary;
   }
 
