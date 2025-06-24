@@ -123,6 +123,8 @@ export class TradesService {
       profit_loss: profitLoss,
     });
 
+    this.logger.log(`Calculated profitLoss: ${profitLoss} USD for trade: ${JSON.stringify(trade)}`);
+
     await this.userRepository.save(user);
     await this.tradeRepository.save(trade);
     const tokensAccrued = await this.tokensService.accrueTokens(trade);
