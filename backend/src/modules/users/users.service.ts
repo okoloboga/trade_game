@@ -15,6 +15,10 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return { balance: Number(user.balance), token_balance: Number(user.token_balance) };
+    return { 
+        balance: Number(user.balance), 
+        usdt_nalance: Number(user.usdt_balance),
+        token_balance: Number(user.token_balance) 
+    };
   }
 }
