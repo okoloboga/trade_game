@@ -76,6 +76,7 @@
     "insufficient_usdt_balance": "Недостаточно USDT",
     "insufficient_ton_balance": "Недостаточно TON",
     "failed_to_execute_trade": "Не удалось совершить сделку",
-    "failed_to_fetch_balances": "Не удалось получить баланс"
+    "failed_to_fetch_balances": "Не удалось получить баланс",
+    "exceeds_max_balance": "Общий баланс не может превышать 10 USD"
   }
 }

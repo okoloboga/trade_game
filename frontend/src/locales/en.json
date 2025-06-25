@@ -76,6 +76,7 @@
     "insufficient_usdt_balance": "Insufficient USDT balance",
     "insufficient_ton_balance": "Insufficient TON balance",
     "failed_to_execute_trade": "Failed to execute trade",
-    "failed_to_fetch_balances": "Failed to fetch balances"
+    "failed_to_fetch_balances": "Failed to fetch balances",
+    "exceeds_max_balance": "Total balance cannot exceed 10 USD"
   }
 }

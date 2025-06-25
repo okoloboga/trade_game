@@ -33,6 +33,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useWalletStore } from '@/stores/wallet';
+import { useMarketStore } from '@/stores/market';
 import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
@@ -47,17 +48,44 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue', 'deposit-success']);
 const walletStore = useWalletStore();
+const marketStore = useMarketStore();
 const errorStore = useErrorStore();
 const authStore = useAuthStore();
 const [tonConnectUI] = useTonConnectUI();
 const price = ref(0.01);
 const isProcessing = ref(false);
 
+const currentPrice = computed(() => {
+  const price = marketStore.currentPrice ?? 3; // Fallback на 3 USD/TON
+  console.log('[DepositDialog] Current price:', price);
+  return price;
+});
+
+const totalBalanceUsd = computed(() => {
+  const tonBalanceUsd = walletStore.balance * currentPrice.value;
+  const usdtBalance = walletStore.usdt_balance;
+  const total = tonBalanceUsd + usdtBalance;
+  console.log('[DepositDialog] Total balance USD:', { tonBalanceUsd, usdtBalance, total });
+  return total;
+});
+
 const depositRules = computed(() => [
   (v) => validateAmount(v, Infinity, 0.01) === true || t('error.invalid_amount'),
+  (v) => {
+    const priceInUsd = v * currentPrice.value;
+    const newTotalBalance = totalBalanceUsd.value + priceInUsd;
+    return newTotalBalance <= 10 || t('error.exceeds_max_balance');
+  },
 ]);
 
-const isValid = computed(() => validateAmount(price.value, Infinity, 0.01) === true);
+const isValid = computed(() => {
+  const amountValid = validateAmount(price.value, Infinity, 0.01) === true;
+  const priceInUsd = price.value * currentPrice.value;
+  const newTotalBalance = totalBalanceUsd.value + priceInUsd;
+  const balanceValid = newTotalBalance <= 10;
+  console.log('[DepositDialog] isValid:', { amountValid, priceInUsd, newTotalBalance, balanceValid });
+  return amountValid && balanceValid;
+});
 
 const deposit = useDebounceFn(async () => {
   if (!tonConnectUI.connected) {
@@ -85,10 +113,10 @@ const deposit = useDebounceFn(async () => {
   try {
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
     const transaction = {
-      validUntil: Math.floor(Date.now() / 1000) + 600, // Увеличено до 10 минут
+      validUntil: Math.floor(Date.now() / 1000) + 600,
       messages: [
         {
-          address: walletStore.depositAddress, // Используем depositAddress
+          address: walletStore.depositAddress,
           amount: nanoAmount,
         },
       ],
@@ -97,7 +125,7 @@ const deposit = useDebounceFn(async () => {
     console.log('[DepositDialog] Sending transaction:', transaction);
     const result = await tonConnectUI.sendTransaction(transaction);
     console.log('[DepositDialog] Transaction result:', result);
-    const txHash = result.boc; // Используем boc как txHash
+    const txHash = result.boc;
 
     const response = await apiService.deposit({
       tonAddress: authStore.user.ton_address,

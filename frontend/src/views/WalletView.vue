@@ -5,13 +5,22 @@
         <v-row>
           <v-col cols="12">
             <div class="text-body-1 text-white">
-              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) :
-              '0.00000' }}
+              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) : '0.00000' }}
+              <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(2) }}) </span>
+              <span class="text-caption text-grey">
+                | Total: ${{ totalBalanceUsd.toFixed(2) }} | Available: ${{ availableDepositUsd.toFixed(2) }}
+              </span>
             </div>
           </v-col>
         </v-row>
         <div class="button-container">
-          <v-btn color="success" class="mb-2" block @click="openDepositDialog">
+          <v-btn
+            color="success"
+            class="mb-2"
+            block
+            :disabled="totalBalanceUsd >= 10"
+            @click="openDepositDialog"
+          >
             {{ $t('deposit') }}
           </v-btn>
           <v-row>
@@ -66,8 +75,32 @@ const showWithdrawTokensDialog = ref(false);
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
+const currentPrice = computed(() => {
+  const price = marketStore.currentPrice ?? 3; // Используем 3 USD/TON, если цена недоступна
+  console.log('[WalletView] Current price:', price);
+  return price;
+});
+
+const totalBalanceUsd = computed(() => {
+  const tonBalanceUsd = walletStore.balance * currentPrice.value;
+  const usdtBalance = walletStore.usdt_balance;
+  const total = tonBalanceUsd + usdtBalance;
+  console.log('[WalletView] Total balance USD:', { tonBalanceUsd, usdtBalance, total });
+  return total;
+});
+
+const availableDepositUsd = computed(() => {
+  const available = Math.max(0, 10 - totalBalanceUsd.value);
+  console.log('[WalletView] Available deposit USD:', available);
+  return available;
+});
+
 const openDepositDialog = () => {
-  console.log('[WalletView] Opening DepositDialog');
+  console.log('[WalletView] Attempting to open DepositDialog, totalBalanceUsd:', totalBalanceUsd.value);
+  if (totalBalanceUsd.value >= 10) {
+    errorStore.setError(t('error.exceeds_max_balance'));
+    return;
+  }
   showDepositDialog.value = true;
 };
 
@@ -86,9 +119,13 @@ onMounted(async () => {
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
     try {
-      await walletStore.fetchBalances();
+      await Promise.all([
+        walletStore.fetchBalances(),
+        marketStore.fetchCurrentPrice('TON-USDT'),
+      ]);
+      console.log('[WalletView] Balances and price fetched');
     } catch (error) {
-      console.error('[WalletView] Failed to fetch balances:', error);
+      console.error('[WalletView] Failed to fetch data:', error);
       errorStore.setError(t('error.failed_to_fetch_balances'));
     }
   } else {
