@@ -1,10 +1,21 @@
 <template>
   <div class="chart-container">
+    <div class="timeframe-buttons mb-2">
+      <v-btn
+        v-for="tf in timeframes"
+        :key="tf"
+        :color="timeframe === tf ? 'primary' : 'secondary'"
+        :class="{ 'flex-grow-1': true }"
+        @click="changeTimeframe(tf)"
+      >
+        {{ tf }}
+      </v-btn>
+    </div>
     <div ref="chartContainer" class="chart"></div>
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="marketStore.isLoading" class="loading">
       <v-progress-circular indeterminate />
-        <div class="mt-2">{{ $t('loading_chart') }}</div>
+      <div class="mt-2">{{ $t('loading_chart') }}</div>
     </div>
   </div>
 </template>
@@ -19,12 +30,14 @@ const { t } = useI18n();
 const marketStore = useMarketStore();
 const chartContainer = ref(null);
 const error = ref('');
+const timeframe = ref(marketStore.timeframe); // Синхронизируем с marketStore
+const timeframes = ['1m', '5m', '15m'];
 let chart = null;
 let candleSeries = null;
 
 const initChart = async () => {
   try {
-    console.log('Starting chart initialization');
+    console.log('[TradingChart] Starting chart initialization');
     error.value = '';
     if (!chartContainer.value) {
       throw new Error('Chart container not found');
@@ -32,11 +45,11 @@ const initChart = async () => {
 
     await nextTick();
     const rect = chartContainer.value.getBoundingClientRect();
-    console.log('Container rect:', rect);
+    console.log('[TradingChart] Container rect:', rect);
     if (rect.width === 0 || rect.height === 0) {
       throw new Error('Container has zero dimensions');
     }
-    console.log('Creating chart...');
+    console.log('[TradingChart] Creating chart...');
     if (chart) {
       chart.remove();
       chart = null;
@@ -67,7 +80,7 @@ const initChart = async () => {
       wickUpColor: '#4caf50',
       wickDownColor: '#f44336',
     });
-    console.log('Candlestick series added successfully');
+    console.log('[TradingChart] Candlestick series added successfully');
 
     const handleResize = () => {
       if (chart && chartContainer.value) {
@@ -89,24 +102,23 @@ const initChart = async () => {
       }
     });
 
-    // updateChartData();
     chart.timeScale().fitContent();
-    console.log('Chart initialized successfully');
+    console.log('[TradingChart] Chart initialized successfully');
   } catch (err) {
-    console.error('Chart initialization error:', err);
+    console.error('[TradingChart] Chart initialization error:', err);
     error.value = `Chart error: ${err.message}`;
   }
 };
 
 const updateChartData = () => {
   if (!candleSeries || !chart) {
-    console.warn('Cannot update chart data: chart or series not initialized');
+    console.warn('[TradingChart] Cannot update chart data: chart or series not initialized');
     return;
   }
 
   try {
     if (!marketStore.candles || marketStore.candles.length === 0) {
-      console.log('No data available for chart');
+      console.log('[TradingChart] No data available for chart');
       error.value = t('no_data_available');
       return;
     }
@@ -116,16 +128,16 @@ const updateChartData = () => {
         if (!candle || candle.timestamp === undefined ||
             candle.open === undefined || candle.high === undefined ||
             candle.low === undefined || candle.close === undefined) {
-          console.warn('Skipping invalid candle (missing fields):', candle);
+          console.warn('[TradingChart] Skipping invalid candle (missing fields):', candle);
           return false;
         }
         if (isNaN(Number(candle.open)) || isNaN(Number(candle.high)) ||
             isNaN(Number(candle.low)) || isNaN(Number(candle.close))) {
-          console.warn('Skipping candle with non-numeric values:', candle);
+          console.warn('[TradingChart] Skipping candle with non-numeric values:', candle);
           return false;
         }
         if (Number(candle.high) < Number(candle.low)) {
-          console.warn('Skipping candle with high < low:', candle);
+          console.warn('[TradingChart] Skipping candle with high < low:', candle);
           return false;
         }
         return true;
@@ -142,19 +154,32 @@ const updateChartData = () => {
       .sort((a, b) => a.time - b.time);
 
     if (chartData.length === 0) {
-      console.warn('No valid candles after filtering');
-      error.value = t('no_data_available');
+      console.warn('[TradingChart] No valid candles after filtering');
+      error.value = t('invalid_data');
       return;
     }
 
-    console.log('Chart data:', chartData.slice(0, 3)); // Отладка
+    console.log('[TradingChart] Chart data (first 3):', chartData.slice(0, 3));
     candleSeries.setData(chartData);
     chart.timeScale().fitContent();
-    error.value = '',
-    console.log('Chart data updated successfully');
+    error.value = '';
+    console.log('[TradingChart] Chart data updated successfully');
   } catch (err) {
-    console.error('Error updating chart data:', err);
+    console.error('[TradingChart] Error updating chart data:', err);
     error.value = `Chart update error: ${err.message}`;
+  }
+};
+
+const changeTimeframe = async (tf) => {
+  console.log(`[TradingChart] Changing timeframe to: ${tf}`);
+  try {
+    timeframe.value = tf;
+    marketStore.setTimeframe(tf);
+    await marketStore.fetchCandles('TON-USDT', tf);
+    updateChartData();
+  } catch (err) {
+    console.error('[TradingChart] Error changing timeframe:', err);
+    error.value = `Failed to load ${tf} candles: ${err.message}`;
   }
 };
 
@@ -162,10 +187,10 @@ watch(
   () => marketStore.candles,
   (newCandles) => {
     if (!chart || !candleSeries) {
-      console.log('Skipping chart update: chart not initialized');
+      console.log('[TradingChart] Skipping chart update: chart not initialized');
       return;
     }
-    console.log('Market candles updated:', newCandles?.length);
+    console.log('[TradingChart] Market candles updated:', newCandles?.length);
     updateChartData();
   },
   { deep: true }
@@ -175,7 +200,7 @@ watch(
   () => marketStore.currentPrice,
   (newPrice) => {
     if (!candleSeries || !newPrice || marketStore.candles.length === 0) return;
-    console.log('Current price updated:', newPrice);
+    console.log('[TradingChart] Current price updated:', newPrice);
 
     const lastCandle = marketStore.candles[marketStore.candles.length - 1];
     const updatedCandle = {
@@ -186,25 +211,33 @@ watch(
       close: newPrice,
     };
 
-    console.log('Updating last candle:', updatedCandle);
+    console.log('[TradingChart] Updating last candle:', updatedCandle);
     candleSeries.update(updatedCandle);
   }
 );
 
 onMounted(async () => {
   try {
-    console.log('onMounted started');
+    console.log('[TradingChart] onMounted started');
     await nextTick();
-    console.log('After nextTick');
-    await initChart(); // Сначала инициализируем чарт
-    console.log('After initChart');
+    console.log('[TradingChart] After nextTick');
+    await initChart();
+    console.log('[TradingChart] After initChart');
     await marketStore.fetchCandles();
-    console.log('After fetchCandles');
+    console.log('[TradingChart] After fetchCandles');
     await marketStore.fetchCurrentPrice();
-    console.log('After fetchCurrentPrice');
+    console.log('[TradingChart] After fetchCurrentPrice');
+    marketStore.startRealTimeUpdates();
+    console.log('[TradingChart] Real-time updates started');
   } catch (err) {
-    console.error('onMounted error:', err);
+    console.error('[TradingChart] onMounted error:', err);
+    error.value = `Chart error: ${err.message}`;
   }
+});
+
+onUnmounted(() => {
+  console.log('[TradingChart] onUnmounted: Stopping real-time updates');
+  marketStore.stopRealTimeUpdates();
 });
 </script>
 
@@ -245,5 +278,15 @@ onMounted(async () => {
   color: #ffffff;
   text-align: center;
   z-index: 5;
+}
+
+.timeframe-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.timeframe-buttons .v-btn {
+  flex: 1;
+  margin: 0 2px;
 }
 </style>
