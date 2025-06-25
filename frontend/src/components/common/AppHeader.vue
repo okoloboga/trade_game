@@ -193,7 +193,7 @@ const handleLanguageChange = () => {
 /* Базовые стили */
 .v-app-bar {
   height: 62px !important;
-  padding: 0px 4px 4px 4px;
+  padding: 0px 0px 4px 4px;
 }
 
 /* Стили для иконок */
