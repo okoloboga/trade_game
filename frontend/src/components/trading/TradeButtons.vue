@@ -94,7 +94,7 @@ const currentPrice = computed(() => {
 });
 
 const amountRules = computed(() => [
-  (v) => validateAmount(v, 10, 0.01) === true || validateAmount(v, 10, 0.01),
+  // (v) => validateAmount(v, 10, 0.01) === true || validateAmount(v, 10, 0.01),
   (v) => !currentPrice.value || (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
   (v) => v <= walletStore.usdt_balance || t('error.insufficient_usdt_balance'),
 ]);
@@ -111,7 +111,7 @@ const canTrade = (type) => {
     console.log('[TradeButtons] Can buy:', { isValidAmount, tonRequired, balance: walletStore.balance, canBuy });
     return canBuy;
   }
-  const canSell = isValidAmount && amount.value <= walletStore.usdt_balance;
+  const canSell = isValidAmount && amount.value <= walletStore.udt_balance;
   console.log('[TradeButtons] Can sell:', { isValidAmount, amount: amount.value, usdtBalance: walletStore.usdt_balance, canSell });
   return canSell;
 };
