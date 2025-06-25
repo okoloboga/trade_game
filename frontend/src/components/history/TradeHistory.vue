@@ -10,9 +10,9 @@
       {{ item.type === 'buy' ? $t('buy_usdt') : $t('sell_usdt') }}
     </template>
     <template v-slot:item.amount="{ item }">
-      {{ Number(item.amount).toFixed(4) }} USDT
+      {{ Number(item.amount).toFixed(2) }}$
       <span v-if="currentPrice" class="text-caption text-grey">
-        (≈ {{ (Number(item.amount) / currentPrice).toFixed(4) }} TON)
+        (≈ {{ (Number(item.amount) / currentPrice).toFixed(2) }} TON)
       </span>
     </template>
     <template v-slot:item.profit_loss="{ item }">

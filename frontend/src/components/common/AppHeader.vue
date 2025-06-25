@@ -1,15 +1,15 @@
 <template>
   <v-app-bar color="#1a1a1a" flat dark>
     <v-container fluid>
-      <v-row align="center" no-gutters>
+      <v-row align="center">
         <v-col cols="2" class="text-center">
-          <v-btn :to="'/'" variant="text" icon class="header-btn">
+          <v-btn :to="'/'" variant="text" icon class="header-btn home-btn">
             <img :src="HomeIcon" class="icon home-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('home') }}</v-tooltip>
           </v-btn>
         </v-col>
         <v-col cols="2" class="text-center">
-          <v-btn :to="'/history'" variant="text" icon class="header-btn">
+          <v-btn :to="'/history'" variant="text" icon class="header-btn history-btn">
             <img :src="HistoryIcon" class="icon history-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('history') }}</v-tooltip>
           </v-btn>
@@ -20,13 +20,13 @@
           </div>
         </v-col>
         <v-col cols="2" class="text-center">
-          <v-btn :to="'/wallet'" variant="text" icon class="header-btn">
+          <v-btn :to="'/wallet'" variant="text" icon class="header-btn wallet-btn">
             <img :src="WalletIcon" class="icon wallet-icon" />
             <v-tooltip activator="parent" location="bottom">{{ $t('wallet') }}</v-tooltip>
           </v-btn>
         </v-col>
         <v-col cols="2" class="text-center">
-          <v-btn variant="text" @click="handleLanguageChange" class="header-btn">
+          <v-btn variant="text" @click="handleLanguageChange" class="header-btn language-btn">
             {{ language === 'en' ? 'EN' : 'RU' }}
             <v-tooltip activator="parent" location="bottom">{{ $t('change_language') }}</v-tooltip>
           </v-btn>
@@ -43,7 +43,7 @@ import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
-import WalletIcon from '@/assets/wallet-icon.svg'; // Исправлен путь
+import WalletIcon from '@/assets/wallet-icon.svg';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -100,7 +100,7 @@ const handleWalletConnect = async (walletData) => {
       ton_address: walletAddressFriendly,
       tonProof,
       account,
-      clientId: clientId.value || walletAddressFriendly, // Используем ton_address как fallback
+      clientId: clientId.value || walletAddressFriendly,
     });
     authStore.setTonProof(tonProof?.proof || null);
     walletAddress.value = walletAddressFriendly;
@@ -230,8 +230,8 @@ const handleLanguageChange = () => {
 
 /* Кастомные стили для TonConnectButton */
 .custom-ton-connect-button {
-  max-width: 150px; /* Ограничиваем максимальную ширину кнопки */
-  width: 100%; /* Убедимся, что кнопка не превышает контейнер */
+  max-width: 150px;
+  width: 100%;
 }
 
 /* Стили для контейнера кнопки */
@@ -239,7 +239,39 @@ const handleLanguageChange = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 150px; /* Ограничиваем контейнер */
-  margin: 0 auto; /* Центрируем контейнер */
+  max-width: 150px;
+  margin: 0 auto;
+}
+
+/* Смещение кнопок */
+.home-btn {
+  margin-right: 8px; /* Смещаем Home левее, добавляем пространство справа */
+}
+.history-btn {
+  margin-right: 16px; /* Смещаем History левее, больше пространства справа */
+}
+.wallet-btn {
+  margin-left: 16px; /* Смещаем Wallet правее, больше пространства слева */
+}
+.language-btn {
+  margin-left: 8px; /* Смещаем RU/EN правее, добавляем пространство слева */
+}
+
+/* Адаптивность */
+@media (max-width: 600px) {
+  .custom-ton-connect-button,
+  .m-btn {
+    max-width: 120px; /* Уменьшаем кнопку на мобильных */
+  }
+  .home-btn,
+  .language-btn {
+    margin-left: 4px;
+    margin-right: 4px; /* Меньше отступов на мобильных */
+  }
+  .history-btn,
+  .wallet-btn {
+    margin-left: 8px;
+    margin-right: 8px; /* Меньше отступов на мобильных */
+  }
 }
 </style>
