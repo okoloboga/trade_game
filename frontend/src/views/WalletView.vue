@@ -143,7 +143,7 @@ onUnmounted(() => {
 .wallet-container {
   background: #1e1e1e;
   border-radius: 8px;
-  padding: 16px;
+  padding: 4px;
 }
 
 .v-card {

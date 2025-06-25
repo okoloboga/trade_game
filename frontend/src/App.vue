@@ -20,9 +20,36 @@ const options = {
 </script>
 
 <style>
+/* Увеличиваем специфичность селектора */
+.v-application .v-container,
+.v-container {
+  padding: 4px !important;
+}
 
-:global(.v-container) {
-  padding: 4px !important; /* Переопределяем padding с 16px на 4px */
+/* Перекрываем медиа-запросы Vuetify */
+@media (min-width: 600px) {
+  .v-application .v-container,
+  .v-container {
+    padding: 4px !important;
+  }
+}
+@media (min-width: 960px) {
+  .v-application .v-container,
+  .v-container {
+    padding: 4px !important;
+  }
+}
+@media (min-width: 1264px) {
+  .v-application .v-container,
+  .v-container {
+    padding: 4px !important;
+  }
+}
+@media (min-width: 1904px) {
+  .v-application .v-container,
+  .v-container {
+    padding: 4px !important;
+  }
 }
 
 .v-dialog .v-overlay {
