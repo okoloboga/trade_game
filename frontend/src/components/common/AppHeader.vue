@@ -230,7 +230,7 @@ const handleLanguageChange = () => {
 
 /* Кастомные стили для TonConnectButton */
 .custom-ton-connect-button {
-  max-width: 200px; /* Ограничиваем максимальную ширину кнопки */
+  max-width: 150px; /* Ограничиваем максимальную ширину кнопки */
   width: 100%; /* Убедимся, что кнопка не превышает контейнер */
 }
 
@@ -239,7 +239,7 @@ const handleLanguageChange = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 200px; /* Ограничиваем контейнер */
+  max-width: 150px; /* Ограничиваем контейнер */
   margin: 0 auto; /* Центрируем контейнер */
 }
 </style>
