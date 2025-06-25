@@ -31,8 +31,6 @@ export class TonService {
     });
     axios.interceptors.response.use(
       (response) => {
-        this.logger.debug(`Response status: ${response.status}`);
-        this.logger.debug(`Response data: ${JSON.stringify(response.data, null, 2)}`);
         return response;
       },
       (error) => {

@@ -1,16 +1,15 @@
 <template>
   <div class="chart-container">
-    <div class="timeframe-buttons mb-2">
-      <v-btn
-        v-for="tf in timeframes"
-        :key="tf"
-        :color="timeframe === tf ? 'primary' : 'secondary'"
-        :class="{ 'flex-grow-1': true }"
-        @click="changeTimeframe(tf)"
-      >
+    <v-tabs
+      v-model="timeframe"
+      color="primary"
+      class="mb-4"
+      @update:modelValue="changeTimeframe"
+    >
+      <v-tab v-for="tf in timeframes" :key="tf" :value="tf">
         {{ tf }}
-      </v-btn>
-    </div>
+      </v-tab>
+    </v-tabs>
     <div ref="chartContainer" class="chart"></div>
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="marketStore.isLoading" class="loading">
@@ -190,7 +189,6 @@ watch(
       console.log('[TradingChart] Skipping chart update: chart not initialized');
       return;
     }
-    console.log('[TradingChart] Market candles updated:', newCandles?.length);
     updateChartData();
   },
   { deep: true }
@@ -211,24 +209,17 @@ watch(
       close: newPrice,
     };
 
-    console.log('[TradingChart] Updating last candle:', updatedCandle);
     candleSeries.update(updatedCandle);
   }
 );
 
 onMounted(async () => {
   try {
-    console.log('[TradingChart] onMounted started');
     await nextTick();
-    console.log('[TradingChart] After nextTick');
     await initChart();
-    console.log('[TradingChart] After initChart');
     await marketStore.fetchCandles();
-    console.log('[TradingChart] After fetchCandles');
     await marketStore.fetchCurrentPrice();
-    console.log('[TradingChart] After fetchCurrentPrice');
     marketStore.startRealTimeUpdates();
-    console.log('[TradingChart] Real-time updates started');
   } catch (err) {
     console.error('[TradingChart] onMounted error:', err);
     error.value = `Chart error: ${err.message}`;
@@ -240,6 +231,30 @@ onUnmounted(() => {
   marketStore.stopRealTimeUpdates();
 });
 </script>
+
+<style scoped>
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.chart {
+  width: 100%;
+  height: 300px;
+}
+.error {
+  color: red;
+  text-align: center;
+  margin-top: 10px;
+}
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+</style>
 
 <style scoped>
 .chart-container {
