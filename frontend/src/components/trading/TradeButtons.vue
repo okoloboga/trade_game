@@ -4,14 +4,13 @@
       <v-row>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) :
-            '0.00000' }}
+            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) : '0.00000' }}
+            <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(2) }})</span>
           </div>
         </v-col>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ?
-            walletStore.usdt_balance.toFixed(5) : '0.00000' }}
+            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ? walletStore.usdt_balance.toFixed(5) : '0.00000' }}
           </div>
         </v-col>
       </v-row>
@@ -27,7 +26,13 @@
             variant="outlined"
             color="white"
             :rules="amountRules"
-          />
+          >
+            <template #details>
+              <div v-if="amount && currentPrice" class="text-caption text-grey">
+                ≈ {{ (amount / currentPrice).toFixed(5) }} TON
+              </div>
+            </template>
+          </v-text-field>
         </v-col>
         <v-col cols="6">
           <div class="text-h6 text-white">
@@ -84,30 +89,42 @@ const errorStore = useErrorStore();
 const loading = ref(false);
 
 const currentPrice = computed(() => {
-  console.log('TradeButtons marketStore:', marketStore);
-  return marketStore.currentPrice;
+  console.log('[TradeButtons] Current price:', marketStore.currentPrice);
+  return marketStore.currentPrice || 0;
 });
 
 const amountRules = computed(() => [
-  (v) => validateAmount(v, 10) === true || validateAmount(v, 10),
-  (v) => (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
+  (v) => validateAmount(v, 10, 0.01) === true || validateAmount(v, 10, 0.01),
+  (v) => !currentPrice.value || (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
+  (v) => v <= walletStore.usdt_balance || t('error.insufficient_usdt_balance'),
 ]);
 
 const canTrade = (type) => {
-  const isValidAmount = validateAmount(amount.value, 10) === true;
-  if (type === 'buy') {
-    return isValidAmount && amount.value <= walletStore.usdt_balance;
+  const isValidAmount = validateAmount(amount.value, 10, 0.01) === true;
+  if (!currentPrice.value) {
+    console.log('[TradeButtons] Cannot trade: no current price');
+    return false;
   }
-  return isValidAmount && (amount.value / currentPrice.value) <= walletStore.balance;
+  if (type === 'buy') {
+    const tonRequired = amount.value / currentPrice.value;
+    const canBuy = isValidAmount && tonRequired <= walletStore.balance;
+    console.log('[TradeButtons] Can buy:', { isValidAmount, tonRequired, balance: walletStore.balance, canBuy });
+    return canBuy;
+  }
+  const canSell = isValidAmount && amount.value <= walletStore.usdt_balance;
+  console.log('[TradeButtons] Can sell:', { isValidAmount, amount: amount.value, usdtBalance: walletStore.usdt_balance, canSell });
+  return canSell;
 };
 
 const executeTrade = useDebounceFn(async (type) => {
+  console.log(`[TradeButtons] Executing ${type} trade: ${amount.value} USD for TON-USDT`);
   loading.value = true;
   try {
     await tradingStore.executeTrade(type, amount.value, 'TON-USDT');
     errorStore.setError(t('trade_executed'), false);
     amount.value = 0.1;
   } catch (error) {
+    console.error('[TradeButtons] Trade execution failed:', error);
     errorStore.setError(t('error.failed_to_execute_trade'));
   } finally {
     loading.value = false;
@@ -116,9 +133,9 @@ const executeTrade = useDebounceFn(async (type) => {
 
 onMounted(async () => {
   console.log('[TradeButtons] Mounted, fetching balances');
-  walletStore.syncFromAuthStore(); // Начальная синхронизация
+  walletStore.syncFromAuthStore();
   try {
-    await walletStore.fetchBalances(); // Запрос балансов с сервера
+    await walletStore.fetchBalances();
   } catch (error) {
     console.error('[TradeButtons] Failed to fetch balances on mount:', error);
   }

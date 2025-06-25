@@ -51,6 +51,7 @@ export const useTradingStore = defineStore('trading', {
       }
       this.isPlacingTrade = true;
       try {
+        console.log(`[tradingStore] Executing ${type} trade: ${amount} USD for ${symbol}`);
         const response = await (type === 'buy'
           ? apiService.buyTrade({
               ton_address: authStore.user.ton_address,
@@ -63,9 +64,9 @@ export const useTradingStore = defineStore('trading', {
               symbol,
             }));
         this.tradeHistory.push(response.trade);
-        // Обновляем балансы
         walletStore.updateBalances(response.user);
-        await walletStore.fetchBalances(); // Синхронизация с сервером
+        await walletStore.fetchBalances();
+        console.log(`[tradingStore] ${type} trade executed:`, response);
         useErrorStore().setError('Trade executed successfully', false);
       } catch (error) {
         console.error('[tradingStore] Failed to execute trade:', error);
