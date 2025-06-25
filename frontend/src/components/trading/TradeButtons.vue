@@ -29,7 +29,7 @@
           >
             <template #details>
               <div v-if="amount && currentPrice" class="text-caption text-grey">
-                ≈ {{ (amount / currentPrice).toFixed(5) }} TON
+                ≈ {{ (amount / currentPrice).toFixed(4) }} TON
               </div>
             </template>
           </v-text-field>
@@ -95,8 +95,6 @@ const currentPrice = computed(() => {
 
 const amountRules = computed(() => [
   (v) => validateAmount(v, Infinity, 0.01) === true || t('error.invalid_amount'),
-  (v) => !currentPrice.value || (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
-  (v) => v <= walletStore.usdt_balance || t('error.insufficient_usdt_balance'),
 ]);
 
 const canTrade = (type) => {
@@ -111,7 +109,7 @@ const canTrade = (type) => {
     console.log('[TradeButtons] Can buy:', { isValidAmount, tonRequired, balance: walletStore.balance, canBuy });
     return canBuy;
   }
-  const canSell = isValidAmount && amount.value <= walletStore.udt_balance;
+  const canSell = isValidAmount && amount.value <= walletStore.usdt_balance;
   console.log('[TradeButtons] Can sell:', { isValidAmount, amount: amount.value, usdtBalance: walletStore.usdt_balance, canSell });
   return canSell;
 };
