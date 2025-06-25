@@ -58,7 +58,7 @@ const initChart = async () => {
 
     chart = createChart(chartContainer.value, {
       width: Math.max(400, rect.width),
-      height: 350, // Увеличиваем высоту для видимости timeScale
+      height: 300, // Возвращаем высоту 300px, но с учётом timeScale
       layout: {
         background: { type: 'solid', color: '#000000' },
         textColor: '#ffffff',
@@ -87,7 +87,7 @@ const initChart = async () => {
         const newRect = chartContainer.value.getBoundingClientRect();
         chart.applyOptions({
           width: Math.max(400, newRect.width),
-          height: 350, // Синхронизируем с высотой контейнера
+          height: 300, // Синхронизируем с контейнером
         });
       }
     };
@@ -237,15 +237,15 @@ onUnmounted(() => {
 .chart-container {
   position: relative;
   width: 100%;
-  height: 350px; /* Увеличиваем высоту для вкладок и timeScale */
+  height: 348px; /* Уменьшаем до 348px для учёта v-tabs */
   border-radius: 8px;
-  overflow: visible; /* Убираем overflow: hidden, чтобы не обрезать timeScale */
+  overflow: hidden; /* Возвращаем hidden для предотвращения перекрытия */
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .chart {
   width: 100%;
-  height: 100%;
+  height: 300px; /* Фиксируем высоту canvas графика */
 }
 
 .error {
