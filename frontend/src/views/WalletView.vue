@@ -5,10 +5,11 @@
         <v-row>
           <v-col cols="12">
             <div class="text-body-1 text-white">
-              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) : '0.00000' }}
-              <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(2) }}) </span>
+              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(4) : '0.0000' }}
+              <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(4) }}) </span>
               <span class="text-caption text-grey">
-                | Total: ${{ totalBalanceUsd.toFixed(2) }} | Available: ${{ availableDepositUsd.toFixed(2) }}
+                | Total: ${{ totalBalanceUsd.toFixed(4) }} | Available: ${{
+                availableDepositUsd.toFixed(4) }}
               </span>
             </div>
           </v-col>

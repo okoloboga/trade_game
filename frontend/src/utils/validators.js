@@ -11,12 +11,19 @@ export const validateWalletAddress = (address) => {
   return true;
 };
 
-export function validateAmount(value, max = Number.MAX_SAFE_INTEGER, min = 0) {
-  if (!value || isNaN(value)) return 'Amount is required';
-  if (value < min) return `Amount must be at least ${min}`;
-  if (value > max) return `Amount cannot exceed ${max}`;
+export const validateAmount = (value, max, min) => {
+  if (value === null || value === undefined || isNaN(Number(value))) {
+    return 'Invalid amount';
+  }
+  const num = Number(value);
+  if (num < min) {
+    return `Amount must be at least ${min}`;
+  }
+  if (max !== Infinity && num > max) {
+    return `Amount cannot exceed ${max}`;
+  }
   return true;
-}
+};
 
 export function validateTradeType(value) {
   if (!['buy', 'sell'].includes(value)) return 'Invalid trade type';

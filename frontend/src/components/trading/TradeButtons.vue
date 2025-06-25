@@ -4,13 +4,14 @@
       <v-row>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(5) : '0.00000' }}
-            <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(2) }})</span>
+            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(4) : '0.0000' }}
+            <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(4) }})</span>
           </div>
         </v-col>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ? walletStore.usdt_balance.toFixed(5) : '0.00000' }}
+            {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ?
+            walletStore.usdt_balance.toFixed(4) : '0.0000' }}
           </div>
         </v-col>
       </v-row>
@@ -20,7 +21,6 @@
             v-model.number="amount"
             :label="$t('amount_label')"
             type="number"
-            :max="10"
             :min="0.01"
             step="0.01"
             variant="outlined"
@@ -36,7 +36,7 @@
         </v-col>
         <v-col cols="6">
           <div class="text-h6 text-white">
-            ${{ currentPrice.toFixed(5) ?? '--' }}
+            ${{ currentPrice.toFixed(4) ?? '--' }}
           </div>
         </v-col>
       </v-row>
@@ -94,13 +94,13 @@ const currentPrice = computed(() => {
 });
 
 const amountRules = computed(() => [
-  // (v) => validateAmount(v, 10, 0.01) === true || validateAmount(v, 10, 0.01),
+  (v) => validateAmount(v, Infinity, 0.01) === true || t('error.invalid_amount'),
   (v) => !currentPrice.value || (v / currentPrice.value) <= walletStore.balance || t('error.insufficient_ton_balance'),
   (v) => v <= walletStore.usdt_balance || t('error.insufficient_usdt_balance'),
 ]);
 
 const canTrade = (type) => {
-  const isValidAmount = validateAmount(amount.value, 10, 0.01) === true;
+  const isValidAmount = validateAmount(amount.value, Infinity, 0.01) === true;
   if (!currentPrice.value) {
     console.log('[TradeButtons] Cannot trade: no current price');
     return false;

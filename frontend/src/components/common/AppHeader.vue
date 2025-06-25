@@ -16,7 +16,7 @@
         </v-col>
         <v-col cols="4" class="text-center">
           <div class="m-btn">
-            <TonConnectButton :button-root-id="'ton-connect-button'" />
+            <TonConnectButton class="custom-ton-connect-button" :button-root-id="'ton-connect-button'" />
           </div>
         </v-col>
         <v-col cols="2" class="text-center">
@@ -226,5 +226,20 @@ const handleLanguageChange = () => {
   padding-bottom: 4px;
   --tc-button-background: transparent !important;
   --tc-button-color: #E0E0E0 !important;
+}
+
+/* Кастомные стили для TonConnectButton */
+.custom-ton-connect-button {
+  max-width: 200px; /* Ограничиваем максимальную ширину кнопки */
+  width: 100%; /* Убедимся, что кнопка не превышает контейнер */
+}
+
+/* Стили для контейнера кнопки */
+.m-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 200px; /* Ограничиваем контейнер */
+  margin: 0 auto; /* Центрируем контейнер */
 }
 </style>

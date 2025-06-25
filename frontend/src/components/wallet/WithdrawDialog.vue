@@ -15,7 +15,7 @@
           :rules="withdrawRules"
         />
         <v-alert type="info" variant="tonal" class="mt-2">
-          {{ $t('withdraw_info', { receive: (amount - 0.1).toFixed(2) }) }} (0.1 TON — {{ $t('fee') }})
+          {{ $t('withdraw_info', { receive: (amount - 0.1).toFixed(4) }) }} (0.1 TON — {{ $t('fee') }})
         </v-alert>
       </v-card-text>
       <v-card-actions>
