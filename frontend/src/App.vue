@@ -20,6 +20,11 @@ const options = {
 </script>
 
 <style>
+
+:global(.v-container) {
+  padding: 4px !important; /* Переопределяем padding с 16px на 4px */
+}
+
 .v-dialog .v-overlay {
   z-index: 2000 !important;
 }
