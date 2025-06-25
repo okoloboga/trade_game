@@ -1,9 +1,9 @@
 <template>
-  <div class="chart-container">
+  <div class="trading-chart-wrapper">
     <v-tabs
       v-model="timeframe"
       color="primary"
-      class="mb-4"
+      class="mb-2 timeframe-tabs"
       grow
       @update:modelValue="changeTimeframe"
     >
@@ -11,11 +11,13 @@
         {{ tf }}
       </v-tab>
     </v-tabs>
-    <div ref="chartContainer" class="chart"></div>
-    <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="marketStore.isLoading" class="loading">
-      <v-progress-circular indeterminate />
-      <div class="mt-2">{{ $t('loading_chart') }}</div>
+    <div class="chart-container">
+      <div ref="chartContainer" class="chart"></div>
+      <div v-if="error" class="error">{{ error }}</div>
+      <div v-if="marketStore.isLoading" class="loading">
+        <v-progress-circular indeterminate />
+        <div class="mt-2">{{ $t('loading_chart') }}</div>
+      </div>
     </div>
   </div>
 </template>
@@ -58,7 +60,7 @@ const initChart = async () => {
 
     chart = createChart(chartContainer.value, {
       width: Math.max(400, rect.width),
-      height: 300, // Возвращаем высоту 300px, но с учётом timeScale
+      height: 300, // Полная высота контейнера
       layout: {
         background: { type: 'solid', color: '#000000' },
         textColor: '#ffffff',
@@ -234,18 +236,22 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.trading-chart-wrapper {
+  width: 100%;
+}
+
 .chart-container {
   position: relative;
   width: 100%;
-  height: 348px; /* Уменьшаем до 348px для учёта v-tabs */
+  height: 300px; /* Уменьшаем до 300px, так как v-tabs теперь вне контейнера */
   border-radius: 8px;
-  overflow: hidden; /* Возвращаем hidden для предотвращения перекрытия */
+  overflow: hidden;
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .chart {
   width: 100%;
-  height: 300px; /* Фиксируем высоту canvas графика */
+  height: 100%; /* Используем всю высоту контейнера */
 }
 
 .error {
@@ -269,6 +275,10 @@ onUnmounted(() => {
   color: #ffffff;
   text-align: center;
   z-index: 5;
+}
+
+.timeframe-tabs {
+  background: transparent;
 }
 
 .timeframe-buttons {
