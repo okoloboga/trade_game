@@ -1,7 +1,7 @@
 <template>
   <v-container fluid>
     <TradingStats />
-    <v-tabs v-model="activeTab" color="primary" class="mb-4">
+    <v-tabs v-model="activeTab" color="primary" class="mb-4" grow>
       <v-tab value="trades">{{ $t('trades') }}</v-tab>
       <v-tab value="transactions">{{ $t('transactions') }}</v-tab>
     </v-tabs>

@@ -4,6 +4,7 @@
       v-model="timeframe"
       color="primary"
       class="mb-4"
+      grow
       @update:modelValue="changeTimeframe"
     >
       <v-tab v-for="tf in timeframes" :key="tf" :value="tf">
@@ -29,7 +30,7 @@ const { t } = useI18n();
 const marketStore = useMarketStore();
 const chartContainer = ref(null);
 const error = ref('');
-const timeframe = ref(marketStore.timeframe); // Синхронизируем с marketStore
+const timeframe = ref(marketStore.timeframe);
 const timeframes = ['1m', '5m', '15m'];
 let chart = null;
 let candleSeries = null;
@@ -57,7 +58,7 @@ const initChart = async () => {
 
     chart = createChart(chartContainer.value, {
       width: Math.max(400, rect.width),
-      height: 300,
+      height: 350, // Увеличиваем высоту для видимости timeScale
       layout: {
         background: { type: 'solid', color: '#000000' },
         textColor: '#ffffff',
@@ -86,7 +87,7 @@ const initChart = async () => {
         const newRect = chartContainer.value.getBoundingClientRect();
         chart.applyOptions({
           width: Math.max(400, newRect.width),
-          height: 300,
+          height: 350, // Синхронизируем с высотой контейнера
         });
       }
     };
@@ -236,35 +237,10 @@ onUnmounted(() => {
 .chart-container {
   position: relative;
   width: 100%;
-  height: 100%;
-}
-.chart {
-  width: 100%;
-  height: 300px;
-}
-.error {
-  color: red;
-  text-align: center;
-  margin-top: 10px;
-}
-.loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-</style>
-
-<style scoped>
-.chart-container {
-  position: relative;
-  width: 100%;
-  height: 300px;
+  height: 350px; /* Увеличиваем высоту для вкладок и timeScale */
   border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.2)
-
+  overflow: visible; /* Убираем overflow: hidden, чтобы не обрезать timeScale */
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .chart {
