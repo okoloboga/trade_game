@@ -75,6 +75,9 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('ton-connect-storage_bridge-connection');
+      localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+      localStorage.removeItem('ton-connect-ui_wallet-info');
       this.token = null;
       this.user = null;
       this.walletAddress = null;
