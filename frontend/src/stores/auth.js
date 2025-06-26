@@ -72,6 +72,22 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
+    async verifyToken() {
+      try {
+        const response = await apiService.verifyToken(this.token);
+        if (response.valid) {
+          await this.init();
+          return response;
+        } else {
+          this.logout();
+          throw new Error('Token verification failed');
+        }
+      } catch (error) {
+        console.error('[authStore] Verify token failed:', error);
+        this.logout();
+        throw error;
+      }
+    },
     logout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
