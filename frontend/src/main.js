@@ -10,6 +10,7 @@ import WebApp from '@twa-dev/sdk';
 import { createI18n } from 'vue-i18n';
 import { Buffer } from 'buffer';
 import apiService from '@/services/api';
+import { TonConnectUI } from '@townsquarelabs/ui-vue';
 
 // Импорт переводов
 import en from './locales/en.json';
@@ -40,6 +41,12 @@ if (!window.Telegram?.WebApp) {
 }
 
 window.Buffer = window.Buffer || Buffer;
+
+// Инициализация TonConnect
+const tonConnectUI = new TonConnectUI({
+  manifestUrl: 'https://trade.ruble.website/tonconnect-manifest.json', // Замените на ваш манифест
+  bridgeUrl: 'https://bridge.tonapi.io/bridge', // Явно указываем рабочий мост
+});
 
 // Vuetify инициализация
 const vuetify = createVuetify({
@@ -75,6 +82,7 @@ app.use(pinia);
 app.use(router);
 app.use(vuetify);
 app.use(i18n);
+app.provide('tonConnectUI', tonConnectUI); // Предоставляем tonConnectUI для компонентов
 
 // Монтируем приложение
 app.mount('#app');
@@ -91,11 +99,10 @@ async function initializeApp() {
     appStore.setLoading(true);
 
     if (authStore.token) {
-      // Проверяем токен через API (например, /auth/verify)
       try {
         const response = await apiService.verifyToken(authStore.token);
         if (response.valid) {
-          await authStore.init(); // Восстанавливаем user из LocalStorage
+          await authStore.init();
           if (authStore.isConnected) {
             await walletStore.fetchWalletData();
           }

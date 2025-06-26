@@ -43,7 +43,7 @@ import { useLanguage } from '@/composables/useLanguage';
 import { useI18n } from 'vue-i18n';
 import HomeIcon from '@/assets/home-icon.svg';
 import HistoryIcon from '@/assets/history-icon.svg';
-import WalletIcon from '@/assets/wallet-icon.svg'; // Исправлен путь
+import WalletIcon from '@/assets/wallet-icon.svg';
 
 const { t } = useI18n();
 const { language, changeLanguage } = useLanguage();
@@ -100,7 +100,7 @@ const handleWalletConnect = async (walletData) => {
       ton_address: walletAddressFriendly,
       tonProof,
       account,
-      clientId: clientId.value || walletAddressFriendly, // Используем ton_address как fallback
+      clientId: clientId.value || walletAddressFriendly,
     });
     authStore.setTonProof(tonProof?.proof || null);
     walletAddress.value = walletAddressFriendly;
@@ -112,7 +112,8 @@ const handleWalletConnect = async (walletData) => {
     authStore.logout();
     walletAddress.value = null;
     clientId.value = null;
-    throw error;
+    await tonConnectUI.disconnect(); // Сбрасываем сессию при ошибке
+    await recreateProofPayload(); // Пробуем заново сгенерировать challenge
   }
 };
 
@@ -126,19 +127,6 @@ onMounted(async () => {
   console.log('[onMounted] Initializing auth store');
   await authStore.init();
   console.log('[onMounted] authStore after init:', authStore.token, authStore.user);
-
-  // Сбрасываем сессию TonConnect, если кошелёк не подключён
-  if (!tonConnectUI.connected || !wallet.value) {
-    console.log('[onMounted] No wallet connected, resetting session');
-    await tonConnectUI.disconnect();
-    localStorage.removeItem('ton-connect-storage_bridge-connection');
-    localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
-    localStorage.removeItem('ton-connect-ui_wallet-info');
-  }
-
-  // Генерируем новый challenge
-  console.log('[onMounted] Generating new challenge');
-  await recreateProofPayload();
 
   if (tonConnectUI.connected && wallet.value) {
     console.log('[onMounted] Wallet already connected');
@@ -157,7 +145,7 @@ onMounted(async () => {
     } else {
       console.warn('[onMounted] Failed to generate tonProof, disconnecting');
       await tonConnectUI.disconnect();
-      authStore.logout();
+      await recreateProofPayload();
     }
   } else {
     console.log('[onMounted] No wallet connected, generating challenge');
@@ -186,9 +174,7 @@ onMounted(async () => {
       walletAddress.value = null;
       clientId.value = null;
       tonConnectUI.setConnectRequestParameters(null);
-      localStorage.removeItem('ton-connect-storage_bridge-connection');
-      localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
-      localStorage.removeItem('ton-connect-ui_wallet-info');
+      await recreateProofPayload(); // Генерируем новый challenge после отключения
     }
   });
 });
@@ -205,56 +191,47 @@ const handleLanguageChange = () => {
 </script>
 
 <style scoped>
-/* Базовые стили */
 .v-app-bar {
   height: 62px !important;
   padding: 0px 0px 4px 4px;
 }
-
-/* Стили для иконок */
 .icon {
   width: 24px;
   height: 24px;
   filter: brightness(0) invert(1);
   transition: opacity 0.2s ease;
 }
-
-/* Состояние наведения */
 .v-btn.header-btn:hover .icon {
   opacity: 0.8;
 }
-
-/* Активное состояние (нажатие) - только для Home */
 .v-btn.header-btn:active .home-icon {
   background: rgba(255, 255, 255, 0.1) !important;
   border-radius: 50%;
   padding: 8px;
 }
-
-/* Фикс для Material иконки */
 .header-btn :deep(.v-icon) {
   color: inherit !important;
 }
-
-/* Специфичные стили для TonConnectButton */
 .ton-connect-button {
   padding-bottom: 4px;
   --tc-button-background: transparent !important;
   --tc-button-color: #E0E0E0 !important;
 }
-
-/* Кастомные стили для TonConnectButton */
 .custom-ton-connect-button {
-  max-width: 150px; /* Ограничиваем максимальную ширину кнопки */
-  width: 100%; /* Убедимся, что кнопка не превышает контейнер */
+  max-width: 150px;
+  width: 100%;
 }
-
-/* Стили для контейнера кнопки */
 .m-btn {
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 150px; /* Ограничиваем контейнер */
-  margin: 0 auto; /* Центрируем контейнер */
+  max-width: 150px;
+  margin: 0 auto;
+}
+@media (max-width: 600px) {
+  .custom-ton-connect-button,
+  .m-btn {
+    max-width: 120px;
+  }
 }
 </style>
