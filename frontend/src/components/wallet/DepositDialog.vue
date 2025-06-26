@@ -85,7 +85,7 @@ const isValid = computed(() => {
 });
 
 /**
- * Initiates a deposit transaction to the user's TON wallet.
+ * Initiates a deposit transaction to the central TON wallet.
  */
 const deposit = useDebounceFn(async () => {
   if (!tonConnectUI.connected) {
@@ -102,9 +102,10 @@ const deposit = useDebounceFn(async () => {
     }
   }
 
-  if (!walletStore.depositAddress) {
-    console.error('[DepositDialog] No deposit address available');
-    errorStore.setError(t('error.no_deposit_address'));
+  const centralWallet = import.meta.env.VITE_TON_CENTRAL_WALLET;
+  if (!centralWallet) {
+    console.error('[DepositDialog] Central wallet address not configured');
+    errorStore.setError(t('error.no_central_wallet'));
     return;
   }
 
@@ -115,7 +116,7 @@ const deposit = useDebounceFn(async () => {
       validUntil: Math.floor(Date.now() / 1000) + 600,
       messages: [
         {
-          address: walletStore.depositAddress,
+          address: centralWallet,
           amount: nanoAmount,
         },
       ],
@@ -131,7 +132,6 @@ const deposit = useDebounceFn(async () => {
     });
 
     await walletStore.fetchBalances();
-    // errorStore.setError(t('deposit_success'), false);
     emit('deposit-success');
     closeDialog();
   } catch (error) {
