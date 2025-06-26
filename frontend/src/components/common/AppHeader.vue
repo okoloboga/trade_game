@@ -83,9 +83,11 @@ const recreateProofPayload = async () => {
 
 const handleWalletConnect = async (walletData) => {
   try {
+    console.log('[handleWalletConnect] Starting wallet connect, walletData:', walletData);
     const walletAddressFriendly = userFriendlyAddress.value;
     if (!walletAddressFriendly) {
-      throw new Error('[handleWalletConnect] User-friendly address not available');
+      console.error('[handleWalletConnect] User-friendly address not available');
+      throw new Error('User-friendly address not available');
     }
     const tonProofPayload = walletData.connectItems?.tonProof?.proof;
     const tonProof = tonProofPayload ? { proof: tonProofPayload } : null;
@@ -95,7 +97,7 @@ const handleWalletConnect = async (walletData) => {
       chain: walletData.account?.chain || '',
       walletStateInit: walletData.account?.walletStateInit || '',
     };
-    console.log('[handleWalletConnect] Logging in with ton_address:', walletAddressFriendly);
+    console.log('[handleWalletConnect] Logging in with ton_address:', walletAddressFriendly, 'tonProof:', tonProof);
     await authStore.login({
       ton_address: walletAddressFriendly,
       tonProof,
@@ -112,8 +114,11 @@ const handleWalletConnect = async (walletData) => {
     authStore.logout();
     walletAddress.value = null;
     clientId.value = null;
-    await tonConnectUI.disconnect(); // Сбрасываем сессию при ошибке
-    await recreateProofPayload(); // Пробуем заново сгенерировать challenge
+    await tonConnectUI.disconnect();
+    localStorage.removeItem('ton-connect-storage_bridge-connection');
+    localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+    localStorage.removeItem('ton-connect-ui_wallet-info');
+    await recreateProofPayload();
   }
 };
 
@@ -133,18 +138,30 @@ onMounted(async () => {
     await new Promise((resolve) => {
       const unwatch = watch(userFriendlyAddress, (newAddress) => {
         if (newAddress) {
+          console.log('[onMounted] User-friendly address available:', newAddress);
           unwatch();
           resolve();
         }
       });
+      // Таймаут на случай, если адрес не появится
+      setTimeout(() => {
+        if (!userFriendlyAddress.value) {
+          console.warn('[onMounted] User-friendly address timeout');
+          unwatch();
+          resolve();
+        }
+      }, 5000);
     });
     walletAddress.value = userFriendlyAddress.value;
     const success = await recreateProofPayload();
-    if (success) {
+    if (success && userFriendlyAddress.value) {
       await handleWalletConnect(wallet.value);
     } else {
-      console.warn('[onMounted] Failed to generate tonProof, disconnecting');
+      console.warn('[onMounted] Failed to generate tonProof or no address, disconnecting');
       await tonConnectUI.disconnect();
+      localStorage.removeItem('ton-connect-storage_bridge-connection');
+      localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+      localStorage.removeItem('ton-connect-ui_wallet-info');
       await recreateProofPayload();
     }
   } else {
@@ -160,21 +177,42 @@ onMounted(async () => {
         await new Promise((resolve) => {
           const unwatch = watch(userFriendlyAddress, (newAddress) => {
             if (newAddress) {
+              console.log('[onStatusChange] User-friendly address available:', newAddress);
               unwatch();
               resolve();
             }
           });
+          // Таймаут на случай, если адрес не появится
+          setTimeout(() => {
+            if (!userFriendlyAddress.value) {
+              console.warn('[onStatusChange] User-friendly address timeout');
+              unwatch();
+              resolve();
+            }
+          }, 5000);
         });
       }
-      console.log('[onStatusChange] Wallet connected, address:', userFriendlyAddress.value);
-      await handleWalletConnect(walletData);
+      if (userFriendlyAddress.value) {
+        console.log('[onStatusChange] Wallet connected, address:', userFriendlyAddress.value);
+        await handleWalletConnect(walletData);
+      } else {
+        console.error('[onStatusChange] No user-friendly address, disconnecting');
+        await tonConnectUI.disconnect();
+        localStorage.removeItem('ton-connect-storage_bridge-connection');
+        localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+        localStorage.removeItem('ton-connect-ui_wallet-info');
+        await recreateProofPayload();
+      }
     } else {
       console.log('[onStatusChange] Wallet disconnected, token before logout:', authStore.token);
       authStore.logout();
       walletAddress.value = null;
       clientId.value = null;
       tonConnectUI.setConnectRequestParameters(null);
-      await recreateProofPayload(); // Генерируем новый challenge после отключения
+      localStorage.removeItem('ton-connect-storage_bridge-connection');
+      localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+      localStorage.removeItem('ton-connect-ui_wallet-info');
+      await recreateProofPayload();
     }
   });
 });
