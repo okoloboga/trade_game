@@ -36,6 +36,7 @@
   </v-app-bar>
 </template>
 
+
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useTonWallet, useTonConnectUI, TonConnectButton, useTonAddress } from '@townsquarelabs/ui-vue';
