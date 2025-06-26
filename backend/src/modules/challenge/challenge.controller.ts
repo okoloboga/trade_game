@@ -15,7 +15,7 @@ interface VerifyTonProofDto {
   walletAddress: string;
   tonProof: TonProof;
   account: Account;
-  clientId: string; // Добавляем clientId
+  clientId: string;
 }
 
 interface ChallengeResponse {
@@ -32,7 +32,6 @@ export class ChallengeController {
 
   @Get('generate')
   async generateChallenge(@Query('clientId') clientId?: string): Promise<ChallengeResponse> {
-    this.logger.log(`Generating challenge for clientId: ${clientId || 'new session'}`);
     return await this.challengeService.generateChallenge(clientId);
   }
 
@@ -46,7 +45,6 @@ export class ChallengeController {
     }
 
     try {
-      this.logger.log(`Starting TON Proof verification for walletAddress: ${walletAddress}, clientId: ${clientId}`);
       const isValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
 
       if (isValid) {

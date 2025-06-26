@@ -70,6 +70,9 @@ const withdrawRules = computed(() => [
 
 const isValid = computed(() => validateAmount(amount.value, walletStore.balance, 0.11) === true);
 
+/**
+ * Initiates a withdrawal transaction from the user's TON wallet.
+ */
 const withdraw = useDebounceFn(async () => {
   if (!authStore.isConnected || !authStore.user?.ton_address) {
     console.error('[WithdrawDialog] Wallet not connected:', authStore.user?.ton_address);
@@ -79,20 +82,13 @@ const withdraw = useDebounceFn(async () => {
 
   isProcessing.value = true;
   try {
-    console.log('[WithdrawDialog] Withdraw params:', {
-      tonAddress: authStore.user.ton_address,
-      amount: amount.value,
-      receive: amount.value - 0.1,
-    });
-
     const response = await apiService.withdraw({
       tonAddress: authStore.user.ton_address,
       amount: amount.value,
     });
 
-    console.log('[WithdrawDialog] Transaction result:', response);
     walletStore.updateBalances(response.user);
-    errorStore.setError(t('withdraw_success'), false);
+    // errorStore.setError(t('withdraw_success'), false);
     emit('withdraw-success');
     closeDialog();
   } catch (error) {
@@ -103,6 +99,9 @@ const withdraw = useDebounceFn(async () => {
   }
 }, 300);
 
+/**
+ * Closes the withdraw dialog and resets the input amount.
+ */
 const closeDialog = () => {
   internalModelValue.value = false;
   amount.value = 0.11;

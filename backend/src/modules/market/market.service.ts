@@ -13,6 +13,9 @@ interface Candle {
   close: number;
 }
 
+/**
+ * Service for fetching and caching market data from OKX API.
+ */
 @Injectable()
 export class MarketService {
   private readonly logger = new Logger(MarketService.name);
@@ -23,13 +26,18 @@ export class MarketService {
     @InjectRedis() private readonly redis: Redis
   ) {}
 
-  async getCandles(candlesDto: CandlesDto) {
+  /**
+   * Fetches candlestick data for a given instrument and interval, with caching.
+   * @param candlesDto - DTO containing instrument ID and bar interval.
+   * @returns {Promise<Candle[]>} Array of candlestick data.
+   * @throws {AxiosError} If the API request fails.
+   */
+  async getCandles(candlesDto: CandlesDto): Promise<Candle[]> {
     const { instId, bar } = candlesDto;
     const cacheKey = `candles:${instId}:${bar}`;
     const cached = await this.redis.get(cacheKey);
 
     if (cached) {
-      this.logger.log(`Returning cached candles for ${instId} (${bar})`);
       return JSON.parse(cached);
     }
 
@@ -60,10 +68,7 @@ export class MarketService {
         })
       );
 
-      // Кэшируем на 5 минут
       await this.redis.set(cacheKey, JSON.stringify(candles), 'EX', 300);
-      this.logger.log(`Fetched and cached candles for ${instId} (${bar})`);
-
       return candles;
     } catch (error) {
       this.logger.error(
@@ -72,12 +77,18 @@ export class MarketService {
       throw error;
     }
   }
+
+  /**
+   * Fetches the current price for a given instrument, with caching.
+   * @param instrument - Instrument ID (e.g., TON-USDT).
+   * @returns {Promise<number>} Current price.
+   * @throws {BadRequestException} If the API request fails.
+   */
   async getCurrentPrice(instrument: string): Promise<number> {
     const cacheKey = `price:${instrument}`;
     const cached = await this.redis.get(cacheKey);
 
     if (cached) {
-      this.logger.log(`Returning cached price for ${instrument}`);
       return parseFloat(cached);
     }
 
@@ -92,8 +103,7 @@ export class MarketService {
       });
 
       const price = parseFloat(response.data.data[0].last);
-      await this.redis.set(cacheKey, price, 'EX', 60); // Кэш на 1 минуту
-      this.logger.log(`Fetched and cached price for ${instrument}: ${price}`);
+      await this.redis.set(cacheKey, price, 'EX', 60);
       return price;
     } catch (error) {
       this.logger.error(

@@ -11,6 +11,10 @@ export const useTradingStore = defineStore('trading', {
     isPlacingTrade: false,
   }),
   actions: {
+    /**
+     * Fetches the trade history for the authenticated user.
+     * @param {string} [period='1w'] - The time period for the trade history.
+     */
     async fetchTradeHistory(period = '1w') {
       const authStore = useAuthStore();
       if (!authStore.isConnected || !authStore.user?.ton_address) {
@@ -18,16 +22,20 @@ export const useTradingStore = defineStore('trading', {
         throw new Error('Not connected');
       }
       try {
-        console.log('[tradingStore] Fetching trade history for:', authStore.user.ton_address, 'period:', period);
         const response = await apiService.getTradeHistory(period);
         this.tradeHistory = response.trades;
-        console.log('[tradingStore] Trade history fetched:', this.tradeHistory.length);
       } catch (error) {
         console.error('[tradingStore] Failed to fetch trade history:', error);
         useErrorStore().setError('Failed to fetch trade history');
         throw error;
       }
     },
+    /**
+     * Executes a buy or sell trade.
+     * @param {string} type - The trade type ('buy' or 'sell').
+     * @param {number} amount - The trade amount in USD.
+     * @param {string} symbol - The trading pair symbol.
+     */
     async executeTrade(type, amount, symbol) {
       const authStore = useAuthStore();
       const walletStore = useWalletStore();
@@ -51,7 +59,6 @@ export const useTradingStore = defineStore('trading', {
       }
       this.isPlacingTrade = true;
       try {
-        console.log(`[tradingStore] Executing ${type} trade: ${amount} USD for ${symbol}`);
         const response = await (type === 'buy'
           ? apiService.buyTrade({
               ton_address: authStore.user.ton_address,
@@ -66,7 +73,6 @@ export const useTradingStore = defineStore('trading', {
         this.tradeHistory.push(response.trade);
         walletStore.updateBalances(response.user);
         await walletStore.fetchBalances();
-        console.log(`[tradingStore] ${type} trade executed:`, response);
         useErrorStore().setError('Trade executed successfully', false);
       } catch (error) {
         console.error('[tradingStore] Failed to execute trade:', error);

@@ -59,25 +59,29 @@ const profitClass = computed(() => ({
   'white--text': summary.value.totalProfitLoss.usd === 0,
 }));
 
+/**
+ * Fetches trading statistics and trade history for the selected period.
+ */
 const fetchStats = async () => {
   if (!authStore.isConnected || !authStore.user?.ton_address) {
     errorStore.setError(t('wallet_connect'));
     return;
   }
   try {
-    console.log('[TradingStats] Fetching stats for period:', period.value);
     const [summaryResponse] = await Promise.all([
       apiService.getSummary(period.value),
       tradingStore.fetchTradeHistory(period.value),
     ]);
     summary.value = summaryResponse;
-    console.log('[TradingStats] Stats fetched:', summary.value);
   } catch (error) {
     console.error('[TradingStats] Failed to fetch stats:', error);
     errorStore.setError(t('load_trading_stats'));
   }
 };
 
+/**
+ * Initializes the component by fetching trading statistics.
+ */
 onMounted(fetchStats);
 watch(period, fetchStats);
 </script>

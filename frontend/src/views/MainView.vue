@@ -38,26 +38,29 @@ const tradingStore = useTradingStore();
 const authStore = useAuthStore();
 const errorStore = useErrorStore();
 
+/**
+ * Loads initial data for the main view (candles, price, trade history).
+ */
+const loadData = async () => {
+  const results = await Promise.allSettled([
+    marketStore.fetchCandles('TON-USDT', '5m').catch(e => console.error('Candles fetch failed:', e.message)),
+    marketStore.fetchCurrentPrice('TON-USDT').catch(e => console.error('Price fetch failed:', e.message)),
+    tradingStore.fetchTradeHistory().catch(e => console.error('Trade history fetch failed:', e.message)),
+  ]);
+
+  const failures = results.filter(r => r.status === 'rejected').length;
+  if (failures > 0) {
+    errorStore.setError(t('offline_mode'));
+  }
+};
+
+/**
+ * Initializes the main view, setting up data and real-time updates.
+ */
 onMounted(async () => {
-  console.log('MainView mounted, initializing...');
   errorStore.clearError();
-
-  const loadData = async () => {
-    const results = await Promise.allSettled([
-      marketStore.fetchCandles('TON-USDT', '5m').catch(e => console.log('Candles fetch failed:', e.message)),
-      marketStore.fetchCurrentPrice('TON-USDT').catch(e => console.log('Price fetch failed:', e.message)),
-      tradingStore.fetchTradeHistory().catch(e => console.log('Trade history fetch failed:', e.message)),
-    ]);
-
-    const failures = results.filter(r => r.status === 'rejected').length;
-    if (failures > 0) {
-      console.log(`${failures} requests failed - working in offline mode`);
-      errorStore.setError(t('offline_mode'));
-    }
-  };
-
   try {
-    await authStore.init(); // Восстанавливаем сессию
+    await authStore.init(); // Restore session
     marketStore.setMainPage(true);
     await loadData();
     marketStore.startRealTimeUpdates('TON-USDT');
@@ -67,8 +70,10 @@ onMounted(async () => {
   }
 });
 
+/**
+ * Cleans up the main view, stopping real-time updates.
+ */
 onUnmounted(() => {
-  console.log('MainView unmounted, cleaning up...');
   marketStore.setMainPage(false);
   marketStore.stopRealTimeUpdates();
 });

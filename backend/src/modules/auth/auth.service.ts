@@ -15,6 +15,13 @@ export class AuthService {
     private readonly challengeService: ChallengeService
   ) {}
 
+  /**
+   * Authenticates a user using TON wallet credentials and generates a JWT token.
+   * Creates a new user if none exists for the provided TON address.
+   * @param authDto - Authentication data including TON address, proof, account, and client ID.
+   * @returns {Promise<{ access_token: string, user: User }>} Object containing JWT token and user data.
+   * @throws {UnauthorizedException} If client ID is missing or TON proof is invalid.
+   */
   async login(authDto: AuthDto) {
     const { ton_address, tonProof, account, clientId } = authDto;
 
@@ -44,6 +51,13 @@ export class AuthService {
 
     return { access_token: token, user };
   }
+
+  /**
+   * Verifies a JWT token and retrieves the associated user.
+   * @param token - JWT token to verify.
+   * @returns {Promise<{ id: string, ton_address: string }>} User data if token is valid.
+   * @throws {UnauthorizedException} If token is invalid or user not found.
+   */
   async verifyToken(token: string) {
     try {
       const payload = await this.jwtService.verifyAsync(token);

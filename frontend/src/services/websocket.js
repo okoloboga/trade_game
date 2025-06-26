@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client';
-import { watch } from 'vue';
 
 export class WebSocketService {
   constructor() {
@@ -9,6 +8,10 @@ export class WebSocketService {
     this.subscriptions = new Set();
   }
 
+  /**
+   * Establishes a WebSocket connection and sets up event handlers.
+   * @param {Function} onMessage - Callback to handle incoming WebSocket messages.
+   */
   connect(onMessage) {
     if (this.socket) this.close();
 
@@ -22,7 +25,6 @@ export class WebSocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to WebSocket server', this.socket.id, 'Namespace:', this.socket.nsp);
       this.reconnectAttempts = 0;
       this.subscriptions.forEach(channel => this.subscribe(channel));
     });
@@ -36,32 +38,30 @@ export class WebSocketService {
     });
 
     this.socket.on('message', (data) => {
-      console.log('WebSocket message:', data);
     });
 
     this.socket.on('candle', (data) => {
-      console.log('Received candle data:', data);
       onMessage({ type: 'candle', symbol: data.instId, candle: data });
     });
 
     this.socket.on('ticker', (data) => {
-      console.log('Received ticker data:', data);
       onMessage({ type: 'ticker', symbol: data.instId, price: data.close });
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
     });
 
     this.socket.on('subscribed', (data) => {
-      console.log('Subscribed to channel:', data);
     });
 
     this.socket.on('unsubscribed', (data) => {
-      console.log('Unsubscribed from channel:', data);
     });
   }
 
+  /**
+   * Subscribes to a WebSocket channel for real-time data.
+   * @param {string} channel - The channel to subscribe to (e.g., 'candles:TON-USDT:5m').
+   */
   subscribe(channel) {
     if (!this.subscriptions.has(channel)) {
       this.subscriptions.add(channel);
@@ -70,23 +70,28 @@ export class WebSocketService {
     if (this.socket && this.socket.connected) {
       const [type, instId, bar] = channel.split(':');
       if (type === 'candles' || type === 'ticker') {
-        console.log(`Subscribing to channel: ${channel}`);
         this.socket.emit('subscribe', { instId: instId || 'TON-USDT', bar: bar || '5m' });
       }
     }
   }
 
+  /**
+   * Unsubscribes from a WebSocket channel.
+   * @param {string} channel - The channel to unsubscribe from (e.g., 'candles:TON-USDT:5m').
+   */
   unsubscribe(channel) {
     if (this.subscriptions.has(channel)) {
       this.subscriptions.delete(channel);
       if (this.socket && this.socket.connected) {
         const [type, instId, bar] = channel.split(':');
-        console.log(`Unsubscribing from channel: ${channel}`);
         this.socket.emit('unsubscribe', { instId: instId || 'TON-USDT', bar: bar || '5m' });
       }
     }
   }
 
+  /**
+   * Closes the WebSocket connection and clears subscriptions.
+   */
   close() {
     if (this.socket) {
       this.subscriptions.forEach(channel => this.unsubscribe(channel));
@@ -94,7 +99,6 @@ export class WebSocketService {
       this.socket = null;
       this.subscriptions.clear();
       this.reconnectAttempts = 0;
-      console.log('WebSocket connection closed');
     }
   }
 }

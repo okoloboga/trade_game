@@ -24,9 +24,6 @@ export class TonService {
 
   constructor(private readonly configService: ConfigService) {
     axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-      this.logger.debug(`Sending HTTP request: ${config.method?.toUpperCase()} ${config.url}`);
-      this.logger.debug(`Request headers: ${JSON.stringify(config.headers, null, 2)}`);
-      this.logger.debug(`Request data: ${JSON.stringify(config.data, null, 2)}`);
       return config;
     });
     axios.interceptors.response.use(
@@ -46,6 +43,10 @@ export class TonService {
     this.initializeWallet();
   }
 
+  /**
+   * Initializes the TON client with the configured endpoint and API key.
+   * @throws {BadRequestException} If TON_API_KEY is not defined.
+   */
   private initializeClient() {
     const tonEndpoint = 'https://toncenter.com/api/v2/jsonRPC';
     const apiKey = this.configService.get<string>('TON_API_KEY');
@@ -56,6 +57,10 @@ export class TonService {
     this.logger.log(`Initialized TON client with endpoint: ${tonEndpoint}`);
   }
 
+  /**
+   * Initializes the central wallet using the configured mnemonic and Jetton master address.
+   * @throws {BadRequestException} If mnemonic or Jetton master address is missing or invalid.
+   */
   private async initializeWallet() {
     const mnemonic = this.configService.get<string>('CENTRAL_WALLET_MNEMONIC');
     const jettonMasterAddress = this.configService.get<string>('JETTON_MASTER_ADDRESS');
@@ -77,6 +82,13 @@ export class TonService {
       throw new BadRequestException('Failed to initialize TON wallet');
     }
   }
+
+  /**
+   * Retrieves the Jetton wallet address for a given user address.
+   * @param userAddress - The TON address of the user.
+   * @returns {Promise<Address>} The Jetton wallet address.
+   * @throws {BadRequestException} If Jetton master address or TON client is not initialized.
+   */
   async getUserJettonWalletAddress(userAddress: Address): Promise<Address> {
     if (!this.jettonMasterAddress) {
       throw new BadRequestException('Jetton master address not initialized');
@@ -96,6 +108,13 @@ export class TonService {
     }
   }
 
+  /**
+   * Sends RUBLE tokens to a recipient address.
+   * @param recipientAddress - The TON address to receive the tokens.
+   * @param amount - The amount of tokens to send.
+   * @returns {Promise<string>} Transaction hash.
+   * @throws {BadRequestException} If wallet, client, or transaction fails.
+   */
   async sendTokens(recipientAddress: string, amount: string): Promise<string> {
     if (!this.centralWallet || !this.keyPair || !this.jettonMasterAddress || !this.client) {
       throw new BadRequestException('Central wallet or client not initialized');
@@ -148,18 +167,20 @@ export class TonService {
     }
   }
 
+  /**
+   * Sends TON to a recipient address.
+   * @param recipientAddress - The TON address to receive the TON.
+   * @param amount - The amount of TON to send.
+   * @returns {Promise<string>} Transaction hash.
+   * @throws {BadRequestException} If wallet, client, or transaction fails.
+   */
   async sendTon(recipientAddress: string, amount: string): Promise<string> {
     if (!this.centralWallet || !this.keyPair || !this.client) {
       throw new BadRequestException('Central wallet or client not initialized');
     }
-
-    this.logger.log(`Preparing to send ${amount} TON to ${recipientAddress}`);
-
     try {
       const wallet = this.centralWallet;
       const contract = this.client.open(wallet)
-      this.logger.log(`Opened wallet: ${this.centralWallet.address.toString()}`);
-
       let seqno: number;
       try {
         seqno = await contract.getSeqno();
@@ -175,8 +196,6 @@ export class TonService {
         bounce: true,
         body: beginCell().endCell(),
       });
-      this.logger.log(`Created internal message for ${amount} TON to ${recipientAddress}`);
-
       const body = this.centralWallet.createTransfer({
         seqno,
         secretKey: Buffer.from(this.keyPair.secretKey),
@@ -188,18 +207,14 @@ export class TonService {
         to: this.centralWallet.address,
         body,
       });
-      this.logger.log(`Created external message`);
-
       const externalMessageCell = beginCell().store(storeMessage(externalMessage)).endCell();
       const signedTransaction = externalMessageCell.toBoc().toString('base64');
       this.logger.log(`Serialized transaction to BOC (base64): ${signedTransaction.substring(0, 50)}...`);
 
       const apiKey = this.configService.get<string>('TON_API_KEY');
-      this.logger.log(`Using API key: ${apiKey ? 'present' : 'missing'}`);
-
       try {
         const response = await axios.post(
-          'https://toncenter.com/api/v2/sendBocReturnHash', // Пробуем альтернативный эндпоинт
+          'https://toncenter.com/api/v2/sendBocReturnHash',
           { boc: signedTransaction },
           {
             headers: {
@@ -208,8 +223,6 @@ export class TonService {
             },
           }
         );
-        this.logger.log(`SendBoc response: ${JSON.stringify(response.data, null, 2)}`);
-
         if (!response.data.result) {
           throw new Error(`SendBoc failed: ${JSON.stringify(response.data)}`);
         }
@@ -227,7 +240,6 @@ export class TonService {
       }
 
       const txHash = externalMessageCell.hash().toString('hex');
-      this.logger.log(`Sent ${amount} TON to ${recipientAddress}, txHash: ${txHash}`);
       return txHash;
     } catch (error: unknown) {
       this.logger.error(`Failed to send TON: ${(error as Error).message}`);
@@ -237,6 +249,13 @@ export class TonService {
       throw new BadRequestException(`Failed to send TON: ${(error as Error).message}`);
     }
   }
+
+  /**
+   * Retrieves wallet data for a user, including TON and token balances.
+   * @param userAddress - The TON address of the user.
+   * @returns {Promise<{ balance: string, tokenBalance: string, address: string, depositAddress: string }>} Wallet data including balances and addresses.
+   * @throws {BadRequestException} If TON client is not initialized or data fetch fails.
+   */
   async getWalletData(userAddress: string): Promise<{ balance: string; tokenBalance: string; address: string; depositAddress: string }> {
     if (!this.client) {
       throw new BadRequestException('TON client not initialized');

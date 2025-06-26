@@ -77,8 +77,7 @@ const showWithdrawTokensDialog = ref(false);
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
 const currentPrice = computed(() => {
-  const price = marketStore.currentPrice ?? 3; // Используем 3 USD/TON, если цена недоступна
-  console.log('[WalletView] Current price:', price);
+  const price = marketStore.currentPrice ?? 3; // Use 3 USD/TON if price is unavailable
   return price;
 });
 
@@ -86,18 +85,18 @@ const totalBalanceUsd = computed(() => {
   const tonBalanceUsd = walletStore.balance * currentPrice.value;
   const usdtBalance = walletStore.usdt_balance;
   const total = tonBalanceUsd + usdtBalance;
-  console.log('[WalletView] Total balance USD:', { tonBalanceUsd, usdtBalance, total });
   return total;
 });
 
 const availableDepositUsd = computed(() => {
   const available = Math.max(0, 10 - totalBalanceUsd.value);
-  console.log('[WalletView] Available deposit USD:', available);
   return available;
 });
 
+/**
+ * Opens the deposit dialog if the total balance is below the limit.
+ */
 const openDepositDialog = () => {
-  console.log('[WalletView] Attempting to open DepositDialog, totalBalanceUsd:', totalBalanceUsd.value);
   if (totalBalanceUsd.value >= 10) {
     errorStore.setError(t('error.exceeds_max_balance'));
     return;
@@ -105,18 +104,24 @@ const openDepositDialog = () => {
   showDepositDialog.value = true;
 };
 
+/**
+ * Opens the withdraw dialog.
+ */
 const openWithdrawDialog = () => {
-  console.log('[WalletView] Opening WithdrawDialog');
   showWithdrawDialog.value = true;
 };
 
+/**
+ * Opens the withdraw tokens dialog.
+ */
 const openWithdrawTokensDialog = () => {
-  console.log('[WalletView] Opening WithdrawTokensDialog');
   showWithdrawTokensDialog.value = true;
 };
 
+/**
+ * Initializes the wallet view, syncing and fetching balances and price.
+ */
 onMounted(async () => {
-  console.log('[WalletView] Mounted');
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
     try {
@@ -124,7 +129,6 @@ onMounted(async () => {
         walletStore.fetchBalances(),
         marketStore.fetchCurrentPrice('TON-USDT'),
       ]);
-      console.log('[WalletView] Balances and price fetched');
     } catch (error) {
       console.error('[WalletView] Failed to fetch data:', error);
       errorStore.setError(t('error.failed_to_fetch_balances'));
@@ -134,8 +138,10 @@ onMounted(async () => {
   }
 });
 
+/**
+ * Cleans up the wallet view, stopping market updates.
+ */
 onUnmounted(() => {
-  console.log('[WalletView] Unmounted, stopping market updates');
   marketStore.stopRealTimeUpdates();
 });
 </script>

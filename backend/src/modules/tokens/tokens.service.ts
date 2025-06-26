@@ -27,6 +27,11 @@ export class TokensService {
     private readonly tonService: TonService,
   ) {}
 
+  /**
+   * Accrues RUBLE tokens to a user based on their daily trading volume.
+   * @param trade - The trade entity containing user and amount data.
+   * @returns {Promise<number>} Number of tokens accrued (capped at 10 per day).
+   */
   async accrueTokens(trade: Trade): Promise<number> {
     const user = trade.user;
     const tonPriceUsd = await this.getTonPrice();
@@ -55,14 +60,18 @@ export class TokensService {
         'EX',
         24 * 60 * 60
       );
-      this.logger.log(
-        `Accrued ${newTokens} RUBLE for user ${user.id}, volume: $${dailyVolume}`
-      );
     }
 
     return newTokens;
   }
 
+  /**
+   * Withdraws RUBLE tokens from a user's balance to their TON wallet.
+   * @param withdrawTokensDto - DTO containing user ID and amount to withdraw.
+   * @returns {Promise<{ user: User, txHash: string }>} Updated user data and transaction hash.
+   * @throws {BadRequestException} If amount is invalid or insufficient balance.
+   * @throws {NotFoundException} If user is not found.
+   */
   async withdrawTokens(withdrawTokensDto: WithdrawTokensDto) {
     const { userId, amount } = withdrawTokensDto;
 
@@ -83,8 +92,6 @@ export class TokensService {
       const txHash = await this.tonService.sendTokens(user.ton_address, amount.toString());
       user.token_balance -= amount;
       await this.userRepository.save(user);
-
-      this.logger.log(`Initiated withdrawal of ${amount} RUBLE to ${user.ton_address}, txHash: ${txHash}`);
       return { user, txHash };
     } catch (error) {
       this.logger.error(`Error withdrawing ${amount} RUBLE: ${(error as AxiosError).message}`);
@@ -92,6 +99,10 @@ export class TokensService {
     }
   }
 
+  /**
+   * Fetches the current TON price in USD, with caching.
+   * @returns {Promise<number>} Current TON price in USD.
+   */
   private async getTonPrice(): Promise<number> {
     const cacheKey = 'ton_price_usd';
     const cached = await this.redis.get(cacheKey);

@@ -7,6 +7,10 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { Logger } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 
+/**
+ * Initializes and starts the NestJS application with configured middleware and WebSocket support.
+ * @returns {Promise<void>} A promise that resolves when the application is successfully started.
+ */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');

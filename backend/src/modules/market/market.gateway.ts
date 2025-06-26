@@ -11,6 +11,10 @@ import { Logger, BadRequestException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import WebSocket from 'ws';
 
+/**
+ * WebSocket gateway for handling real-time market data subscriptions to OKX WebSocket.
+ * Manages client subscriptions and broadcasts candle and ticker updates.
+ */
 @WebSocketGateway({
   transports: ['websocket', 'polling'],
 })
@@ -27,18 +31,26 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.connectToOkxWebSocket();
   }
 
-  afterInit() {
-    this.logger.log('WebSocket server initialized');
-  }
+  /**
+   * Initializes the WebSocket server.
+   */
+  afterInit() {}
 
-  handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Client connected: ${client.id}, Args: ${JSON.stringify(args)}, Namespace: ${client.nsp.name}`);
+  /**
+   * Handles new client connections and sends a welcome message.
+   * @param client - The connected Socket.IO client.
+   * @param args - Additional connection arguments.
+   */
+  handleConnection(client: Socket) {
     client.emit('message', { message: 'Connected to market WebSocket' });
   }
 
+  /**
+   * Handles client disconnections and cleans up subscriptions.
+   * @param client - The disconnected Socket.IO client.
+   */
   handleDisconnect(client: Socket) {
     try {
-      this.logger.log(`Client disconnected from WebSocket: ${client.id}`);
       this.subscriptions.forEach((clients, channel) => {
         clients.delete(client);
         if (clients.size === 0) {
@@ -51,9 +63,13 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /**
+   * Subscribes a client to a market data channel (e.g., candle5m:TON-USDT).
+   * @param client - The Socket.IO client.
+   * @param data - Subscription data with instrument ID and bar interval.
+   */
   @SubscribeMessage('subscribe')
   handleSubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: { instId: string; bar: string }) {
-    this.logger.log(`Subscribe data received: ${JSON.stringify(data)}`);
     if (!data) {
       client.emit('error', { error: 'Missing subscription data' });
       throw new BadRequestException('Missing subscription data');
@@ -72,8 +88,6 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const candleChannel = `candle${bar}:${instId}`;
-    this.logger.log(`Client ${client.id} subscribed to ${candleChannel}`);
-
     if (!this.subscriptions.has(candleChannel)) {
       this.subscriptions.set(candleChannel, new Set());
       this.subscribeToOkx(candleChannel);
@@ -91,9 +105,13 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('subscribed', { instId, bar, status: 'subscribed' });
   }
 
+  /**
+   * Unsubscribes a client from a market data channel.
+   * @param client - The Socket.IO client.
+   * @param data - Unsubscription data with instrument ID and bar interval.
+   */
   @SubscribeMessage('unsubscribe')
   handleUnsubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: { instId: string; bar: string }) {
-    this.logger.log(`Unsubscribe data received: ${JSON.stringify(data)}`);
     if (!data) {
       client.emit('error', { error: 'Missing unsubscription data' });
       return;
@@ -112,8 +130,6 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const candleChannel = `candle${bar}:${instId}`;
-    this.logger.log(`Client ${client.id} unsubscribed from ${candleChannel}`);
-
     const clients = this.subscriptions.get(candleChannel);
     if (clients) {
       clients.delete(client);
@@ -137,6 +153,11 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('unsubscribed', { instId, bar, status: 'unsubscribed' });
   }
 
+  /**
+   * Broadcasts ticker updates to subscribed clients.
+   * @param instId - Instrument ID (e.g., TON-USDT).
+   * @param price - Current price.
+   */
   private sendTickerUpdate(instId: string, price: number) {
     const tickerChannel = `ticker:${instId}`;
     const clients = this.subscriptions.get(tickerChannel);
@@ -154,6 +175,10 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /**
+   * Subscribes to an OKX WebSocket channel.
+   * @param channel - Channel name (e.g., candle5m:TON-USDT).
+   */
   private subscribeToOkx(channel: string) {
     if (this.okxWs?.readyState === WebSocket.OPEN) {
       const [candle, instId] = channel.split(':');
@@ -164,12 +189,15 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           args: [{ channel: `candle${bar}`, instId }],
         }),
       );
-      this.logger.log(`Subscribed to OKX ${channel}`);
     } else {
       this.logger.warn(`Cannot subscribe to OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`);
     }
   }
 
+  /**
+   * Unsubscribes from an OKX WebSocket channel.
+   * @param channel - Channel name (e.g., candle5m:TON-USDT).
+   */
   private unsubscribeFromOkx(channel: string) {
     if (this.okxWs?.readyState === WebSocket.OPEN) {
       const [candle, instId] = channel.split(':');
@@ -180,18 +208,19 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           args: [{ channel: `candle${bar}`, instId }],
         }),
       );
-      this.logger.log(`Unsubscribed from OKX ${channel}`);
     } else {
       this.logger.warn(`Cannot unsubscribe from OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`);
     }
   }
 
+  /**
+   * Establishes connection to OKX WebSocket and handles events.
+   */
   private connectToOkxWebSocket() {
     const wsUrl = 'wss://ws.okx.com:8443/ws/v5/public';
     this.okxWs = new WebSocket(wsUrl);
 
     this.okxWs.on('open', () => {
-      this.logger.log('Connected to OKX WebSocket');
       this.subscriptions.forEach((_, channel) => {
         this.subscribeToOkx(channel);
       });
@@ -233,7 +262,6 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     this.okxWs.on('close', () => {
-      this.logger.log('Disconnected from OKX WebSocket. Reconnecting...');
       setTimeout(() => this.connectToOkxWebSocket(), 5000);
     });
   }

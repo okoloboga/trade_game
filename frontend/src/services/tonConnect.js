@@ -8,6 +8,10 @@ export class TonConnectService {
     this.authStore = useAuthStore();
   }
 
+  /**
+   * Disconnects the TON wallet and logs out the user.
+   * @throws {Error} If disconnection fails.
+   */
   async disconnect() {
     try {
       await this.tonConnectUI.disconnect();

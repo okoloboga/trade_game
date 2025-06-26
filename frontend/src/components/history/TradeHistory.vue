@@ -52,15 +52,13 @@ const headers = computed(() => [
   { title: t('trade_headers.date'), key: 'created_at' },
 ]);
 
+/**
+ * Fetches trade history on component mount.
+ */
 onMounted(async () => {
-  console.log('[TradeHistory] Mounted, authStore.isConnected:', authStore.isConnected);
-  console.log('[TradeHistory] authStore.user:', authStore.user);
-  console.log('[TradeHistory] authStore.user.ton_address:', authStore.user?.ton_address);
-  console.log('[TradeHistory] tradeHistory:', tradingStore.tradeHistory);
   loading.value = true;
   try {
     await tradingStore.fetchTradeHistory();
-    console.log('[TradeHistory] Trade history loaded:', tradingStore.tradeHistory.length);
   } catch (error) {
     console.error('[TradeHistory] Failed to load trade history:', error);
     errorStore.setError(t('load_trade_history'));

@@ -4,7 +4,7 @@ import { StatsService } from './stats.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { Trade } from '../../entities/trade.entity';
-import { Transaction } from '../../entities/transaction.entity'; // Добавляем Transaction
+import { Transaction } from '../../entities/transaction.entity';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -18,7 +18,7 @@ import { MarketGateway } from '../market/market.gateway';
       type: 'single',
       url: process.env.REDIS_URL,
     }),
-    TypeOrmModule.forFeature([User, Trade, Transaction]), // Добавляем Transaction
+    TypeOrmModule.forFeature([User, Trade, Transaction]),
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET,

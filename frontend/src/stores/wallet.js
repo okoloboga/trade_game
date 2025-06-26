@@ -15,10 +15,12 @@ export const useWalletStore = defineStore('wallet', {
       isProcessing: false,
       isFetchingBalances: false,
     };
-    console.log('[walletStore] Initial state:', initialState);
     return initialState;
   },
   actions: {
+    /**
+     * Syncs wallet balances and address from the auth store.
+     */
     syncFromAuthStore() {
       const authStore = useAuthStore();
       if (authStore.user) {
@@ -26,24 +28,20 @@ export const useWalletStore = defineStore('wallet', {
         this.usdt_balance = parseFloat(authStore.user.usdt_balance) || 0.0;
         this.tokenBalance = parseFloat(authStore.user.token_balance) || 0.0;
         this.depositAddress = authStore.walletAddress;
-        console.log('[walletStore] Synced from authStore:', {
-          balance: this.balance,
-          usdt_balance: this.usdt_balance,
-          tokenBalance: this.tokenBalance,
-          depositAddress: this.depositAddress,
-        });
       }
     },
+    /**
+     * Updates wallet balances with new user data.
+     * @param {Object} userData - The user data containing balance information.
+     */
     updateBalances(userData) {
       this.balance = parseFloat(userData.balance) || 0.0;
       this.usdt_balance = parseFloat(userData.usdt_balance) || 0.0;
       this.tokenBalance = parseFloat(userData.token_balance) || 0.0;
-      console.log('[walletStore] Balances updated:', {
-        balance: this.balance,
-        usdt_balance: this.usdt_balance,
-        tokenBalance: this.tokenBalance,
-      });
     },
+    /**
+     * Fetches the user's wallet balances.
+     */
     async fetchBalances() {
       const authStore = useAuthStore();
       if (!authStore.isConnected || !authStore.user?.ton_address) {
@@ -52,10 +50,8 @@ export const useWalletStore = defineStore('wallet', {
       }
       this.isFetchingBalances = true;
       try {
-        console.log('[walletStore] Fetching balances for:', authStore.user.ton_address);
         const response = await apiService.getUserBalance(authStore.user.ton_address);
         this.updateBalances(response);
-        console.log('[walletStore] Balances fetched:', response);
       } catch (error) {
         console.error('[walletStore] Failed to fetch balances:', error);
         useErrorStore().setError('Failed to fetch balances');
@@ -64,17 +60,23 @@ export const useWalletStore = defineStore('wallet', {
         this.isFetchingBalances = false;
       }
     },
+    /**
+     * Fetches the current TON price.
+     */
     async fetchTonPrice() {
       try {
         const response = await apiService.getTonPrice();
         this.tonPrice = response.price;
-        console.log('[walletStore] TON price fetched:', this.tonPrice);
       } catch (error) {
         console.error('[walletStore] Failed to fetch TON price:', error);
         useErrorStore().setError('Failed to fetch TON price');
         throw error;
       }
     },
+    /**
+     * Fetches the transaction history for the authenticated user.
+     * @param {string} [period='1w'] - The time period for the transactions.
+     */
     async fetchTransactions(period = '1w') {
       try {
         const authStore = useAuthStore();
@@ -82,10 +84,8 @@ export const useWalletStore = defineStore('wallet', {
           useErrorStore().setError('Please connect wallet');
           throw new Error('Not connected');
         }
-        console.log('[walletStore] Fetching transactions for:', authStore.user.ton_address, 'period:', period);
         const response = await apiService.getTransactions(period);
         this.transactions = response.transactions;
-        console.log('[walletStore] Transactions fetched:', this.transactions.length);
       } catch (error) {
         console.error('[walletStore] Failed to fetch transactions:', error);
         useErrorStore().setError('Failed to fetch transactions');

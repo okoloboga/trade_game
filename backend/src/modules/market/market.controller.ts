@@ -15,14 +15,14 @@ export class MarketController {
   constructor(private readonly marketService: MarketService) {}
 
   @Get('candles')
-  @Public() // Используйте этот декоратор вместо @UseGuards(JwtAuthGuard)
+  @Public()
   @HttpCode(HttpStatus.OK)
   async getCandles(@Query() candlesDto: CandlesDto) {
     return this.marketService.getCandles(candlesDto);
   }
 
   @Get('ticker')
-  @Public() // Используйте этот декоратор вместо @UseGuards(JwtAuthGuard)
+  @Public()
   @HttpCode(HttpStatus.OK)
   async getTicker(@Query('instId') instId: string) {
     if (!instId) {

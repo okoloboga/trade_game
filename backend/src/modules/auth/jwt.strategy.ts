@@ -24,6 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
+  /**
+   * Validates a JWT payload and retrieves the associated user.
+   * @param payload - JWT payload containing user ID and TON address.
+   * @returns {Promise<{ id: string, ton_address: string } | null>} User data if found, null otherwise.
+   */
   async validate(payload: { sub: string; ton_address: string }) {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },

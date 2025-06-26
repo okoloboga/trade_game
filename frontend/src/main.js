@@ -10,11 +10,11 @@ import WebApp from '@twa-dev/sdk'
 import { createI18n } from 'vue-i18n'
 import { Buffer } from 'buffer';
 
-// Импорт переводов
+// Import translations
 import en from './locales/en.json'
 import ru from './locales/ru.json'
 
-// Telegram WebApp инициализация
+// Telegram WebApp initialization
 if (window.Telegram?.WebApp?.isVersionAtLeast?.('6.0')) {
   window.Telegram.WebApp.ready()
   window.Telegram.WebApp.expand()
@@ -27,12 +27,12 @@ if (!window.Telegram?.WebApp) {
   window.Telegram = {
     WebApp: {
       isVersionAtLeast: () => true,
-      ready: () => console.log('Mock WebApp ready'),
-      expand: () => console.log('Mock WebApp 1expand'),
+      ready: () => {},
+      expand: () => {},
       BackButton: {
-        show: () => console.log('Mock BackButton show'),
-        hide: () => console.log('Mock BackButton hide'),
-        onClick: (callback) => console.log('Mock BackButton onClick', callback)
+        show: () => {},
+        hide: () => {},
+        onClick: (callback) => {}
       }
     }
   }
@@ -40,7 +40,7 @@ if (!window.Telegram?.WebApp) {
 
 window.Buffer = window.Buffer || Buffer;
 
-// Vuetify инициализация
+// Vuetify initialization
 const vuetify = createVuetify({
   components,
   directives,
@@ -57,7 +57,7 @@ const vuetify = createVuetify({
   }
 })
 
-// Инициализация vue-i18n
+// vue-i18n initialization
 const i18n = createI18n({
   locale: 'en',
   fallbackLocale: 'en',
@@ -65,20 +65,22 @@ const i18n = createI18n({
   legacy: false
 })
 
-// Создаем приложение
+// Create app
 const app = createApp(App)
 const pinia = createPinia()
 
-// Подключаем плагины
+// Use plugins
 app.use(pinia)
 app.use(router)
 app.use(vuetify)
 app.use(i18n)
 
-// Монтируем приложение
+// Mount app
 app.mount('#app')
 
-// Инициализация после монтирования
+/**
+ * Initializes the application by verifying the auth token and fetching wallet data.
+ */
 async function initializeApp() {
   try {
     const { useAppStore } = await import('./stores/app')

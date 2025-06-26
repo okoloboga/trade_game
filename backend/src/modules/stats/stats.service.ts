@@ -25,10 +25,14 @@ export class StatsService {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
+  /**
+   * Retrieves trade history for a user within a specified period.
+   * @param statsDto - DTO containing TON address and period ('1d' or '1w').
+   * @returns {Promise<{ trades: Trade[] }>} Object containing an array of trades.
+   * @throws {BadRequestException} If period is invalid or user not found.
+   */
   async getTradeHistory(statsDto: StatsDto) {
     const { ton_address, period } = statsDto;
-    this.logger.log(`Fetching trades for ton_address: ${ton_address}, period: ${period}`);
-
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
       throw new BadRequestException('Invalid period. Use 1d or 1w');
@@ -39,8 +43,6 @@ export class StatsService {
       this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new BadRequestException('User not found');
     }
-    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
-
     const now = new Date();
     const startDate = new Date();
     if (period === '1d') {
@@ -48,8 +50,6 @@ export class StatsService {
     } else if (period === '1w') {
       startDate.setDate(now.getDate() - 7);
     }
-    this.logger.log(`Searching trades from: ${startDate.toISOString()}`);
-
     const trades = await this.tradeRepository.find({
       where: {
         user: { ton_address },
@@ -60,18 +60,19 @@ export class StatsService {
     });
 
     if (!trades.length) {
-      this.logger.log(`No trades found for user ${ton_address} in period ${period}`);
       return { trades: [] };
     }
-
-    this.logger.log(`Fetched ${trades.length} trades for user ${ton_address} in period ${period}`);
     return { trades };
   }
 
+  /**
+   * Retrieves transaction history for a user within a specified period.
+   * @param statsDto - DTO containing TON address and period ('1d' or '1w').
+   * @returns {Promise<{ transactions: Transaction[] }>} Object containing an array of completed transactions.
+   * @throws {BadRequestException} If period is invalid or user not found.
+   */
   async getTransactionHistory(statsDto: StatsDto) {
     const { ton_address, period } = statsDto;
-    this.logger.log(`Fetching transactions for ton_address: ${ton_address}, period: ${period}`);
-
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
       throw new BadRequestException('Invalid period. Use 1d or 1w');
@@ -82,8 +83,6 @@ export class StatsService {
       this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new BadRequestException('User not found');
     }
-    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
-
     const now = new Date();
     const startDate = new Date();
     if (period === '1d') {
@@ -91,8 +90,6 @@ export class StatsService {
     } else if (period === '1w') {
       startDate.setDate(now.getDate() - 7);
     }
-    this.logger.log(`Searching transactions from: ${startDate.toISOString()}`);
-
     const transactions = await this.transactionRepository.find({
       where: {
         user: { ton_address },
@@ -104,18 +101,19 @@ export class StatsService {
     });
 
     if (!transactions.length) {
-      this.logger.log(`No transactions found for user ${ton_address} in period ${period}`);
       return { transactions: [] };
     }
-
-    this.logger.log(`Fetched ${transactions.length} transactions for user ${ton_address} in period ${period}`);
     return { transactions };
   }
 
+  /**
+   * Calculates a summary of trading activity for a user within a specified period.
+   * @param statsDto - DTO containing TON address and period ('1d' or '1w').
+   * @returns {Promise<{ totalVolume: { ton: number, usd: number }, totalProfitLoss: { ton: number, usd: number }, period: string }>} Summary of trading volume and profit/loss.
+   * @throws {BadRequestException} If period is invalid or user not found.
+   */
   async getSummary(statsDto: StatsDto) {
     const { ton_address, period } = statsDto;
-    this.logger.log(`Generating summary for ton_address: ${ton_address}, period: ${period}`);
-
     const validPeriods = ['1d', '1w'];
     if (!validPeriods.includes(period)) {
       throw new BadRequestException('Invalid period. Use 1d or 1w');
@@ -126,8 +124,6 @@ export class StatsService {
       this.logger.error(`User not found for ton_address: ${ton_address}`);
       throw new BadRequestException('User not found');
     }
-    this.logger.log(`Found user with id: ${user.id} for ton_address: ${ton_address}`);
-
     const now = new Date();
     const startDate = new Date();
     if (period === '1d') {
@@ -135,8 +131,6 @@ export class StatsService {
     } else if (period === '1w') {
       startDate.setDate(now.getDate() - 7);
     }
-    this.logger.log(`Searching trades for summary from: ${startDate.toISOString()}`);
-
     const trades = await this.tradeRepository.find({
       where: {
         user: { ton_address },
@@ -155,8 +149,6 @@ export class StatsService {
       totalProfitLossUsd += Number(trade.profit_loss);
     }
 
-    this.logger.log(`Calculated: totalVolumeTon=${totalVolumeTon}, totalVolumeUsd=${totalVolumeUsd}, totalProfitLossUsd=${totalProfitLossUsd}`);
-
     const tonPriceUsd = await this.getTonPrice();
     const totalProfitLossTon = totalProfitLossUsd / tonPriceUsd;
 
@@ -171,11 +163,13 @@ export class StatsService {
       },
       period,
     };
-
-    this.logger.log(`Generated summary for user ${ton_address} in period ${period}: ${JSON.stringify(summary)}`);
     return summary;
   }
 
+  /**
+   * Fetches the current TON price in USD, with caching.
+   * @returns {Promise<number>} Current TON price in USD.
+   */
   private async getTonPrice(): Promise<number> {
     const cacheKey = 'ton_price_usd';
     const cached = await this.redis.get(cacheKey);

@@ -26,10 +26,15 @@ export class TradesService {
     private readonly tokensService: TokensService,
   ) {}
 
+  /**
+   * Executes a buy trade, converting TON to USDT and accruing tokens.
+   * @param tradeDto - DTO containing TON address, amount, and symbol.
+   * @returns {Promise<{ trade: Trade, user: User, tokensAccrued: number }>} Trade details, updated user data, and accrued tokens.
+   * @throws {UnauthorizedException} If user is not found.
+   * @throws {BadRequestException} If balance is insufficient or USDT limit is exceeded.
+   */
   async buyTrade(tradeDto: TradeDto) {
     const { ton_address, amount, symbol } = tradeDto;
-    this.logger.log(`Processing buy trade (USDT for TON) for ton_address: ${ton_address}, amount: ${amount} USD, symbol: ${symbol}`);
-
     const user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
       this.logger.error(`User not found for ton_address: ${ton_address}`);
@@ -46,9 +51,6 @@ export class TradesService {
 
     user.balance = Number(user.balance || 0) - tonAmount;
     user.usdt_balance = Number(user.usdt_balance || 0) + amountNum;
-
-    this.logger.log(`Before save: user.balance=${user.balance}, user.usdt_balance=${user.usdt_balance}, tonAmount=${tonAmount}, amount=${amountNum}`);
-
     if (user.usdt_balance > this.maxUsdtBalance) {
       throw new BadRequestException(`USDT balance cannot exceed ${this.maxUsdtBalance} USD`);
     }
@@ -57,25 +59,26 @@ export class TradesService {
       user,
       instrument: symbol,
       type: 'buy',
-      amount: amountNum, // Сохраняем сумму в USDT
+      amount: amountNum,
       usdt_price: usdtPrice,
-      profit_loss: 0, // Для покупки USDT profit_loss = 0
+      profit_loss: 0,
     });
 
     await this.userRepository.save(user);
     await this.tradeRepository.save(trade);
     const tokensAccrued = await this.tokensService.accrueTokens(trade);
-
-    this.logger.log(
-      `Buy trade completed: ${amountNum} USDT for ${tonAmount} TON on ${symbol} for user ${user.id}, ton_address: ${ton_address}, accrued ${tokensAccrued} RUBLE`,
-    );
     return { trade, user, tokensAccrued };
   }
 
+  /**
+   * Executes a sell trade, converting USDT to TON and accruing tokens.
+   * @param tradeDto - DTO containing TON address, amount, and symbol.
+   * @returns {Promise<{ trade: Trade, user: User, tokensAccrued: number }>} Trade details, updated user data, and accrued tokens.
+   * @throws {UnauthorizedException} If user is not found.
+   * @throws {BadRequestException} If balance is insufficient or USDT limit is exceeded.
+   */
   async sellTrade(tradeDto: TradeDto) {
     const { ton_address, amount, symbol } = tradeDto;
-    this.logger.log(`Processing sell trade (USDT for TON) for ton_address: ${ton_address}, amount: ${amount} USD, symbol: ${symbol}`);
-
     const user = await this.userRepository.findOne({ where: { ton_address } });
     if (!user) {
       this.logger.error(`User not found for ton_address: ${ton_address}`);
@@ -92,9 +95,6 @@ export class TradesService {
 
     user.usdt_balance = Number(user.usdt_balance || 0) - amountNum;
     user.balance = Number(user.balance || 0) + tonAmount;
-
-    this.logger.log(`Before save: user.balance=${user.balance}, user.usdt_balance=${user.usdt_balance}, tonAmount=${tonAmount}, amount=${amountNum}`);
-
     if (user.usdt_balance > this.maxUsdtBalance) {
       throw new BadRequestException(`USDT balance cannot exceed ${this.maxUsdtBalance} USD`);
     }
@@ -107,12 +107,8 @@ export class TradesService {
       },
       order: { created_at: 'DESC' },
     });
-
-    this.logger.log(`prevBuy found: ${!!prevBuy}, prevBuy: ${JSON.stringify(prevBuy)}`);
-
     let profitLoss = 0;
     if (prevBuy) {
-      // P/L = (текущая цена TON - цена TON при покупке USDT) * количество TON
       profitLoss = (usdtPrice - Number(prevBuy.usdt_price)) * tonAmount;
     }
 
@@ -120,23 +116,22 @@ export class TradesService {
       user,
       instrument: symbol,
       type: 'sell',
-      amount: amountNum, // Сохраняем сумму в USDT
+      amount: amountNum,
       usdt_price: usdtPrice,
       profit_loss: profitLoss,
     });
-
-    this.logger.log(`Calculated profitLoss: ${profitLoss} USD for trade: ${JSON.stringify(trade)}`);
-
     await this.userRepository.save(user);
     await this.tradeRepository.save(trade);
     const tokensAccrued = await this.tokensService.accrueTokens(trade);
-
-    this.logger.log(
-      `Sell trade completed: ${amountNum} USDT for ${tonAmount} TON on ${symbol} for user ${user.id}, ton_address: ${ton_address}, P/L: ${profitLoss} USD, accrued ${tokensAccrued} RUBLE`,
-    );
     return { trade, user, tokensAccrued };
   }
 
+  /**
+   * Fetches the current market price for a given instrument.
+   * @param instrument - The trading pair symbol (e.g., TON-USDT).
+   * @returns {Promise<number>} Current price in USD.
+   * @throws {BadRequestException} If price fetch fails or price is invalid.
+   */
   private async getCurrentPrice(instrument: string): Promise<number> {
     try {
       const price = await this.marketService.getCurrentPrice(instrument);

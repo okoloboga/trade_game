@@ -89,7 +89,6 @@ const errorStore = useErrorStore();
 const loading = ref(false);
 
 const currentPrice = computed(() => {
-  console.log('[TradeButtons] Current price:', marketStore.currentPrice);
   return marketStore.currentPrice || 0;
 });
 
@@ -97,25 +96,30 @@ const amountRules = computed(() => [
   (v) => validateAmount(v, Infinity, 0.01) === true || t('error.invalid_amount'),
 ]);
 
+/**
+ * Determines if a trade (buy or sell) can be executed based on balance and amount.
+ * @param {string} type - The trade type ('buy' or 'sell').
+ * @returns {boolean} True if the trade is allowed, false otherwise.
+ */
 const canTrade = (type) => {
   const isValidAmount = validateAmount(amount.value, Infinity, 0.01) === true;
   if (!currentPrice.value) {
-    console.log('[TradeButtons] Cannot trade: no current price');
     return false;
   }
   if (type === 'buy') {
     const tonRequired = amount.value / currentPrice.value;
     const canBuy = isValidAmount && tonRequired <= walletStore.balance;
-    console.log('[TradeButtons] Can buy:', { isValidAmount, tonRequired, balance: walletStore.balance, canBuy });
     return canBuy;
   }
   const canSell = isValidAmount && amount.value <= walletStore.usdt_balance;
-  console.log('[TradeButtons] Can sell:', { isValidAmount, amount: amount.value, usdtBalance: walletStore.usdt_balance, canSell });
   return canSell;
 };
 
+/**
+ * Executes a trade (buy or sell) with debouncing.
+ * @param {string} type - The trade type ('buy' or 'sell').
+ */
 const executeTrade = useDebounceFn(async (type) => {
-  console.log(`[TradeButtons] Executing ${type} trade: ${amount.value} USD for TON-USDT`);
   loading.value = true;
   try {
     await tradingStore.executeTrade(type, amount.value, 'TON-USDT');
@@ -129,8 +133,10 @@ const executeTrade = useDebounceFn(async (type) => {
   }
 }, 300);
 
+/**
+ * Initializes the component by syncing and fetching wallet balances.
+ */
 onMounted(async () => {
-  console.log('[TradeButtons] Mounted, fetching balances');
   walletStore.syncFromAuthStore();
   try {
     await walletStore.fetchBalances();

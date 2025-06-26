@@ -15,6 +15,11 @@ export class ChallengeService {
 
   constructor(private readonly tonService: TonService) {}
 
+  /**
+   * Generates a challenge for TON proof authentication.
+   * @param clientId - Optional client ID; if not provided, a new UUID is generated.
+   * @returns {Promise<{ challenge: string, validUntil: number, clientId: string }>} Challenge data including the challenge string, expiration time, and client ID.
+   */
   async generateChallenge(clientId?: string): Promise<{ challenge: string; validUntil: number; clientId: string }> {
     const newClientId = clientId || uuidv4();
     const challenge = randomBytes(32).toString('hex');
@@ -24,6 +29,14 @@ export class ChallengeService {
     return { challenge, validUntil, clientId: newClientId };
   }
 
+  /**
+   * Verifies a TON proof signature against a stored challenge.
+   * @param account - TON account data including address, public key, and wallet state init.
+   * @param tonProof - TON proof data containing the signature and payload.
+   * @param clientId - Client ID associated with the challenge.
+   * @returns {Promise<boolean>} True if the proof is valid, false otherwise.
+   * @throws {BadRequestException} If account, proof, or client ID is invalid.
+   */
   async verifyTonProof(account: Account, tonProof: TonProof, clientId: string): Promise<boolean> {
     if (!account?.address || !account.publicKey || !account.walletStateInit || !tonProof?.proof || !clientId) {
       this.logger.error('Invalid account, proof, or clientId');
@@ -43,7 +56,6 @@ export class ChallengeService {
       return false;
     }
 
-
     const payload = {
       address: account.address,
       public_key: account.publicKey,
@@ -53,12 +65,8 @@ export class ChallengeService {
       },
     };
 
-    this.logger.log(`Verifying TON Proof for clientId ${clientId}. Payload: ${JSON.stringify(payload, null, 2)}`);
-
     try {
       const stateInitCell = Cell.fromBoc(Buffer.from(payload.proof.state_init, 'base64'))[0];
-      this.logger.log('stateInit parsed successfully');
-
       const client = this.tonService['client'];
       if (!client) {
         this.logger.error('TON client not initialized');
@@ -71,7 +79,6 @@ export class ChallengeService {
       try {
         const result = await client.runMethod(address, 'get_public_key', []);
         publicKey = Buffer.from(result.stack.readBigNumber().toString(16).padStart(64, '0'), 'hex');
-        this.logger.log(`Retrieved public key: ${publicKey.toString('hex')}`);
       } catch (error) {
         this.logger.log('get_public_key failed, using state_init for verification');
 
@@ -100,7 +107,6 @@ export class ChallengeService {
           this.logger.error('Proof is too old');
           return false;
         }
-        this.logger.log(`Removing challenge for clientId ${clientId} after successful verification`);
         this.challenges.delete(clientId);
         return true;
       }

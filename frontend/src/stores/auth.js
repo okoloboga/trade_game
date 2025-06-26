@@ -11,8 +11,10 @@ export const useAuthStore = defineStore('auth', {
     tonProof: null,
   }),
   actions: {
+    /**
+     * Initializes the authentication store by restoring session from localStorage.
+     */
     async init() {
-      console.log('[authStore] Initializing, token:', this.token, 'localStorage.token:', localStorage.getItem('token'));
       if (this.token && !this.user) {
         try {
           const response = JSON.parse(localStorage.getItem('user') || '{}');
@@ -29,10 +31,14 @@ export const useAuthStore = defineStore('auth', {
         }
       }
     },
+    /**
+     * Generates a challenge for TON proof authentication.
+     * @param {string} clientId - The client ID for the challenge.
+     * @returns {Promise<Object>} The challenge response data.
+     */
     async generateChallenge(clientId) {
       try {
         const response = await apiService.generateChallenge(clientId);
-        console.log('[generateChallenge] Response:', response);
         return response;
       } catch (error) {
         console.error('[generateChallenge] Error:', error);
@@ -40,14 +46,17 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
+    /**
+     * Logs in a user with TON wallet credentials.
+     * @param {Object} data - The login data including TON address and proof.
+     * @returns {Promise<Object>} The login response data.
+     */
     async login(data) {
       try {
         const response = await apiService.login(data);
-        console.log('[authStore] Login response:', JSON.stringify(response, null, 2));
         if (!response.access_token || !response.user) {
           throw new Error('Invalid login response: missing access_token or user');
         }
-        console.log('[authStore] Saved token:', response.access_token);
         this.token = response.access_token;
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('user', JSON.stringify({
@@ -68,10 +77,13 @@ export const useAuthStore = defineStore('auth', {
         return response;
       } catch (error) {
         console.error('[authStore] Login error:', error);
-        // useErrorStore().setError('Login failed: ' + (error.message || 'Unknown error'));
         throw error;
       }
     },
+    /**
+     * Verifies the validity of the stored JWT token.
+     * @returns {Promise<Object>} The token verification response data.
+     */
     async verifyToken() {
       try {
         const response = await apiService.verifyToken(this.token);
@@ -88,6 +100,9 @@ export const useAuthStore = defineStore('auth', {
         throw error;
       }
     },
+    /**
+     * Logs out the user and clears authentication data.
+     */
     logout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -100,9 +115,17 @@ export const useAuthStore = defineStore('auth', {
       this.tonProof = null;
       this.setConnected(false);
     },
+    /**
+     * Sets the connection status of the user.
+     * @param {boolean} isConnected - The connection status.
+     */
     setConnected(isConnected) {
       this.isConnected = isConnected;
     },
+    /**
+     * Sets the TON proof data.
+     * @param {Object|null} proof - The TON proof data or null.
+     */
     setTonProof(proof) {
       this.tonProof = proof;
     },

@@ -24,11 +24,15 @@ export class TransactionsService {
     private readonly tonService: TonService,
   ) {}
 
+  /**
+   * Processes a deposit of TON to a user's balance.
+   * @param depositDto - DTO containing TON address, amount, and transaction hash.
+   * @returns {Promise<{ user: User, status: string, transaction: Transaction }>} Updated user data, transaction status, and transaction details.
+   * @throws {BadRequestException} If the amount is invalid.
+   * @throws {NotFoundException} If the user is not found.
+   */
   async processDeposit(depositDto: DepositDto) {
     const { tonAddress, amount, txHash } = depositDto;
-
-    this.logger.log(`Deposit data: ${JSON.stringify({ tonAddress, amount, txHash }, null, 2)}`);
-
     if (amount <= 0) {
       throw new BadRequestException('Invalid amount');
     }
@@ -40,9 +44,6 @@ export class TransactionsService {
 
     const depositAmount = Number(amount);
     user.balance = Number(user.balance || 0) + depositAmount;
-    this.logger.log(`Before save: user.balance=${user.balance}, depositAmount=${depositAmount}`);
-
-    // Создаём запись о транзакции
     const transaction = this.transactionRepository.create({
       user,
       type: 'deposit',
@@ -53,11 +54,16 @@ export class TransactionsService {
 
     await this.userRepository.save(user);
     await this.transactionRepository.save(transaction);
-
-    this.logger.log(`Processed deposit of ${depositAmount} TON for user ${tonAddress}, transaction ID: ${transaction.id}`);
     return { user: { ...user, balance: user.balance }, status: 'confirmed', transaction };
   }
 
+  /**
+   * Processes a withdrawal of TON from a user's balance, applying a fee.
+   * @param withdrawDto - DTO containing TON address and amount to withdraw.
+   * @returns {Promise<{ user: User, txHash: string, fee: number, transaction: Transaction }>} Updated user data, transaction hash, fee, and transaction details.
+   * @throws {BadRequestException} If the amount is invalid, insufficient, or withdrawal fails.
+   * @throws {NotFoundException} If the user is not found.
+   */
   async processWithdraw(withdrawDto: WithdrawDto) {
     const { tonAddress, amount } = withdrawDto;
     const fee = 0.1;
@@ -95,9 +101,6 @@ export class TransactionsService {
       await this.userRepository.save(user);
       await this.transactionRepository.save(transaction);
 
-      this.logger.log(
-        `Initiated withdrawal of ${amount} TON (transfer: ${transferAmount} TON, fee: ${fee} TON) for user ${tonAddress}, txHash: ${txHash}, transaction ID: ${transaction.id}`,
-      );
       return { user, txHash, fee, transaction };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

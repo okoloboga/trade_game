@@ -15,6 +15,7 @@
   </v-data-table>
 </template>
 
+```vue
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { useWalletStore } from '@/stores/wallet';
@@ -36,14 +37,13 @@ const headers = computed(() => [
   { title: t('transaction_headers.date'), key: 'created_at' },
 ]);
 
+/**
+ * Fetches transaction history on component mount.
+ */
 onMounted(async () => {
-  console.log('authStore.isConnected:', authStore.isConnected);
-  console.log('authStore.user:', authStore.user);
-  console.log('authStore.user.ton_address:', authStore.user?.ton_address);
   loading.value = true;
   try {
     await walletStore.fetchTransactions();
-    console.log('[TransactionHistory] Transactions:', walletStore.transactions);
   } catch (error) {
     console.error('[TransactionHistory] Error fetching transactions:', error);
     errorStore.setError(t('load_transaction_history'));

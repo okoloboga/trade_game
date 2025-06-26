@@ -9,14 +9,21 @@ export const useMarketStore = defineStore('market', {
     currentPrice: null,
     ws: null,
     isMainPage: true,
-    timeframe: localStorage.getItem('marketTimeFrame') || '5m', // Добавляем состояние для таймфрейма
+    timeframe: localStorage.getItem('marketTimeFrame') || '5m',
   }),
   actions: {
+    /**
+     * Sets whether the current page is the main trading page.
+     * @param {boolean} isMain - True if on the main page, false otherwise.
+     */
     setMainPage(isMain) {
       this.isMainPage = isMain;
     },
+    /**
+     * Sets the timeframe for market data and updates WebSocket subscriptions.
+     * @param {string} timeframe - The timeframe (e.g., '1m', '5m', '15m').
+     */
     setTimeframe(timeframe) {
-      console.log(`[marketStore] Setting timeframe to: ${timeframe}`);
       if (!['1m', '5m', '15m'].includes(timeframe)) {
         console.error(`[marketStore] Invalid timeframe: ${timeframe}`);
         useErrorStore().setError('Invalid timeframe selected');
@@ -26,17 +33,18 @@ export const useMarketStore = defineStore('market', {
       this.timeframe = timeframe;
       localStorage.setItem('marketSTimeFrame', timeframe);
 
-      // Отписываемся от старого канала свечей и подписываемся на новый
       if (this.ws && oldTimeframe !== timeframe) {
-        console.log(`[marketStore] Unsubscribing from candles:TON-USDT:${oldTimeframe}`);
         this.ws.unsubscribe(`candles:TON-USDT:${oldTimeframe}`);
-        console.log(`[marketStore] Subscribing to candles:TON-USDT:${timeframe}`);
         this.ws.subscribe(`candles:TON-USDT:${timeframe}`);
       }
     },
+    /**
+     * Fetches candlestick data for a trading pair.
+     * @param {string} [symbol='TON-USDT'] - The trading pair ID.
+     * @param {string} [timeframe=this.timeframe] - The candlestick interval.
+     */
     async fetchCandles(symbol = 'TON-USDT', timeframe = this.timeframe) {
       try {
-        console.log(`[marketStore] Fetching candles for: ${symbol}, timeframe: ${timeframe}`);
         const response = await apiService.getCandles(symbol, timeframe);
 
         if (!Array.isArray(response)) {
@@ -60,22 +68,22 @@ export const useMarketStore = defineStore('market', {
         });
 
         this.candles = validCandles.sort((a, b) => a.timestamp - b.timestamp);
-        console.log(`[marketStore] Candles fetched: ${this.candles.length}`);
       } catch (error) {
         console.error('[marketStore] Error fetching candles:', error);
         useErrorStore().setError('Failed to fetch candles');
         this.candles = [];
       }
     },
+    /**
+     * Fetches the current price for a trading pair.
+     * @param {string} [symbol='TON-USDT'] - The trading pair ID.
+     */
     async fetchCurrentPrice(symbol = 'TON-USDT') {
       if (!this.isMainPage) {
-        console.log(`[marketStore] Skipping fetchCurrentPrice: not on main page`);
         return;
       }
       try {
-        console.log(`[marketStore] Fetching current price for: ${symbol}`);
         const response = await apiService.getCurrentPrice(symbol);
-        console.log('[marketStore] Raw price response:', JSON.stringify(response, null, 2));
 
         let price = response.price;
         if (typeof price !== 'number') {
@@ -85,26 +93,25 @@ export const useMarketStore = defineStore('market', {
         }
 
         this.currentPrice = price;
-        console.log(`[marketStore] Current price fetched: ${this.currentPrice}`);
       } catch (error) {
         console.error('[marketStore] Error fetching current price:', error);
         useErrorStore().setError('Failed to fetch current price');
         this.currentPrice = null;
       }
     },
+    /**
+     * Starts real-time WebSocket updates for market data.
+     * @param {string} [symbol='TON-USDT'] - The trading pair ID.
+     */
     startRealTimeUpdates(symbol = 'TON-USDT') {
       if (!this.isMainPage) {
-        console.log(`[marketStore] Skipping startRealTimeUpdates: not on main page`);
         return;
       }
       if (this.ws) return;
-      console.log(`[marketStore] Starting WebSocket updates for: ${symbol}`);
       this.ws = new WebSocketService();
       this.ws.connect((data) => {
-        console.log('[marketStore] WebSocket data received:', JSON.stringify(data, null, 2));
         if (data.type === 'ticker' && data.symbol === symbol) {
           this.currentPrice = data.price;
-          console.log(`[marketStore] Updated current price from WebSocket: ${this.currentPrice}`);
         }
         if (data.type === 'candle' && data.symbol === symbol) {
           if (!this.candles) this.candles = [];
@@ -120,7 +127,6 @@ export const useMarketStore = defineStore('market', {
             } else {
               this.candles = [...this.candles.slice(-99), candle];
             }
-            console.log(`[marketStore] Updated candles array: ${this.candles.length}`);
           } catch (error) {
             console.error('[marketStore] Error processing WebSocket candle:', error, data);
           }
@@ -128,11 +134,12 @@ export const useMarketStore = defineStore('market', {
       });
       this.ws.subscribe(`ticker:${symbol}`);
       this.ws.subscribe(`candles:${symbol}:${this.timeframe}`);
-      console.log('[marketStore] WebSocket subscriptions active');
     },
+    /**
+     * Stops real-time WebSocket updates and closes the connection.
+     */
     stopRealTimeUpdates() {
       if (this.ws) {
-        console.log('[marketStore] Stopping WebSocket updates');
         this.ws.unsubscribe(`ticker:TON-USDT`);
         this.ws.unsubscribe(`candles:TON-USDT:${this.timeframe}`);
         this.ws.close();

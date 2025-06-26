@@ -56,8 +56,7 @@ const price = ref(0.01);
 const isProcessing = ref(false);
 
 const currentPrice = computed(() => {
-  const price = marketStore.currentPrice ?? 3; // Fallback на 3 USD/TON
-  console.log('[DepositDialog] Current price:', price);
+  const price = marketStore.currentPrice ?? 3; // Fallback to 3 USD/TON
   return price;
 });
 
@@ -65,7 +64,6 @@ const totalBalanceUsd = computed(() => {
   const tonBalanceUsd = walletStore.balance * currentPrice.value;
   const usdtBalance = walletStore.usdt_balance;
   const total = tonBalanceUsd + usdtBalance;
-  console.log('[DepositDialog] Total balance USD:', { tonBalanceUsd, usdtBalance, total });
   return total;
 });
 
@@ -83,13 +81,14 @@ const isValid = computed(() => {
   const priceInUsd = price.value * currentPrice.value;
   const newTotalBalance = totalBalanceUsd.value + priceInUsd;
   const balanceValid = newTotalBalance <= 10;
-  console.log('[DepositDialog] isValid:', { amountValid, priceInUsd, newTotalBalance, balanceValid });
   return amountValid && balanceValid;
 });
 
+/**
+ * Initiates a deposit transaction to the user's TON wallet.
+ */
 const deposit = useDebounceFn(async () => {
   if (!tonConnectUI.connected) {
-    console.log('[DepositDialog] Wallet not connected, opening modal');
     errorStore.setError(t('error.connect_wallet'));
     try {
       await tonConnectUI.openModal();
@@ -122,9 +121,7 @@ const deposit = useDebounceFn(async () => {
       ],
     };
 
-    console.log('[DepositDialog] Sending transaction:', transaction);
     const result = await tonConnectUI.sendTransaction(transaction);
-    console.log('[DepositDialog] Transaction result:', result);
     const txHash = result.boc;
 
     const response = await apiService.deposit({
@@ -133,9 +130,8 @@ const deposit = useDebounceFn(async () => {
       txHash,
     });
 
-    console.log('[DepositDialog] Deposit response:', response);
     await walletStore.fetchBalances();
-    errorStore.setError(t('deposit_success'), false);
+    // errorStore.setError(t('deposit_success'), false);
     emit('deposit-success');
     closeDialog();
   } catch (error) {
@@ -146,6 +142,9 @@ const deposit = useDebounceFn(async () => {
   }
 }, 300);
 
+/**
+ * Closes the deposit dialog and resets the input amount.
+ */
 const closeDialog = () => {
   internalModelValue.value = false;
   price.value = 0.01;
