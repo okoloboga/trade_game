@@ -7,7 +7,7 @@
     class="elevation-1"
   >
     <template v-slot:item.type="{ item }">
-      {{ item.type === 'buy' ? $t('buy_usdt') : $t('sell_usdt') }}
+      {{ item.type === 'buy' ? $t('Buy') : $t('Sell') }}
     </template>
     <template v-slot:item.amount="{ item }">
       {{ Number(item.amount).toFixed(2) }}$

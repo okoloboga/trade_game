@@ -68,7 +68,7 @@ export const useAuthStore = defineStore('auth', {
         return response;
       } catch (error) {
         console.error('[authStore] Login error:', error);
-        useErrorStore().setError('Login failed: ' + (error.message || 'Unknown error'));
+        // useErrorStore().setError('Login failed: ' + (error.message || 'Unknown error'));
         throw error;
       }
     },
