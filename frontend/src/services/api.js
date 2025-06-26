@@ -84,6 +84,16 @@ export default {
       return handleApiError(error);
     }
   },
+  async verifyToken(token) {
+    try {
+      const response = await api.get('/auth/verify', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return { valid: true, data: response.data };
+    } catch (error) {
+      return { valid: false, error: handleApiError(error) };
+    }
+  },
   async getUserBalance(tonAddress) {
     try {
       const response = await api.get(`/users/${tonAddress}/balance`);

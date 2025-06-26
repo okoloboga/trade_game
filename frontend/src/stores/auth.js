@@ -44,6 +44,9 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await apiService.login(data);
         console.log('[authStore] Login response:', JSON.stringify(response, null, 2));
+        if (!response.access_token || !response.user) {
+          throw new Error('Invalid login response: missing access_token or user');
+        }
         console.log('[authStore] Saved token:', response.access_token);
         this.token = response.access_token;
         localStorage.setItem('token', response.access_token);
@@ -65,7 +68,7 @@ export const useAuthStore = defineStore('auth', {
         return response;
       } catch (error) {
         console.error('[authStore] Login error:', error);
-        useErrorStore().setError('Login failed');
+        useErrorStore().setError('Login failed: ' + (error.message || 'Unknown error'));
         throw error;
       }
     },

@@ -127,6 +127,19 @@ onMounted(async () => {
   await authStore.init();
   console.log('[onMounted] authStore after init:', authStore.token, authStore.user);
 
+  // Сбрасываем сессию TonConnect, если кошелёк не подключён
+  if (!tonConnectUI.connected || !wallet.value) {
+    console.log('[onMounted] No wallet connected, resetting session');
+    await tonConnectUI.disconnect();
+    localStorage.removeItem('ton-connect-storage_bridge-connection');
+    localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+    localStorage.removeItem('ton-connect-ui_wallet-info');
+  }
+
+  // Генерируем новый challenge
+  console.log('[onMounted] Generating new challenge');
+  await recreateProofPayload();
+
   if (tonConnectUI.connected && wallet.value) {
     console.log('[onMounted] Wallet already connected');
     await new Promise((resolve) => {
@@ -153,8 +166,7 @@ onMounted(async () => {
 
   tonConnectUI.onStatusChange(async (walletData) => {
     if (walletData) {
-      console.log('[onStatusChange] Wallet data received:', walletData, 'connected:',
-      tonConnectUI.connected, 'token:', authStore.token);
+      console.log('[onStatusChange] Wallet data received:', walletData, 'connected:', tonConnectUI.connected, 'token:', authStore.token);
       if (!userFriendlyAddress.value) {
         console.log('[onStatusChange] Waiting for user-friendly address');
         await new Promise((resolve) => {
@@ -174,6 +186,9 @@ onMounted(async () => {
       walletAddress.value = null;
       clientId.value = null;
       tonConnectUI.setConnectRequestParameters(null);
+      localStorage.removeItem('ton-connect-storage_bridge-connection');
+      localStorage.removeItem('ton-connect-ui_last-selected-wallet-info');
+      localStorage.removeItem('ton-connect-ui_wallet-info');
     }
   });
 });

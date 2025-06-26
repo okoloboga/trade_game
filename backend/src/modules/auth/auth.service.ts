@@ -44,4 +44,16 @@ export class AuthService {
 
     return { access_token: token, user };
   }
+  async verifyToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      const user = await this.userRepository.findOne({ where: { id: payload.sub, ton_address: payload.ton_address } });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return { id: user.id, ton_address: user.ton_address };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
 }
