@@ -60,17 +60,24 @@ export class TokensService {
 
     const newTokens = Math.min(tokensToAccrue, 10 - dailyTokens);
     if (newTokens > 0) {
-      await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
-        user.token_balance += newTokens;
-        await transactionalEntityManager.save(User, user);
-        await this.redis.set(
-          dailyTokensKey,
-          (dailyTokens + newTokens).toString(),
-          'EX',
-          24 * 60 * 60,
-        );
-      });
-      this.logger.log(`Accrued ${newTokens} RUBLE tokens to user ${user.id}`);
+      try {
+        await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
+          user.token_balance += newTokens;
+          await transactionalEntityManager.save(User, user);
+          await this.redis.set(
+            dailyTokensKey,
+            (dailyTokens + newTokens).toString(),
+            'EX',
+            24 * 60 * 60,
+          );
+        });
+        // Log the updated user entity after transaction
+        const updatedUser = await this.userRepository.findOne({ where: { id: user.id } });
+        this.logger.log(`Accrued ${newTokens} RUBLE tokens to user ${user.id}, new token_balance: ${updatedUser?.token_balance}`);
+      } catch (error) {
+        this.logger.error(`Failed to accrue ${newTokens} RUBLE tokens for user ${user.id}: ${(error as AxiosError).stack}`);
+        throw new BadRequestException('Failed to accrue tokens');
+      }
     }
 
     return newTokens;
