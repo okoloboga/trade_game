@@ -28,6 +28,6 @@ import { TonModule } from '../ton/ton.module';
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService],
-  exports: [TransactionsService],
+  exports: [TransactionsService, TypeOrmModule],
 })
 export class TransactionsModule {}
