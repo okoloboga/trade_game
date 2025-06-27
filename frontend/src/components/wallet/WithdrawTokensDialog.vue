@@ -1,3 +1,4 @@
+```vue
 <template>
   <v-dialog v-model="internalModelValue" max-width="320">
     <v-card color="black">
@@ -40,18 +41,19 @@ import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
+import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
 });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'withdraw-success']);
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
+const authStore = useAuthStore();
 const amount = ref(0.1);
 
-// Computed для v-model
 const internalModelValue = computed({
   get() {
     return props.modelValue;
@@ -62,22 +64,35 @@ const internalModelValue = computed({
 });
 
 const withdrawRules = computed(() => [
-  (v) => validateAmount(v, walletStore.tokenBalance) === true || validateAmount(v, walletStore.tokenBalance),
+  (v) => validateAmount(v, walletStore.tokenBalance) === true || t('error.invalid_amount_withdraw'),
 ]);
 
 const isValid = computed(() => validateAmount(amount.value, walletStore.tokenBalance) === true);
 
+/**
+ * Initiates a withdrawal transaction for RUBLE tokens.
+ */
 const withdraw = useDebounceFn(async () => {
+  if (!authStore.isConnected || !authStore.user?.ton_address) {
+    console.error('[WithdrawTokensDialog] Wallet not connected:', authStore.user?.ton_address);
+    errorStore.setError(t('error.connect_wallet'));
+    return;
+  }
+
   try {
-    await walletStore.withdrawTokens(amount.value);
+    const response = await walletStore.withdrawTokens(amount.value);
     errorStore.setError(t('ruble_withdraw_initiated'), false);
+    emit('withdraw-success');
     closeDialog();
   } catch (error) {
     console.error('[WithdrawTokensDialog] Withdraw error:', error);
-    errorStore.setError(t('failed_to_initiate_ruble_withdraw'));
+    errorStore.setError(t('error.failed_to_initiate_ruble_withdraw'));
   }
 }, 300);
 
+/**
+ * Closes the withdraw dialog and resets the input amount.
+ */
 const closeDialog = () => {
   internalModelValue.value = false;
   amount.value = 0.1;

@@ -92,5 +92,27 @@ export const useWalletStore = defineStore('wallet', {
         throw error;
       }
     },
+    async withdrawTokens(amount) {
+      const authStore = useAuthStore();
+      if (!authStore.isConnected || !authStore.user?.ton_address) {
+        useErrorStore().setError('Please connect wallet');
+        throw new Error('Not connected');
+      }
+      this.isProcessing = true;
+      try {
+        const response = await apiService.withdrawTokens({
+          tonAddress: authStore.user.ton_address,
+          amount,
+        });
+        this.updateBalances(response.user);
+        return response;
+      } catch (error) {
+        console.error('[walletStore] Failed to withdraw tokens:', error);
+        useErrorStore().setError('Failed to withdraw tokens');
+        throw error;
+      } finally {
+        this.isProcessing = false;
+      }
+    },
   },
 });

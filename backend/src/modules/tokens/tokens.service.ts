@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { Trade } from '../../entities/trade.entity';
+import { Transaction } from '../../entities/transaction.entity';
 import { WithdrawTokensDto } from './dto/withdraw-tokens.dto';
 import { MarketService } from '../market/market.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -22,6 +23,7 @@ export class TokensService {
   /**
    * Initializes TokensService with dependencies.
    * @param userRepository - Repository for User entity.
+   * @param transactionRepository - Repository for Transaction entity.
    * @param marketService - Service for fetching market data.
    * @param redis - Redis client for caching.
    * @param tonService - Service for TON blockchain interactions.
@@ -29,6 +31,8 @@ export class TokensService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
     private readonly marketService: MarketService,
     @InjectRedis() private readonly redis: Redis,
     private readonly tonService: TonService,
@@ -90,19 +94,19 @@ export class TokensService {
 
   /**
    * Withdraws RUBLE tokens from a user's balance to their TON wallet.
-   * @param withdrawTokensDto - DTO containing user ID and amount to withdraw.
-   * @returns {Promise<{ user: User, txHash: string }>} Updated user data and transaction hash.
+   * @param withdrawTokensDto - DTO containing TON address and amount to withdraw.
+   * @returns {Promise<{ user: User, txHash: string, transaction: Transaction }>} Updated user data, transaction hash, and transaction details.
    * @throws {BadRequestException} If amount is invalid or insufficient balance.
    * @throws {NotFoundException} If user is not found.
    */
   async withdrawTokens(withdrawTokensDto: WithdrawTokensDto) {
-    const { userId, amount } = withdrawTokensDto;
+    const { tonAddress, amount } = withdrawTokensDto;
 
     if (amount <= 0 || isNaN(amount)) {
       throw new BadRequestException('Amount must be a positive number');
     }
 
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({ where: { ton_address: tonAddress } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -112,19 +116,28 @@ export class TokensService {
     }
 
     try {
-      const txHash = await this.tonService.sendTokens(user.ton_address, amount.toString());
+      const txHash = await this.tonService.sendTokens(tonAddress, amount.toString());
+      let transaction: Transaction;
       await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
         await transactionalEntityManager.update(
           User,
-          { id: userId },
+          { id: user.id },
           { token_balance: () => `token_balance - ${amount}` },
         );
+        transaction = this.transactionRepository.create({
+          user: { id: user.id },
+          type: 'ruble',
+          amount,
+          ton_tx_hash: txHash,
+          status: 'completed',
+        });
+        await transactionalEntityManager.save(Transaction, transaction);
       });
-      const updatedUser = await this.userRepository.findOne({ where: { id: userId }, cache: false });
-      this.logger.log(`Withdrew ${amount} RUBLE tokens for user ${userId}, new token_balance: ${updatedUser?.token_balance}, txHash: ${txHash}`);
-      return { user: updatedUser || user, txHash };
+      const updatedUser = await this.userRepository.findOne({ where: { id: user.id }, cache: false });
+      this.logger.log(`Withdrew ${amount} RUBLE tokens for user ${user.id}, new token_balance: ${updatedUser?.token_balance}, txHash: ${txHash}`);
+      return { user: updatedUser || user, txHash, transaction: transaction! };
     } catch (error) {
-      this.logger.error(`Error withdrawing ${amount} RUBLE for user ${userId}: ${(error as AxiosError).stack}`);
+      this.logger.error(`Error withdrawing ${amount} RUBLE for user ${tonAddress}: ${(error as AxiosError).stack}`);
       throw new BadRequestException('Failed to process withdrawal');
     }
   }

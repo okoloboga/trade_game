@@ -14,6 +14,11 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class TokensController {
   constructor(private readonly tokensService: TokensService) {}
 
+  /**
+   * Initiates a withdrawal of RUBLE tokens.
+   * @param withdrawTokensDto - DTO containing TON address and amount to withdraw.
+   * @returns {Promise<{ user: User, txHash: string }>} Updated user data and transaction hash.
+   */
   @Post('withdraw')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

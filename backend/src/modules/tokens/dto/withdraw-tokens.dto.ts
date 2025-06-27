@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
 export class WithdrawTokensDto {
   @IsString()
   @IsNotEmpty()
-  userId!: string;
+  tonAddress!: string;
 
   @IsNumber()
   @Min(0.01)

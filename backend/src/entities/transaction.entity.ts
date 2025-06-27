@@ -17,7 +17,7 @@ export class Transaction {
   user!: User;
 
   @Column({ type: 'varchar' })
-  type!: 'deposit' | 'withdraw';
+  type!: 'deposit' | 'withdraw' | 'ruble';
 
   @Column({ type: 'decimal', precision: 10, scale: 5 })
   amount!: number;
