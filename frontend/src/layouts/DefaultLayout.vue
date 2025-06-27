@@ -2,12 +2,6 @@
   <v-main>
     <AppHeader />
     <v-container fluid>
-      <v-progress-circular
-        v-if="globalLoading"
-        indeterminate
-        color="primary"
-        class="global-spinner"
-      />
       <slot />
     </v-container>
   </v-main>
