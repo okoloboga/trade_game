@@ -1,16 +1,18 @@
+```vue
 <template>
   <v-container fluid class="wallet-container">
     <v-card v-if="authStore.isConnected && authStore.user" color="#1e1e1e" class="pa-4" elevation="4">
       <v-card-text>
         <v-row>
           <v-col cols="12">
-            <div class="text-body-1 text-white">
-              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(4) : '0.0000' }}
-              <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(4) }}) </span>
-              <span class="text-caption text-grey">
-                | Total: ${{ totalBalanceUsd.toFixed(4) }} | Available: ${{
-                availableDepositUsd.toFixed(4) }}
-              </span>
+            <div class="text-body-1 text-white mb-2">
+              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(4) : '0.0000' }} TON
+            </div>
+            <div class="text-body-1 text-white mb-2">
+              {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ? walletStore.usdt_balance.toFixed(4) : '0.0000' }} USDT
+            </div>
+            <div class="text-body-1 text-white mb-2">
+              {{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ? walletStore.tokenBalance.toFixed(4) : '0.0000' }} RUBLE
             </div>
           </v-col>
         </v-row>
@@ -76,21 +78,11 @@ const showWithdrawTokensDialog = ref(false);
 
 const shortAddress = computed(() => formatAddress(authStore.walletAddress));
 
-const currentPrice = computed(() => {
-  const price = marketStore.currentPrice ?? 3; // Use 3 USD/TON if price is unavailable
-  return price;
-});
-
 const totalBalanceUsd = computed(() => {
-  const tonBalanceUsd = walletStore.balance * currentPrice.value;
+  const tonBalanceUsd = walletStore.balance * (marketStore.currentPrice ?? 3);
   const usdtBalance = walletStore.usdt_balance;
   const total = tonBalanceUsd + usdtBalance;
   return total;
-});
-
-const availableDepositUsd = computed(() => {
-  const available = Math.max(0, 10 - totalBalanceUsd.value);
-  return available;
 });
 
 /**
@@ -119,16 +111,13 @@ const openWithdrawTokensDialog = () => {
 };
 
 /**
- * Initializes the wallet view, syncing and fetching balances and price.
+ * Initializes the wallet view, syncing and fetching balances.
  */
 onMounted(async () => {
   if (authStore.isConnected && authStore.user) {
     walletStore.syncFromAuthStore();
     try {
-      await Promise.all([
-        walletStore.fetchBalances(),
-        marketStore.fetchCurrentPrice('TON-USDT'),
-      ]);
+      await walletStore.fetchBalances();
     } catch (error) {
       console.error('[WalletView] Failed to fetch data:', error);
       errorStore.setError(t('error.failed_to_fetch_balances'));
@@ -139,10 +128,9 @@ onMounted(async () => {
 });
 
 /**
- * Cleans up the wallet view, stopping market updates.
+ * Cleans up the wallet view.
  */
 onUnmounted(() => {
-  marketStore.stopRealTimeUpdates();
 });
 </script>
 

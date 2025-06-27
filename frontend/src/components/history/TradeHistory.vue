@@ -7,13 +7,10 @@
     class="elevation-1"
   >
     <template v-slot:item.type="{ item }">
-      {{ item.type === 'buy' ? $t('Buy') : $t('Sell') }}
+      {{ item.type === 'buy' ? $t('buy') : $t('sell') }}
     </template>
     <template v-slot:item.amount="{ item }">
       {{ Number(item.amount).toFixed(2) }}$
-      <span v-if="currentPrice" class="text-caption text-grey">
-        (≈ {{ (Number(item.amount) / currentPrice).toFixed(2) }} TON)
-      </span>
     </template>
     <template v-slot:item.profit_loss="{ item }">
       <span v-if="item.type === 'buy'">-</span>

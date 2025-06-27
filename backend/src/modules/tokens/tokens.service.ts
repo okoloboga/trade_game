@@ -19,6 +19,13 @@ import { AxiosError } from 'axios';
 export class TokensService {
   private readonly logger = new Logger(TokensService.name);
 
+  /**
+   * Initializes TokensService with dependencies.
+   * @param userRepository - Repository for User entity.
+   * @param marketService - Service for fetching market data.
+   * @param redis - Redis client for caching.
+   * @param tonService - Service for TON blockchain interactions.
+   */
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -47,19 +54,23 @@ export class TokensService {
     const dailyTokens = parseInt((await this.redis.get(dailyTokensKey)) || '0');
 
     if (dailyTokens >= 10) {
+      this.logger.log(`Daily token limit reached for user ${user.id}`);
       return 0;
     }
 
     const newTokens = Math.min(tokensToAccrue, 10 - dailyTokens);
     if (newTokens > 0) {
-      user.token_balance += newTokens;
-      await this.userRepository.save(user);
-      await this.redis.set(
-        dailyTokensKey,
-        (dailyTokens + newTokens).toString(),
-        'EX',
-        24 * 60 * 60
-      );
+      await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
+        user.token_balance += newTokens;
+        await transactionalEntityManager.save(User, user);
+        await this.redis.set(
+          dailyTokensKey,
+          (dailyTokens + newTokens).toString(),
+          'EX',
+          24 * 60 * 60,
+        );
+      });
+      this.logger.log(`Accrued ${newTokens} RUBLE tokens to user ${user.id}`);
     }
 
     return newTokens;
@@ -75,8 +86,8 @@ export class TokensService {
   async withdrawTokens(withdrawTokensDto: WithdrawTokensDto) {
     const { userId, amount } = withdrawTokensDto;
 
-    if (amount <= 0) {
-      throw new BadRequestException('Amount must be positive');
+    if (amount <= 0 || isNaN(amount)) {
+      throw new BadRequestException('Amount must be a positive number');
     }
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -90,11 +101,14 @@ export class TokensService {
 
     try {
       const txHash = await this.tonService.sendTokens(user.ton_address, amount.toString());
-      user.token_balance -= amount;
-      await this.userRepository.save(user);
+      await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
+        user.token_balance -= amount;
+        await transactionalEntityManager.save(User, user);
+      });
+      this.logger.log(`Withdrew ${amount} RUBLE tokens for user ${user.id}, txHash: ${txHash}`);
       return { user, txHash };
     } catch (error) {
-      this.logger.error(`Error withdrawing ${amount} RUBLE: ${(error as AxiosError).message}`);
+      this.logger.error(`Error withdrawing ${amount} RUBLE for user ${user.id}: ${(error as AxiosError).stack}`);
       throw new BadRequestException('Failed to process withdrawal');
     }
   }
@@ -114,11 +128,16 @@ export class TokensService {
     try {
       const response = await this.marketService.getCurrentPrice('TON-USDT');
       const price = response;
+      if (!price || price <= 0) {
+        throw new Error('Invalid TON price');
+      }
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).message}`);
-      return 5.0;
+      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).stack}`);
+      const fallbackPrice = parseFloat((await this.redis.get('ton_price_usd_fallback')) || '5.0');
+      await this.redis.set('ton_price_usd_fallback', fallbackPrice.toString(), 'EX', 24 * 60 * 60);
+      return fallbackPrice;
     }
   }
 }

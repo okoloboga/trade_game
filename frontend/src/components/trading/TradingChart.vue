@@ -1,3 +1,4 @@
+```vue
 <template>
   <div class="trading-chart-wrapper">
     <v-tabs
@@ -66,7 +67,7 @@ const initChart = async () => {
     }
 
     chart = createChart(chartContainer.value, {
-      width: Math.max(400, rect.width),
+      width: rect.width,
       height: 300,
       layout: {
         background: { type: 'solid', color: '#000000' },
@@ -85,6 +86,7 @@ const initChart = async () => {
         borderVisible: true,
         borderColor: '#333333',
         scaleMargins: { top: 0.1, bottom: 0.1 },
+        autoScale: true,
       },
     });
 
@@ -96,16 +98,34 @@ const initChart = async () => {
       wickDownColor: '#f44336',
     });
 
+    // Adjust price scale for mobile devices
+    if (rect.width < 400) {
+      chart.priceScale('right').applyOptions({
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+        minimumWidth: 60, // Ensure price scale is visible but compact
+      });
+      chart.timeScale().scrollToRealTime();
+    }
+
     const handleResize = () => {
       if (chart && chartContainer.value) {
         const newRect = chartContainer.value.getBoundingClientRect();
         chart.applyOptions({
-          width: Math.max(400, newRect.width),
+          width: newRect.width,
           height: 300,
         });
         // Ensure right edge is visible on mobile
-        if (newRect.width < 600) {
+        if (newRect.width < 400) {
+          chart.priceScale('right').applyOptions({
+            scaleMargins: { top: 0.1, bottom: 0.1 },
+            minimumWidth: 60,
+          });
           chart.timeScale().scrollToRealTime();
+        } else {
+          chart.priceScale('right').applyOptions({
+            scaleMargins: { top: 0.1, bottom: 0.1 },
+          });
+          chart.timeScale().fitContent();
         }
       }
     };
@@ -119,11 +139,6 @@ const initChart = async () => {
         candleSeries = null;
       }
     });
-
-    // Focus on the right edge for mobile devices
-    if (rect.width < 600) {
-      chart.timeScale().scrollToRealTime();
-    }
   } catch (err) {
     error.value = `Chart error: ${err.message}`;
   }
@@ -175,8 +190,12 @@ const updateChartData = () => {
     }
 
     candleSeries.setData(chartData);
-    // Focus on the right edge for mobile devices
-    if (chartContainer.value?.getBoundingClientRect().width < 600) {
+    // Ensure right edge is visible on mobile
+    if (chartContainer.value?.getBoundingClientRect().width < 400) {
+      chart.priceScale('right').applyOptions({
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+        minimumWidth: 60,
+      });
       chart.timeScale().scrollToRealTime();
     } else {
       chart.timeScale().fitContent();
@@ -189,7 +208,7 @@ const updateChartData = () => {
 
 /**
  * Changes the timeframe and fetches new candlestick data.
- * @param tf - The selected timeframe (e.g., '1m', '5m', '15m').
+ * @param {string} tf - The selected timeframe (e.g., '1m', '5m', '15m').
  */
 const changeTimeframe = async (tf) => {
   try {
@@ -224,6 +243,10 @@ watch(
       close: newPrice,
     };
     candleSeries.update(updatedCandle);
+    // Ensure right edge is visible on mobile
+    if (chartContainer.value?.getBoundingClientRect().width < 400) {
+      chart.timeScale().scrollToRealTime();
+    }
   }
 );
 
@@ -247,7 +270,7 @@ onUnmounted(() => {
 <style scoped>
 .trading-chart-wrapper {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .chart-container {
@@ -301,14 +324,17 @@ onUnmounted(() => {
   margin: 0 2px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 400px) {
   .trading-chart-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    padding: 0;
   }
 
   .chart-container {
-    min-width: 400px; /* Ensure price scale is visible */
+    width: 100%;
+  }
+
+  .timeframe-tabs {
+    font-size: 0.8rem;
   }
 }
 </style>
