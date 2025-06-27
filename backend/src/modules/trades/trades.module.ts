@@ -12,6 +12,7 @@ import { MarketService } from '../market/market.service';
 import { MarketGateway } from '../market/market.gateway';
 import { TonModule } from '../ton/ton.module';
 import { TokensModule } from '../tokens/tokens.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 
 @Module({
@@ -29,6 +30,7 @@ import { TokensModule } from '../tokens/tokens.module';
     }),
     TonModule,
     TokensModule,
+    TransactionsModule,
   ],
   controllers: [TradesController],
   providers: [TradesService, TokensService, MarketService, MarketGateway],

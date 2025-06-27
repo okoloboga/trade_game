@@ -11,6 +11,7 @@ import { MarketService } from '../market/market.service';
 import { MarketGateway } from '../market/market.gateway';
 import { TonModule } from '../ton/ton.module';
 import { MarketModule } from '../market/market.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { MarketModule } from '../market/market.module';
       }),
     }),
     TonModule,
-    MarketModule
+    MarketModule,
+    TransactionsModule,
   ],
   controllers: [TokensController],
   providers: [TokensService, MarketService, MarketGateway],
