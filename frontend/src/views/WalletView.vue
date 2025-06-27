@@ -6,13 +6,15 @@
         <v-row>
           <v-col cols="12">
             <div class="text-body-1 text-white mb-2">
-              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(4) : '0.0000' }} TON
+              {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(3) : '0.000' }} TON
             </div>
             <div class="text-body-1 text-white mb-2">
-              {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ? walletStore.usdt_balance.toFixed(4) : '0.0000' }} USDT
+              {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ?
+              walletStore.usdt_balance.toFixed(3) : '0.000' }} USDT
             </div>
             <div class="text-body-1 text-white mb-2">
-              {{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ? walletStore.tokenBalance.toFixed(4) : '0.0000' }} RUBLE
+              {{ $t('ruble_balance') }}: {{ walletStore.tokenBalance ?
+              walletStore.tokenBalance.toFixed(0) : '0' }} RUBLE
             </div>
           </v-col>
         </v-row>

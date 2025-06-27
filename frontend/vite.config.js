@@ -34,7 +34,6 @@ export default defineConfig({
       },
     },
     allowedHosts: ["https://447c-91-199-154-233.ngrok-free.app"],
-    // Добавляем для корректной загрузки модулей
     fs: {
       strict: false,
     },
@@ -66,7 +65,6 @@ export default defineConfig({
     },
   },
   css: {
-    // Явная загрузка CSS Vuetify
     preprocessorOptions: {
       scss: {
         additionalData: `@import "vuetify/styles";`,

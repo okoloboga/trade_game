@@ -4,14 +4,14 @@
       <v-row>
         <v-col cols="6">
           <div class="text-body-1 text-white">
-            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(4) : '0.0000' }}
-            <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(4) }})</span>
+            {{ $t('ton_balance') }}: {{ walletStore.balance ? walletStore.balance.toFixed(3) : '0.000' }}
+            <span v-if="currentPrice"> (~${{ (walletStore.balance * currentPrice).toFixed(3) }})</span>
           </div>
         </v-col>
         <v-col cols="6">
           <div class="text-body-1 text-white">
             {{ $t('usdt_balance') }}: {{ walletStore.usdt_balance ?
-            walletStore.usdt_balance.toFixed(4) : '0.0000' }}
+            walletStore.usdt_balance.toFixed(3) : '0.000' }}
           </div>
         </v-col>
       </v-row>
@@ -29,14 +29,14 @@
           >
             <template #details>
               <div v-if="amount && currentPrice" class="text-caption text-grey">
-                ≈ {{ (amount / currentPrice).toFixed(4) }} TON
+                ≈ {{ (amount / currentPrice).toFixed(3) }} TON
               </div>
             </template>
           </v-text-field>
         </v-col>
         <v-col cols="6">
           <div class="text-h6 text-white">
-            ${{ currentPrice.toFixed(4) ?? '--' }}
+            ${{ currentPrice.toFixed(3) ?? '--' }}
           </div>
         </v-col>
       </v-row>

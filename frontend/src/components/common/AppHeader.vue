@@ -36,7 +36,6 @@
   </v-app-bar>
 </template>
 
-```vue
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useTonWallet, useTonConnectUI, TonConnectButton, useTonAddress } from '@townsquarelabs/ui-vue';
@@ -230,13 +229,12 @@ const handleLanguageChange = () => {
 </script>
 
 <style scoped>
-/* Базовые стили */
+
 .v-app-bar {
   height: 62px !important;
   padding: 0px 0px 4px 4px;
 }
 
-/* Стили для иконок */
 .icon {
   width: 24px;
   height: 24px;
@@ -244,42 +242,37 @@ const handleLanguageChange = () => {
   transition: opacity 0.2s ease;
 }
 
-/* Состояние наведения */
 .v-btn.header-btn:hover .icon {
   opacity: 0.8;
 }
 
-/* Активное состояние (нажатие) - только для Home */
 .v-btn.header-btn:active .home-icon {
   background: rgba(255, 255, 255, 0.1) !important;
   border-radius: 50%;
   padding: 8px;
 }
 
-/* Фикс для Material иконки */
 .header-btn :deep(.v-icon) {
   color: inherit !important;
 }
 
-/* Специфичные стили для TonConnectButton */
 .ton-connect-button {
   padding-bottom: 4px;
   --tc-button-background: transparent !important;
   --tc-button-color: #E0E0E0 !important;
 }
 
-/* Кастомные стили для TonConnectButton */
+
 .custom-ton-connect-button {
-  max-width: 150px; /* Ограничиваем максимальную ширину кнопки */
-  width: 100%; /* Убедимся, что кнопка не превышает контейнер */
+  max-width: 150px;
+  width: 100%;
 }
 
-/* Стили для контейнера кнопки */
 .m-btn {
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 150px; /* Ограничиваем контейнер */
-  margin: 0 auto; /* Центрируем контейнер */
+  max-width: 150px;
+  margin: 0 auto;
 }
 </style>

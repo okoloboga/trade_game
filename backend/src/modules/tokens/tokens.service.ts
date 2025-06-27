@@ -53,7 +53,7 @@ export class TokensService {
       parseFloat((await this.redis.get(cacheKey)) || '0') + tradeVolumeUsd;
     await this.redis.set(cacheKey, dailyVolume.toString(), 'EX', 24 * 60 * 60);
 
-    const tokensToAccrue = Math.floor(dailyVolume / 10);
+    const tokensToAccrue = Math.floor(dailyVolume / 1000);
     const dailyTokensKey = `daily_tokens:${user.id}`;
     const dailyTokens = parseInt((await this.redis.get(dailyTokensKey)) || '0');
 
