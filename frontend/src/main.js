@@ -9,6 +9,7 @@ import { router } from './router'
 import WebApp from '@twa-dev/sdk'
 import { createI18n } from 'vue-i18n'
 import { Buffer } from 'buffer';
+import telegramAnalytics from '@telegram-apps/analytics'
 
 // Import translations
 import en from './locales/en.json'
@@ -79,10 +80,18 @@ app.use(i18n)
 app.mount('#app')
 
 /**
- * Initializes the application by verifying the auth token and fetching wallet data.
+ * Initializes the application by setting up analytics, verifying the auth token, and fetching wallet data.
  */
 async function initializeApp() {
   try {
+    // Initialize Telegram Analytics
+    telegramAnalytics.init({
+      token: import.meta.env.VITE_ANALYTICS_TOKEN,
+      appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
+    });
+    // Track app launch event
+    telegramAnalytics.trackEvent('app_launched');
+
     const { useAppStore } = await import('./stores/app')
     const { useAuthStore } = await import('./stores/auth')
     const { useWalletStore } = await import('./stores/wallet')
@@ -101,6 +110,8 @@ async function initializeApp() {
     const { useAuthStore } = await import('./stores/auth')
     const authStore = useAuthStore()
     authStore.logout()
+    // Track initialization error
+    telegramAnalytics.trackEvent('app_initialization_error', { error: error.message });
   } finally {
     const { useAppStore } = await import('./stores/app')
     const appStore = useAppStore()
