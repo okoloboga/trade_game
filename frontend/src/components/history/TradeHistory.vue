@@ -12,6 +12,9 @@
     <template v-slot:item.amount="{ item }">
       {{ Number(item.amount).toFixed(2) }}$
     </template>
+    <template v-slot:item.usdt_price="{ item }">
+      {{ formatCurrency(Number(item.usdt_price)) }}
+    </template>
     <template v-slot:item.profit_loss="{ item }">
       <span v-if="item.type === 'buy'">-</span>
       <span v-else :class="Number(item.profit_loss) > 0 ? 'green--text' : 'red--text'">
@@ -45,6 +48,7 @@ const currentPrice = computed(() => marketStore.currentPrice || 0);
 const headers = computed(() => [
   { title: t('trade_headers.type'), key: 'type' },
   { title: t('trade_headers.amount'), key: 'amount' },
+  { title: t('trade_headers.price'), key: 'usdt_price' },
   { title: t('trade_headers.profit_loss'), key: 'profit_loss' },
   { title: t('trade_headers.date'), key: 'created_at' },
 ]);

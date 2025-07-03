@@ -17,7 +17,8 @@
     "entry_price": "Entry Price",
     "profit_loss": "P&L",
     "date": "Date",
-    "actions": "Actions"
+    "actions": "Actions",
+    "price": "Price"
   },
   "transaction_headers": {
       "type": "Type",

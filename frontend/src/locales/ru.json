@@ -17,7 +17,8 @@
     "entry_price": "Цена входа",
     "profit_loss": "P&L",
     "date": "Дата",
-    "actions": "Действия"
+    "actions": "Действия",
+    "price": "Цена"
   },
   "transaction_headers": {
     "type": "Тип",
