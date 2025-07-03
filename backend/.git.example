@@ -1,0 +1,17 @@
+NODE_ENV=development
+PORT=3000
+POSTGRES_URL=postgres://ruble_trade:pass@postgres:5432/db
+POSTGRES_USER=ruble_trade
+POSTGRES_PASSWORD=pass
+POSTGRES_DB=db
+REDIS_URL=redis://redis:6379
+JWT_SECRET=pass
+OKX_API_KEY=api_key
+OKX_SECRET_KEY=secret_key
+OKX_PASSPHRASE=phrase
+TON_CENTRAL_WALLET=UQDIkS1d_Lhd7EDttTtcmr9Xzg78uEMDEsYFde-PZCgfoOtU
+TON_API_KEY=api_key
+CENTRAL_WALLET_MNEMONIC='mnemo'
+TON_ENDPOINT=https://toncenter.com/api/v2/jsonRPC
+JETTON_MASTER_ADDRESS=EQA5QopV0455mb09Nz6iPL3JsX_guIGf77a6l-DtqSQh0aE-
+
