@@ -1,0 +1,25 @@
+Terms of Service for Ruble Trade Game
+
+1. General Provisions
+Ruble Trade Game is a Telegram Mini App for trading virtual TON/USDT pairs and earning RUBLE tokens as rewards for activity. By using the app, you agree to these Terms.
+
+2. Access to the App
+The app is available only through Telegram and requires a TON wallet connection via TonConnect. You are responsible for the security of your TON wallet and TonConnect data.
+
+3. Eligibility
+You must be at least 18 years old to use the app. Trading involves virtual assets, not real securities, and is for entertainment purposes.
+
+4. RUBLE Tokens and Withdrawals
+You can earn up to 1000 RUBLE tokens daily as rewards for trading activity (1 RUBLE per $10 traded). RUBLE tokens have real value and can be withdrawn to your TON wallet with a minimum of $10. Withdrawals are instant but subject to TON blockchain fees.
+
+5. Trading Risks
+Trading TON/USDT involves risks, including price volatility. You accept all risks associated with trading and wallet management.
+
+6. Data Collection
+The app uses Telegram Analytics to anonymously track user actions (e.g., app launches, trades) to improve the experience. No personal data is collected.
+
+7. Limitation of Liability
+The developer is not responsible for losses due to market volatility, technical issues, or wallet security breaches. Use the app at your own risk.
+
+8. Changes to Terms
+We may update these Terms. The latest version is available in the app. For support, contact: https://t.me/okolo_boga
