@@ -9,7 +9,6 @@ import { StatsDto } from '../dto/stats.dto';
 
 describe('StatsController', () => {
   let app: INestApplication;
-  let statsService: StatsService;
 
   const MockStatsService = mock<StatsService>();
 
@@ -43,8 +42,6 @@ describe('StatsController', () => {
 
     app = module.createNestApplication();
     await app.init();
-
-    statsService = module.get<StatsService>(StatsService);
   });
 
   afterEach(async () => {
@@ -63,7 +60,8 @@ describe('StatsController', () => {
       const trades = [mockTrade];
       when(MockStatsService.getTradeHistory(params)).thenResolve({ trades });
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .get('/stats/trades')
         .query(params)
         .expect(200);
@@ -73,14 +71,16 @@ describe('StatsController', () => {
     });
 
     it('should throw BadRequestException if userId is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/stats/trades')
         .query({ period: '1d' })
         .expect(400);
     });
 
     it('should throw BadRequestException if period is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/stats/trades')
         .query({ userId: '0:1234567890abcdef' })
         .expect(400);
@@ -97,7 +97,8 @@ describe('StatsController', () => {
       };
       when(MockStatsService.getSummary(params)).thenResolve(summary);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .get('/stats/summary')
         .query(params)
         .expect(200);
@@ -107,14 +108,16 @@ describe('StatsController', () => {
     });
 
     it('should throw BadRequestException if userId is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/stats/summary')
         .query({ period: '1d' })
         .expect(400);
     });
 
     it('should throw BadRequestException if period is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/stats/summary')
         .query({ userId: '0:1234567890abcdef' })
         .expect(400);

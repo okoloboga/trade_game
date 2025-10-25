@@ -22,7 +22,7 @@ export class StatsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly marketService: MarketService,
-    @InjectRedis() private readonly redis: Redis,
+    @InjectRedis() private readonly redis: Redis
   ) {}
 
   /**
@@ -184,7 +184,9 @@ export class StatsService {
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).message}`);
+      this.logger.error(
+        `Failed to fetch TON price: ${(error as AxiosError).message}`
+      );
       return 5.0;
     }
   }

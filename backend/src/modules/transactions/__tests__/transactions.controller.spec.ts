@@ -52,7 +52,10 @@ describe('TransactionsController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TransactionsController],
       providers: [
-        { provide: TransactionsService, useValue: instance(MockTransactionsService) },
+        {
+          provide: TransactionsService,
+          useValue: instance(MockTransactionsService),
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -82,9 +85,12 @@ describe('TransactionsController', () => {
   describe('POST /transactions/deposit', () => {
     it('should process deposit successfully', async () => {
       const response = { user: mockUser, status: 'confirmed' };
-      when(MockTransactionsService.processDeposit(depositDto)).thenResolve(response);
+      when(MockTransactionsService.processDeposit(depositDto)).thenResolve(
+        response
+      );
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .post('/transactions/deposit')
         .send(depositDto)
         .expect(200);
@@ -96,7 +102,8 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for missing userId', async () => {
       const invalidDto = { ...depositDto, userId: '' };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/deposit')
         .send(invalidDto)
         .expect(400);
@@ -105,7 +112,8 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for invalid amount', async () => {
       const invalidDto = { ...depositDto, amount: 0 };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/deposit')
         .send(invalidDto)
         .expect(400);
@@ -114,7 +122,8 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for missing txHash', async () => {
       const invalidDto = { ...depositDto, txHash: '' };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/deposit')
         .send(invalidDto)
         .expect(400);
@@ -123,16 +132,20 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for invalid tonProof', async () => {
       const invalidDto = { ...depositDto, tonProof: {} };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/deposit')
         .send(invalidDto)
         .expect(400);
     });
 
     it('should throw NotFoundException if user not found', async () => {
-      when(MockTransactionsService.processDeposit(depositDto)).thenReject(new NotFoundException('User not found'));
+      when(MockTransactionsService.processDeposit(depositDto)).thenReject(
+        new NotFoundException('User not found')
+      );
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/deposit')
         .send(depositDto)
         .expect(404);
@@ -142,9 +155,12 @@ describe('TransactionsController', () => {
   describe('POST /transactions/withdraw', () => {
     it('should process withdraw successfully', async () => {
       const response = { user: mockUser, status: 'pending' };
-      when(MockTransactionsService.processWithdraw(withdrawDto)).thenResolve(response);
+      when(MockTransactionsService.processWithdraw(withdrawDto)).thenResolve(
+        response
+      );
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .post('/transactions/withdraw')
         .send(withdrawDto)
         .expect(200);
@@ -156,7 +172,8 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for missing userId', async () => {
       const invalidDto = { ...withdrawDto, userId: '' };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/withdraw')
         .send(invalidDto)
         .expect(400);
@@ -165,7 +182,8 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for invalid amount', async () => {
       const invalidDto = { ...withdrawDto, amount: 0 };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/withdraw')
         .send(invalidDto)
         .expect(400);
@@ -174,16 +192,20 @@ describe('TransactionsController', () => {
     it('should throw BadRequestException for missing ton_address', async () => {
       const invalidDto = { ...withdrawDto, ton_address: '' };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/withdraw')
         .send(invalidDto)
         .expect(400);
     });
 
     it('should throw BadRequestException for insufficient balance', async () => {
-      when(MockTransactionsService.processWithdraw(withdrawDto)).thenReject(new BadRequestException('Insufficient balance'));
+      when(MockTransactionsService.processWithdraw(withdrawDto)).thenReject(
+        new BadRequestException('Insufficient balance')
+      );
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/transactions/withdraw')
         .send(withdrawDto)
         .expect(400);

@@ -8,7 +8,6 @@ import { TonProof, Account } from '../../../types/ton.types';
 
 describe('ChallengeController', () => {
   let app: INestApplication;
-  let challengeService: ChallengeService;
 
   const MockChallengeService = mock<ChallengeService>();
 
@@ -45,14 +44,12 @@ describe('ChallengeController', () => {
 
     app = module.createNestApplication();
     await app.init();
-
-    challengeService = module.get<ChallengeService>(ChallengeService);
   }, 10000);
 
   afterEach(async () => {
-      if (app) {
-          await app.close();
-      }
+    if (app) {
+      await app.close();
+    }
   });
 
   it('should be defined', () => {
@@ -63,9 +60,12 @@ describe('ChallengeController', () => {
     it('should generate a challenge', async () => {
       const walletAddress = 'EQ123...';
       const challenge = 'a'.repeat(64);
-      when(MockChallengeService.generateChallenge(walletAddress)).thenReturn(challenge);
+      when(MockChallengeService.generateChallenge(walletAddress)).thenReturn(
+        challenge
+      );
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .get('/challenge/generate')
         .query({ walletAddress })
         .expect(200);
@@ -75,7 +75,8 @@ describe('ChallengeController', () => {
     });
 
     it('should throw BadRequestException if walletAddress is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/challenge/generate')
         .expect(400);
     });
@@ -83,33 +84,44 @@ describe('ChallengeController', () => {
 
   describe('POST /challenge/verify', () => {
     it('should return valid: true for successful verification', async () => {
-      when(MockChallengeService.verifyTonProof(mockAccount, mockTonProof)).thenResolve(true);
+      when(
+        MockChallengeService.verifyTonProof(mockAccount, mockTonProof)
+      ).thenResolve(true);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .post('/challenge/verify')
         .send(verifyDto)
         .expect(200);
 
       expect(result.body).toEqual({ valid: true });
-      verify(MockChallengeService.verifyTonProof(mockAccount, mockTonProof)).once();
+      verify(
+        MockChallengeService.verifyTonProof(mockAccount, mockTonProof)
+      ).once();
     });
 
     it('should return valid: false for failed verification', async () => {
-      when(MockChallengeService.verifyTonProof(mockAccount, mockTonProof)).thenResolve(false);
+      when(
+        MockChallengeService.verifyTonProof(mockAccount, mockTonProof)
+      ).thenResolve(false);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .post('/challenge/verify')
         .send(verifyDto)
         .expect(200);
 
       expect(result.body).toEqual({ valid: false });
-      verify(MockChallengeService.verifyTonProof(mockAccount, mockTonProof)).once();
+      verify(
+        MockChallengeService.verifyTonProof(mockAccount, mockTonProof)
+      ).once();
     });
 
     it('should throw BadRequestException if walletAddress is missing', async () => {
       const invalidDto = { ...verifyDto, walletAddress: undefined };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/challenge/verify')
         .send(invalidDto)
         .expect(400);
@@ -118,7 +130,8 @@ describe('ChallengeController', () => {
     it('should throw BadRequestException if tonProof is missing', async () => {
       const invalidDto = { ...verifyDto, tonProof: undefined };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/challenge/verify')
         .send(invalidDto)
         .expect(400);

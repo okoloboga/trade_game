@@ -69,7 +69,10 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * @param data - Subscription data with instrument ID and bar interval.
    */
   @SubscribeMessage('subscribe')
-  handleSubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: { instId: string; bar: string }) {
+  handleSubscribe(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { instId: string; bar: string }
+  ) {
     if (!data) {
       client.emit('error', { error: 'Missing subscription data' });
       throw new BadRequestException('Missing subscription data');
@@ -111,7 +114,10 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * @param data - Unsubscription data with instrument ID and bar interval.
    */
   @SubscribeMessage('unsubscribe')
-  handleUnsubscribe(@ConnectedSocket() client: Socket, @MessageBody() data: { instId: string; bar: string }) {
+  handleUnsubscribe(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { instId: string; bar: string }
+  ) {
     if (!data) {
       client.emit('error', { error: 'Missing unsubscription data' });
       return;
@@ -187,10 +193,12 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         JSON.stringify({
           op: 'subscribe',
           args: [{ channel: `candle${bar}`, instId }],
-        }),
+        })
       );
     } else {
-      this.logger.warn(`Cannot subscribe to OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`);
+      this.logger.warn(
+        `Cannot subscribe to OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`
+      );
     }
   }
 
@@ -206,10 +214,12 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         JSON.stringify({
           op: 'unsubscribe',
           args: [{ channel: `candle${bar}`, instId }],
-        }),
+        })
       );
     } else {
-      this.logger.warn(`Cannot unsubscribe from OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`);
+      this.logger.warn(
+        `Cannot unsubscribe from OKX ${channel}: WebSocket not open (readyState: ${this.okxWs?.readyState})`
+      );
     }
   }
 
@@ -253,11 +263,13 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.sendTickerUpdate(message.arg.instId, candle.close);
         }
       } catch (error) {
-        this.logger.error(`Failed to process OKX message: ${(error as Error).message}`);
+        this.logger.error(
+          `Failed to process OKX message: ${(error as Error).message}`
+        );
       }
     });
 
-    this.okxWs.on('error', (error) => {
+    this.okxWs.on('error', error => {
       this.logger.error(`OKX WebSocket error: ${error.message}`);
     });
 

@@ -14,7 +14,6 @@ import { TonModule } from '../ton/ton.module';
 import { TokensModule } from '../tokens/tokens.module';
 import { TransactionsModule } from '../transactions/transactions.module';
 
-
 @Module({
   imports: [
     ConfigModule,

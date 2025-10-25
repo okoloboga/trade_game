@@ -8,10 +8,10 @@ import { ChallengeService } from '../../challenge/challenge.service';
 import { instance, when, verify, reset, anything } from 'ts-mockito';
 import { UnauthorizedException } from '@nestjs/common';
 import { TonProof, Account } from '../../../types/ton.types';
-import { 
-  MockUserRepository, 
-  MockJwtService, 
-  MockChallengeService // Импортируй из setup
+import {
+  MockUserRepository,
+  MockJwtService,
+  MockChallengeService, // Импортируй из setup
 } from '../../../../test/setup';
 
 describe('AuthService', () => {
@@ -59,19 +59,19 @@ describe('AuthService', () => {
 
     console.log('User repository token:', USER_REPOSITORY_TOKEN);
     console.log('User entity:', User);
-    
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { 
-            provide: USER_REPOSITORY_TOKEN, 
-            useValue: instance<Repository<User>>(MockUserRepository) 
+        {
+          provide: USER_REPOSITORY_TOKEN,
+          useValue: instance<Repository<User>>(MockUserRepository),
         },
         { provide: JwtService, useValue: instance(MockJwtService) },
         { provide: ChallengeService, useValue: instance(MockChallengeService) },
-        ],
+      ],
     }).compile();
-    
+
     console.timeEnd('Test.createTestingModule');
     console.log('Module created successfully');
 
@@ -79,7 +79,7 @@ describe('AuthService', () => {
     userRepository = module.get<Repository<User>>(USER_REPOSITORY_TOKEN);
     jwtService = module.get<JwtService>(JwtService);
     challengeService = module.get<ChallengeService>(ChallengeService);
-    
+
     console.log('beforeEach completed');
   });
 
@@ -100,21 +100,26 @@ describe('AuthService', () => {
 
     it('should login existing user and return JWT', async () => {
       // Настройка моков для этого теста
-      when(MockChallengeService.verifyTonProof(anything(), anything())).thenResolve(true);
+      when(
+        MockChallengeService.verifyTonProof(anything(), anything())
+      ).thenResolve(true);
       when(MockUserRepository.findOne(anything())).thenResolve(mockUser);
       when(MockJwtService.signAsync(anything())).thenResolve('jwt-token');
 
       const result = await service.login(mockAuthDto);
 
       expect(result).toEqual({ access_token: 'jwt-token', user: mockUser });
-      verify(MockChallengeService.verifyTonProof(anything(), anything())).once();
+      verify(
+        MockChallengeService.verifyTonProof(anything(), anything())
+      ).once();
       verify(MockUserRepository.findOne(anything())).once();
       verify(MockJwtService.signAsync(anything())).once();
     });
 
     it('should create new user if not exists and return JWT', async () => {
-
-      when(MockChallengeService.verifyTonProof(anything(), anything())).thenResolve(true);
+      when(
+        MockChallengeService.verifyTonProof(anything(), anything())
+      ).thenResolve(true);
       when(MockUserRepository.findOne(anything())).thenResolve(null);
       // Используем thenCall для более гибкого мокинга
       when(MockUserRepository.create(anything())).thenCall(() => mockUser);
@@ -129,10 +134,16 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if TON Proof is invalid', async () => {
-      when(MockChallengeService.verifyTonProof(anything(), anything())).thenResolve(false);
+      when(
+        MockChallengeService.verifyTonProof(anything(), anything())
+      ).thenResolve(false);
 
-      await expect(service.login(mockAuthDto)).rejects.toThrow(UnauthorizedException);
-      verify(MockChallengeService.verifyTonProof(anything(), anything())).once();
+      await expect(service.login(mockAuthDto)).rejects.toThrow(
+        UnauthorizedException
+      );
+      verify(
+        MockChallengeService.verifyTonProof(anything(), anything())
+      ).once();
       verify(MockUserRepository.findOne(anything())).never();
     });
   });

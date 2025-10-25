@@ -12,8 +12,6 @@ import { StatsDto } from '../dto/stats.dto';
 
 describe('StatsService', () => {
   let service: StatsService;
-  let tradeRepository: Repository<Trade>;
-  let redisService: Redis;
 
   const MockTradeRepository = mock<Repository<Trade>>();
   const MockRedisService = mock<Redis>();
@@ -43,19 +41,22 @@ describe('StatsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StatsService,
-        { provide: getRepositoryToken(Trade), useValue: instance(MockTradeRepository) },
+        {
+          provide: getRepositoryToken(Trade),
+          useValue: instance(MockTradeRepository),
+        },
         { provide: Redis, useValue: instance(MockRedisService) },
         { provide: ConfigService, useValue: MockConfigServiceInstance },
       ],
     }).compile();
 
     service = module.get<StatsService>(StatsService);
-    tradeRepository = module.get<Repository<Trade>>(getRepositoryToken(Trade));
-    redisService = module.get<Redis>(Redis);
 
     // Сбрасываем моки
     when(MockRedisService.get(anything())).thenResolve(null);
-    when(MockRedisService.set(anything(), anything(), anything(), anything())).thenResolve('OK');
+    when(
+      MockRedisService.set(anything(), anything(), anything(), anything())
+    ).thenResolve('OK');
   }, 10000);
 
   it('should be defined', () => {
@@ -67,7 +68,9 @@ describe('StatsService', () => {
       const params: StatsDto = { userId: '0:1234567890abcdef', period: '1d' };
       const cacheKey = `trade_history:${params.userId}:${params.period}`;
       const cachedTrades = [mockTrade];
-      when(MockRedisService.get(cacheKey)).thenResolve(JSON.stringify(cachedTrades));
+      when(MockRedisService.get(cacheKey)).thenResolve(
+        JSON.stringify(cachedTrades)
+      );
 
       const result = await service.getTradeHistory(params);
 
@@ -81,24 +84,33 @@ describe('StatsService', () => {
       const cacheKey = `trade_history:${params.userId}:${params.period}`;
       const trades = [mockTrade];
       when(MockRedisService.get(cacheKey)).thenResolve(null);
-      when(MockTradeRepository.find({
-        where: { user: { id: params.userId }, created_at: anything() },
-        order: { created_at: 'DESC' },
-        relations: ['user'],
-      })).thenResolve(trades);
+      when(
+        MockTradeRepository.find({
+          where: { user: { id: params.userId }, created_at: anything() },
+          order: { created_at: 'DESC' },
+          relations: ['user'],
+        })
+      ).thenResolve(trades);
 
       const result = await service.getTradeHistory(params);
 
       expect(result).toEqual({ trades });
       verify(MockRedisService.get(cacheKey)).once();
       verify(MockTradeRepository.find(anything())).once();
-      verify(MockRedisService.set(cacheKey, JSON.stringify(trades), 'EX', 300)).once();
+      verify(
+        MockRedisService.set(cacheKey, JSON.stringify(trades), 'EX', 300)
+      ).once();
     });
 
     it('should throw BadRequestException for invalid period', async () => {
-      const params: StatsDto = { userId: '0:1234567890abcdef', period: 'invalid' };
+      const params: StatsDto = {
+        userId: '0:1234567890abcdef',
+        period: 'invalid',
+      };
 
-      await expect(service.getTradeHistory(params)).rejects.toThrow(BadRequestException);
+      await expect(service.getTradeHistory(params)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockRedisService.get(anything())).never();
       verify(MockTradeRepository.find(anything())).never();
     });
@@ -106,7 +118,9 @@ describe('StatsService', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const params = { userId: undefined, period: '1d' } as any;
 
-      await expect(service.getTradeHistory(params)).rejects.toThrow(BadRequestException);
+      await expect(service.getTradeHistory(params)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockRedisService.get(anything())).never();
       verify(MockTradeRepository.find(anything())).never();
     });
@@ -123,11 +137,15 @@ describe('StatsService', () => {
         period: '1d',
       };
       when(MockRedisService.get(cacheKey)).thenResolve(null);
-      when(MockRedisService.get('ton_price_usd')).thenResolve(JSON.stringify(5));
-      when(MockTradeRepository.find({
-        where: { user: { id: params.userId }, created_at: anything() },
-        relations: ['user'],
-      })).thenResolve(trades);
+      when(MockRedisService.get('ton_price_usd')).thenResolve(
+        JSON.stringify(5)
+      );
+      when(
+        MockTradeRepository.find({
+          where: { user: { id: params.userId }, created_at: anything() },
+          relations: ['user'],
+        })
+      ).thenResolve(trades);
 
       const result = await service.getSummary(params);
 
@@ -135,7 +153,9 @@ describe('StatsService', () => {
       verify(MockRedisService.get(cacheKey)).once();
       verify(MockRedisService.get('ton_price_usd')).once();
       verify(MockTradeRepository.find(anything())).once();
-      verify(MockRedisService.set(cacheKey, JSON.stringify(summary), 'EX', 300)).once();
+      verify(
+        MockRedisService.set(cacheKey, JSON.stringify(summary), 'EX', 300)
+      ).once();
     });
 
     it('should return cached trade summary', async () => {
@@ -157,9 +177,14 @@ describe('StatsService', () => {
     });
 
     it('should throw BadRequestException for invalid period', async () => {
-      const params: StatsDto = { userId: '0:1234567890abcdef', period: 'invalid' };
+      const params: StatsDto = {
+        userId: '0:1234567890abcdef',
+        period: 'invalid',
+      };
 
-      await expect(service.getSummary(params)).rejects.toThrow(BadRequestException);
+      await expect(service.getSummary(params)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockRedisService.get(anything())).never();
       verify(MockTradeRepository.find(anything())).never();
     });
@@ -167,7 +192,9 @@ describe('StatsService', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const params = { userId: undefined, period: '1d' } as any;
 
-      await expect(service.getSummary(params)).rejects.toThrow(BadRequestException);
+      await expect(service.getSummary(params)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockRedisService.get(anything())).never();
       verify(MockTradeRepository.find(anything())).never();
     });

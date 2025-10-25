@@ -43,6 +43,7 @@
   "withdraw_ton": "Withdraw TON",
   "withdraw_ruble": "Withdraw RUBLE",
   "withdraw_info": "You will receive: {receive} TON",
+  "withdraw_info_new": "The transaction will be sent to the smart contract. Network fee will be calculated by your wallet.",
   "fee": "Fee",
   "to_your_wallet": "to your wallet",
   "disconnect": "Disconnect",

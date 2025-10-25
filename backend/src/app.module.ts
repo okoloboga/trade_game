@@ -35,7 +35,7 @@ import { HealthController } from './health/health.controller';
     TokensModule,
     StatsModule,
     ChallengeModule,
-    TonModule
+    TonModule,
   ],
   controllers: [HealthController],
 })

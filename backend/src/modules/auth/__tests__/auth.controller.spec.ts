@@ -8,7 +8,6 @@ import { TonProof, Account } from '../../../types/ton.types';
 
 describe('AuthController', () => {
   let app: INestApplication;
-  let authService: AuthService;
 
   const MockAuthService = mock<AuthService>();
 
@@ -49,14 +48,12 @@ describe('AuthController', () => {
     console.timeEnd('Test.createTestingModule');
     app = module.createNestApplication();
     await app.init();
-
-    authService = module.get<AuthService>(AuthService);
   }, 10000);
 
   afterEach(async () => {
-      if (app) {
-          await app.close();
-      }
+    if (app) {
+      await app.close();
+    }
   });
 
   it('should be defined', () => {
@@ -68,7 +65,8 @@ describe('AuthController', () => {
       const response = { access_token: 'jwt-token', user: mockUser };
       when(MockAuthService.login(mockAuthDto)).thenResolve(response);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .post('/auth/login')
         .send(mockAuthDto)
         .expect(200);
@@ -78,9 +76,12 @@ describe('AuthController', () => {
     });
 
     it('should return 401 on invalid TON Proof', async () => {
-      when(MockAuthService.login(mockAuthDto)).thenReject(new Error('Invalid TON Proof'));
+      when(MockAuthService.login(mockAuthDto)).thenReject(
+        new Error('Invalid TON Proof')
+      );
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/auth/login')
         .send(mockAuthDto)
         .expect(401);

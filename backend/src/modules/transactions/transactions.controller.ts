@@ -1,31 +1,25 @@
 import {
   Controller,
+  UseGuards,
   Post,
   Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-import { DepositDto } from './dto/deposit.dto';
-import { WithdrawDto } from './dto/withdraw.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PrepareWithdrawalDto } from './dto/prepare-withdrawal.dto';
 
 @Controller('transactions')
+@UseGuards(JwtAuthGuard)
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
-  @Post('deposit')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async deposit(@Body() depositDto: DepositDto) {
-    return this.transactionsService.processDeposit(depositDto);
-  }
-
-  @Post('withdraw')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async withdraw(@Body() withdrawDto: WithdrawDto) {
-    return this.transactionsService.processWithdraw(withdrawDto);
+  @Post('withdraw-prepare')
+  async prepareWithdrawal(
+    @Request() req,
+    @Body() dto: PrepareWithdrawalDto,
+  ) {
+    const userId = req.user.id; // Assuming userId is on req.user from JwtAuthGuard
+    return this.transactionsService.prepareWithdrawal(userId, dto);
   }
 }

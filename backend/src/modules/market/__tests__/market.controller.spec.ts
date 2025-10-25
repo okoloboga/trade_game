@@ -7,7 +7,6 @@ import { instance, mock, verify, when } from 'ts-mockito';
 
 describe('MarketController', () => {
   let app: INestApplication;
-  let marketService: MarketService;
 
   const MockMarketService = mock<MarketService>();
 
@@ -22,8 +21,6 @@ describe('MarketController', () => {
 
     app = module.createNestApplication();
     await app.init();
-
-    marketService = module.get<MarketService>(MarketService);
   }, 10000);
 
   afterEach(async () => {
@@ -39,10 +36,13 @@ describe('MarketController', () => {
   describe('GET /market/candles', () => {
     it('should return candle data', async () => {
       const params = { instId: 'BTC-USDT', bar: '1m', limit: 100 };
-      const candles = [[1630000000000, '50000', '51000', '49000', '50500', '1000']];
+      const candles = [
+        [1630000000000, '50000', '51000', '49000', '50500', '1000'],
+      ];
       when(MockMarketService.getCandles(params)).thenResolve(candles);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .get('/market/candles')
         .query(params)
         .expect(200);
@@ -52,14 +52,16 @@ describe('MarketController', () => {
     });
 
     it('should throw BadRequestException if instId is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/market/candles')
         .query({ bar: '1m', limit: 100 })
         .expect(400);
     });
 
     it('should throw BadRequestException if bar is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/market/candles')
         .query({ instId: 'BTC-USDT', limit: 100 })
         .expect(400);
@@ -72,7 +74,8 @@ describe('MarketController', () => {
       const price = 50000;
       when(MockMarketService.getCurrentPrice(instId)).thenResolve(price);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .get('/market/ticker')
         .query({ instId })
         .expect(200);
@@ -82,7 +85,8 @@ describe('MarketController', () => {
     });
 
     it('should throw BadRequestException if instId is missing', async () => {
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .get('/market/ticker')
         .expect(400);
     });

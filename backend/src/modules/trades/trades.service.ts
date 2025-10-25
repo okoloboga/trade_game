@@ -23,7 +23,7 @@ export class TradesService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly marketService: MarketService,
-    private readonly tokensService: TokensService,
+    private readonly tokensService: TokensService
   ) {}
 
   /**
@@ -52,7 +52,9 @@ export class TradesService {
     user.balance = Number(user.balance || 0) - tonAmount;
     user.usdt_balance = Number(user.usdt_balance || 0) + amountNum;
     if (user.usdt_balance > this.maxUsdtBalance) {
-      throw new BadRequestException(`USDT balance cannot exceed ${this.maxUsdtBalance} USD`);
+      throw new BadRequestException(
+        `USDT balance cannot exceed ${this.maxUsdtBalance} USD`
+      );
     }
 
     const trade = this.tradeRepository.create({
@@ -96,7 +98,9 @@ export class TradesService {
     user.usdt_balance = Number(user.usdt_balance || 0) - amountNum;
     user.balance = Number(user.balance || 0) + tonAmount;
     if (user.usdt_balance > this.maxUsdtBalance) {
-      throw new BadRequestException(`USDT balance cannot exceed ${this.maxUsdtBalance} USD`);
+      throw new BadRequestException(
+        `USDT balance cannot exceed ${this.maxUsdtBalance} USD`
+      );
     }
 
     const prevBuy = await this.tradeRepository.findOne({
@@ -140,7 +144,9 @@ export class TradesService {
       }
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch price for ${instrument}: ${(error as Error).message}`);
+      this.logger.error(
+        `Failed to fetch price for ${instrument}: ${(error as Error).message}`
+      );
       throw new BadRequestException(`Failed to fetch price for ${instrument}`);
     }
   }

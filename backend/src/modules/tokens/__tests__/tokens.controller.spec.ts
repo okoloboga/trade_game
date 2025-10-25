@@ -4,14 +4,17 @@ import * as supertest from 'supertest';
 import { TokensController } from '../tokens.controller';
 import { TokensService } from '../tokens.service';
 import { instance, mock, verify, when } from 'ts-mockito';
-import { BadRequestException, NotFoundException, ExecutionContext } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ExecutionContext,
+} from '@nestjs/common';
 import { WithdrawTokensDto } from '../dto/withdraw-tokens.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { User } from '../../../entities/user.entity';
 
 describe('TokensController', () => {
   let app: INestApplication;
-  let tokensService: TokensService;
 
   const MockTokensService = mock<TokensService>();
 
@@ -47,8 +50,6 @@ describe('TokensController', () => {
 
     app = module.createNestApplication();
     await app.init();
-
-    tokensService = module.get<TokensService>(TokensService);
   }, 10000);
 
   afterEach(async () => {
@@ -66,7 +67,8 @@ describe('TokensController', () => {
       const response = { user: mockUser, txHash: 'mockedTxHash' };
       when(MockTokensService.withdrawTokens(withdrawDto)).thenResolve(response);
 
-      const result = await supertest.default(app.getHttpServer())
+      const result = await supertest
+        .default(app.getHttpServer())
         .post('/tokens/withdraw')
         .send(withdrawDto)
         .expect(200);
@@ -78,7 +80,8 @@ describe('TokensController', () => {
     it('should throw BadRequestException for invalid amount', async () => {
       const invalidDto = { ...withdrawDto, amount: 0 };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/tokens/withdraw')
         .send(invalidDto)
         .expect(400);
@@ -87,25 +90,32 @@ describe('TokensController', () => {
     it('should throw BadRequestException for missing userId', async () => {
       const invalidDto = { ...withdrawDto, userId: '' };
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/tokens/withdraw')
         .send(invalidDto)
         .expect(400);
     });
 
     it('should throw NotFoundException if user not found', async () => {
-      when(MockTokensService.withdrawTokens(withdrawDto)).thenReject(new NotFoundException('User not found'));
+      when(MockTokensService.withdrawTokens(withdrawDto)).thenReject(
+        new NotFoundException('User not found')
+      );
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/tokens/withdraw')
         .send(withdrawDto)
         .expect(404);
     });
 
     it('should throw BadRequestException for insufficient balance', async () => {
-      when(MockTokensService.withdrawTokens(withdrawDto)).thenReject(new BadRequestException('Insufficient token balance'));
+      when(MockTokensService.withdrawTokens(withdrawDto)).thenReject(
+        new BadRequestException('Insufficient token balance')
+      );
 
-      await supertest.default(app.getHttpServer())
+      await supertest
+        .default(app.getHttpServer())
         .post('/tokens/withdraw')
         .send(withdrawDto)
         .expect(400);

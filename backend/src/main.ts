@@ -19,15 +19,15 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      exceptionFactory: (errors) => {
-        const messages = errors.map((error) => ({
+      exceptionFactory: errors => {
+        const messages = errors.map(error => ({
           property: error.property,
           constraints: error.constraints,
         }));
         logger.error(`Validation failed: ${JSON.stringify(messages, null, 2)}`);
         return new BadRequestException(messages);
       },
-    }),
+    })
   );
   app.enableCors({
     origin: 'https://trade.ruble.website',
@@ -41,6 +41,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}`);
-  logger.log(`WebSocket server is available at: ws://localhost:${port}/socket.io`);
+  logger.log(
+    `WebSocket server is available at: ws://localhost:${port}/socket.io`
+  );
 }
 bootstrap();

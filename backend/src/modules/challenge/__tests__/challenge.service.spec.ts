@@ -11,8 +11,6 @@ type TupleItem = { type: 'int'; value: bigint };
 
 describe('ChallengeService', () => {
   let service: ChallengeService;
-  let tonClient: TonClient4;
-  let configService: ConfigService;
 
   const MockTonClientInstance = instance(MockTonClient);
   const MockConfigServiceInstance = instance(MockConfigService);
@@ -44,8 +42,6 @@ describe('ChallengeService', () => {
     }).compile();
 
     service = module.get<ChallengeService>(ChallengeService);
-    tonClient = module.get<TonClient4>(TonClient4);
-    configService = module.get<ConfigService>(ConfigService);
 
     jest.spyOn(global.Math, 'random').mockReturnValue(0.5);
   }, 10000);
@@ -71,7 +67,10 @@ describe('ChallengeService', () => {
       const walletAddress = 'EQ123...';
       const challenge = service.generateChallenge(walletAddress);
 
-      const challenges = (service as any).challenges as Map<string, { challenge: string; validUntil: number }>;
+      const challenges = (service as any).challenges as Map<
+        string,
+        { challenge: string; validUntil: number }
+      >;
       const stored = challenges.get(walletAddress);
 
       expect(stored).toBeDefined();
@@ -96,7 +95,12 @@ describe('ChallengeService', () => {
       };
       const runMethodResult = {
         exitCode: 0,
-        result: [{ type: 'int', value: BigInt('0x' + mockAccount.publicKey) } as TupleItem],
+        result: [
+          {
+            type: 'int',
+            value: BigInt('0x' + mockAccount.publicKey),
+          } as TupleItem,
+        ],
         resultRaw: null,
         block: {
           workchain: -1,
@@ -121,13 +125,17 @@ describe('ChallengeService', () => {
         } as any,
       };
       when(MockTonClient.getLastBlock()).thenResolve(masterAt);
-      when(MockTonClient.runMethod(anything(), anything(), anything(), anything())).thenResolve(runMethodResult);
+      when(
+        MockTonClient.runMethod(anything(), anything(), anything(), anything())
+      ).thenResolve(runMethodResult);
 
       const result = await service.verifyTonProof(mockAccount, mockTonProof);
 
       expect(result).toBe(true);
       verify(MockTonClient.getLastBlock()).once();
-      verify(MockTonClient.runMethod(anything(), anything(), anything(), anything())).once();
+      verify(
+        MockTonClient.runMethod(anything(), anything(), anything(), anything())
+      ).once();
     });
 
     it('should return false if walletStateInit is missing', async () => {
@@ -141,7 +149,10 @@ describe('ChallengeService', () => {
     it('should return false if timestamp is expired', async () => {
       const expiredProof = {
         ...mockTonProof,
-        proof: { ...mockTonProof.proof, timestamp: Math.floor(Date.now() / 1000) - 1000 },
+        proof: {
+          ...mockTonProof.proof,
+          timestamp: Math.floor(Date.now() / 1000) - 1000,
+        },
       };
       const result = await service.verifyTonProof(mockAccount, expiredProof);
 
@@ -189,13 +200,17 @@ describe('ChallengeService', () => {
         } as any,
       };
       when(MockTonClient.getLastBlock()).thenResolve(masterAt);
-      when(MockTonClient.runMethod(anything(), anything(), anything(), anything())).thenResolve(runMethodResult);
+      when(
+        MockTonClient.runMethod(anything(), anything(), anything(), anything())
+      ).thenResolve(runMethodResult);
 
       const result = await service.verifyTonProof(mockAccount, mockTonProof);
 
       expect(result).toBe(false);
       verify(MockTonClient.getLastBlock()).once();
-      verify(MockTonClient.runMethod(anything(), anything(), anything(), anything())).once();
+      verify(
+        MockTonClient.runMethod(anything(), anything(), anything(), anything())
+      ).once();
     });
   });
 });

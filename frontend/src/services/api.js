@@ -222,39 +222,14 @@ async function getTransactions(period = '1w') {
 }
 
 /**
- * Initiates a deposit transaction.
- * @param {Object} params - The deposit parameters.
- * @param {string} params.tonAddress - The TON address of the user.
- * @param {number} params.amount - The deposit amount.
- * @param {string} params.txHash - The transaction hash.
- * @returns {Promise<Object>} The deposit response data.
+ * Prepares a withdrawal transaction by getting the payload from the backend.
+ * @param {Object} data - The withdrawal data.
+ * @param {number} data.amount - The withdrawal amount.
+ * @returns {Promise<Object>} The prepared transaction data (BOC, contract address).
  */
-async function deposit({ tonAddress, amount, txHash }) {
+async function prepareWithdrawal(data) {
   try {
-    const response = await api.post('/transactions/deposit', {
-      tonAddress,
-      amount,
-      txHash,
-    });
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-
-/**
- * Initiates a withdrawal transaction.
- * @param {Object} params - The withdrawal parameters.
- * @param {string} params.tonAddress - The TON address of the user.
- * @param {number} params.amount - The withdrawal amount.
- * @returns {Promise<Object>} The withdrawal response data.
- */
-async function withdraw({ tonAddress, amount }) {
-  try {
-    const response = await api.post('/transactions/withdraw', {
-      tonAddress,
-      amount,
-    });
+    const response = await api.post('/transactions/withdraw-prepare', data);
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -334,8 +309,7 @@ export default {
   getTradeHistory,
   getSummary,
   getTransactions,
-  deposit,
-  withdraw,
+  prepareWithdrawal,
   withdrawTokens,
   buyTrade,
   sellTrade,

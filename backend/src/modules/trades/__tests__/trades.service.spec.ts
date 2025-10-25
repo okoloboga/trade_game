@@ -16,11 +16,6 @@ import { MockConfigService } from '../../../../test/setup';
 
 describe('TradesService', () => {
   let service: TradesService;
-  let userRepository: Repository<User>;
-  let tradeRepository: Repository<Trade>;
-  let tokensService: TokensService;
-  let marketService: MarketService;
-  let redisService: Redis;
 
   const MockUserRepository = mock<Repository<User>>();
   const MockTradeRepository = mock<Repository<Trade>>();
@@ -55,8 +50,14 @@ describe('TradesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TradesService,
-        { provide: getRepositoryToken(User), useValue: instance(MockUserRepository) },
-        { provide: getRepositoryToken(Trade), useValue: instance(MockTradeRepository) },
+        {
+          provide: getRepositoryToken(User),
+          useValue: instance(MockUserRepository),
+        },
+        {
+          provide: getRepositoryToken(Trade),
+          useValue: instance(MockTradeRepository),
+        },
         { provide: TokensService, useValue: instance(MockTokensService) },
         { provide: MarketService, useValue: instance(MockMarketService) },
         { provide: Redis, useValue: instance(MockRedisService) },
@@ -65,13 +66,10 @@ describe('TradesService', () => {
     }).compile();
 
     service = module.get<TradesService>(TradesService);
-    userRepository = module.get(getRepositoryToken(User));
-    tradeRepository = module.get(getRepositoryToken(Trade));
-    tokensService = module.get(TokensService);
-    marketService = module.get(MarketService);
-    redisService = module.get(Redis);
 
-    when(MockConfigService.get('TON_ENDPOINT')).thenReturn('https://mainnet-v4.tonhubapi.com');
+    when(MockConfigService.get('TON_ENDPOINT')).thenReturn(
+      'https://mainnet-v4.tonhubapi.com'
+    );
   }, 10000);
 
   it('should be defined', () => {
@@ -87,7 +85,9 @@ describe('TradesService', () => {
     };
 
     it('should place trade successfully', async () => {
-      when(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).thenResolve(mockUser);
+      when(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).thenResolve(mockUser);
       when(MockRedisService.get('ton_price_usd')).thenResolve('5');
       when(MockMarketService.getCurrentPrice('BTC-USDT')).thenResolve(50000);
       when(MockTradeRepository.create(anything())).thenReturn(mockTrade as any);
@@ -100,7 +100,9 @@ describe('TradesService', () => {
       expect(result.trade).toEqual(mockTrade);
       expect(result.user.balance).toBe(99.9);
       expect(result.tokensAccrued).toBe(5);
-      verify(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).once();
+      verify(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).once();
       verify(MockRedisService.get('ton_price_usd')).once();
       verify(MockMarketService.getCurrentPrice('BTC-USDT')).once();
       verify(MockTradeRepository.save(mockTrade)).once();
@@ -109,34 +111,54 @@ describe('TradesService', () => {
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
-      when(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).thenResolve(null);
+      when(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).thenResolve(null);
 
-      await expect(service.placeTrade(placeTradeDto)).rejects.toThrow(UnauthorizedException);
-      verify(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).once();
+      await expect(service.placeTrade(placeTradeDto)).rejects.toThrow(
+        UnauthorizedException
+      );
+      verify(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).once();
     });
 
     it('should throw BadRequestException for insufficient balance', async () => {
       const highAmountDto = { ...placeTradeDto, amount: 200 };
-      when(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).thenResolve(mockUser);
+      when(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).thenResolve(mockUser);
 
-      await expect(service.placeTrade(highAmountDto)).rejects.toThrow(BadRequestException);
-      verify(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).once();
+      await expect(service.placeTrade(highAmountDto)).rejects.toThrow(
+        BadRequestException
+      );
+      verify(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).once();
     });
 
     it('should throw BadRequestException if trade exceeds $1 limit', async () => {
-      when(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).thenResolve(mockUser);
+      when(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).thenResolve(mockUser);
       when(MockRedisService.get('ton_price_usd')).thenResolve('20'); // 0.1 * 20 = $2 > $1
 
-      await expect(service.placeTrade(placeTradeDto)).rejects.toThrow(BadRequestException);
+      await expect(service.placeTrade(placeTradeDto)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockRedisService.get('ton_price_usd')).once();
     });
 
     it('should throw BadRequestException if market price fetch fails', async () => {
-      when(MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })).thenResolve(mockUser);
+      when(
+        MockUserRepository.findOne({ where: { id: placeTradeDto.userId } })
+      ).thenResolve(mockUser);
       when(MockRedisService.get('ton_price_usd')).thenResolve('5');
       when(MockMarketService.getCurrentPrice('BTC-USDT')).thenResolve(0);
 
-      await expect(service.placeTrade(placeTradeDto)).rejects.toThrow(BadRequestException);
+      await expect(service.placeTrade(placeTradeDto)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockMarketService.getCurrentPrice('BTC-USDT')).once();
     });
   });
@@ -148,7 +170,15 @@ describe('TradesService', () => {
     };
 
     it('should cancel trade successfully', async () => {
-      when(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).thenResolve(mockTrade);
+      when(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).thenResolve(mockTrade);
       when(MockMarketService.getCurrentPrice('BTC-USDT')).thenResolve(51000);
       when(MockTradeRepository.save(anything())).thenResolve(mockTrade);
       when(MockUserRepository.save(anything())).thenResolve(mockUser);
@@ -160,32 +190,86 @@ describe('TradesService', () => {
       expect(result.trade.profit_loss).toBe(0.02); // ((51000 - 50000) / 50000) * 0.1 = 0.02
       expect(result.trade.closed_at).toBeDefined();
       expect(result.user.balance).toBe(100.02); // 100 + 0.02
-      verify(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).once();
+      verify(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).once();
       verify(MockMarketService.getCurrentPrice('BTC-USDT')).once();
       verify(MockTradeRepository.save(mockTrade)).once();
       verify(MockUserRepository.save(mockUser)).once();
     });
 
     it('should throw BadRequestException if trade not found', async () => {
-      when(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).thenResolve(null);
+      when(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).thenResolve(null);
 
-      await expect(service.cancelTrade(cancelTradeDto)).rejects.toThrow(BadRequestException);
-      verify(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).once();
+      await expect(service.cancelTrade(cancelTradeDto)).rejects.toThrow(
+        BadRequestException
+      );
+      verify(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).once();
     });
 
     it('should throw BadRequestException if trade is not open', async () => {
       const closedTrade = { ...mockTrade, status: 'closed' as const };
-      when(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).thenResolve(closedTrade);
+      when(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).thenResolve(closedTrade);
 
-      await expect(service.cancelTrade(cancelTradeDto)).rejects.toThrow(BadRequestException);
-      verify(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).once();
+      await expect(service.cancelTrade(cancelTradeDto)).rejects.toThrow(
+        BadRequestException
+      );
+      verify(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).once();
     });
 
     it('should throw BadRequestException if market price fetch fails', async () => {
-      when(MockTradeRepository.findOne({ where: { id: cancelTradeDto.tradeId, user: { id: cancelTradeDto.userId } }, relations: ['user'] })).thenResolve(mockTrade);
+      when(
+        MockTradeRepository.findOne({
+          where: {
+            id: cancelTradeDto.tradeId,
+            user: { id: cancelTradeDto.userId },
+          },
+          relations: ['user'],
+        })
+      ).thenResolve(mockTrade);
       when(MockMarketService.getCurrentPrice('BTC-USDT')).thenResolve(0);
 
-      await expect(service.cancelTrade(cancelTradeDto)).rejects.toThrow(BadRequestException);
+      await expect(service.cancelTrade(cancelTradeDto)).rejects.toThrow(
+        BadRequestException
+      );
       verify(MockMarketService.getCurrentPrice('BTC-USDT')).once();
     });
   });

@@ -29,7 +29,11 @@ export class AuthService {
       throw new UnauthorizedException('Client ID is required');
     }
 
-    const isValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
+    const isValid = await this.challengeService.verifyTonProof(
+      account,
+      tonProof,
+      clientId
+    );
     if (!isValid) {
       throw new UnauthorizedException('Invalid TON Proof');
     }
@@ -61,7 +65,9 @@ export class AuthService {
   async verifyToken(token: string) {
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      const user = await this.userRepository.findOne({ where: { id: payload.sub, ton_address: payload.ton_address } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub, ton_address: payload.ton_address },
+      });
       if (!user) {
         throw new UnauthorizedException('User not found');
       }

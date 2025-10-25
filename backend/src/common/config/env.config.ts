@@ -12,7 +12,7 @@ export const envConfig = ConfigModule.forRoot({
     REDIS_URL: Joi.string().required(),
     JWT_SECRET: Joi.string().required(),
     OKX_API_KEY: Joi.string().required(),
-    TON_CENTRAL_WALLET: Joi.string().required(),
+    WALLET_CONTRACT_ADDRESS: Joi.string().required(),
     CORS_ORIGIN: Joi.string().default('*'),
   }),
 });

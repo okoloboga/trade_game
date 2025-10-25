@@ -31,12 +31,16 @@ export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
   @Get('generate')
-  async generateChallenge(@Query('clientId') clientId?: string): Promise<ChallengeResponse> {
+  async generateChallenge(
+    @Query('clientId') clientId?: string
+  ): Promise<ChallengeResponse> {
     return await this.challengeService.generateChallenge(clientId);
   }
 
   @Post('verify')
-  async verifyTonProof(@Body() verifyDto: VerifyTonProofDto): Promise<{ valid: boolean }> {
+  async verifyTonProof(
+    @Body() verifyDto: VerifyTonProofDto
+  ): Promise<{ valid: boolean }> {
     const { walletAddress, tonProof, account, clientId } = verifyDto;
 
     if (!walletAddress || !tonProof || !clientId) {
@@ -45,12 +49,20 @@ export class ChallengeController {
     }
 
     try {
-      const isValid = await this.challengeService.verifyTonProof(account, tonProof, clientId);
+      const isValid = await this.challengeService.verifyTonProof(
+        account,
+        tonProof,
+        clientId
+      );
 
       if (isValid) {
-        this.logger.log(`TON Proof verification successful for walletAddress: ${walletAddress}, clientId: ${clientId}`);
+        this.logger.log(
+          `TON Proof verification successful for walletAddress: ${walletAddress}, clientId: ${clientId}`
+        );
       } else {
-        this.logger.warn(`TON Proof verification failed for walletAddress: ${walletAddress}, clientId: ${clientId}`);
+        this.logger.warn(
+          `TON Proof verification failed for walletAddress: ${walletAddress}, clientId: ${clientId}`
+        );
       }
 
       return { valid: isValid };

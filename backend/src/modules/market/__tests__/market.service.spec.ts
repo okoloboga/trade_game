@@ -7,7 +7,6 @@ import { MockOkxApi, MockConfigService } from '../../../../test/setup';
 
 describe('MarketService', () => {
   let service: MarketService;
-  let configService: ConfigService;
 
   const MockConfigServiceInstance = instance(MockConfigService);
   const MockOkxApiInstance = MockOkxApi;
@@ -23,10 +22,11 @@ describe('MarketService', () => {
     }).compile();
 
     service = module.get<MarketService>(MarketService);
-    configService = module.get<ConfigService>(ConfigService);
 
     // Настройка моков
-    when(MockConfigService.get('OKX_API_URL')).thenReturn('https://www.okx.com');
+    when(MockConfigService.get('OKX_API_URL')).thenReturn(
+      'https://www.okx.com'
+    );
     MockOkxApi.get.mockReset();
   }, 10000);
 
@@ -40,9 +40,7 @@ describe('MarketService', () => {
       const mockResponse = {
         code: '0',
         msg: '',
-        data: [
-          [1630000000000, '50000', '51000', '49000', '50500', '1000'],
-        ],
+        data: [[1630000000000, '50000', '51000', '49000', '50500', '1000']],
       };
       MockOkxApi.get.mockResolvedValue({ data: mockResponse });
 
@@ -52,8 +50,12 @@ describe('MarketService', () => {
       expect(MockOkxApi.get).toHaveBeenCalledWith(
         '/api/v5/market/candles',
         expect.objectContaining({
-          params: { instId: params.instId, bar: params.bar, limit: params.limit.toString() },
-        }),
+          params: {
+            instId: params.instId,
+            bar: params.bar,
+            limit: params.limit.toString(),
+          },
+        })
       );
       verify(MockConfigService.get('OKX_API_URL')).once();
     });
@@ -61,7 +63,9 @@ describe('MarketService', () => {
     it('should throw BadRequestException for invalid bar', async () => {
       const params = { instId: 'BTC-USDT', bar: 'invalid', limit: 100 };
 
-      await expect(service.getCandles(params)).rejects.toThrow(BadRequestException);
+      await expect(service.getCandles(params)).rejects.toThrow(
+        BadRequestException
+      );
       expect(MockOkxApi.get).not.toHaveBeenCalled();
     });
 
@@ -70,7 +74,9 @@ describe('MarketService', () => {
       const mockResponse = { code: '1', msg: 'Invalid instId', data: [] };
       MockOkxApi.get.mockResolvedValue({ data: mockResponse });
 
-      await expect(service.getCandles(params)).rejects.toThrow(BadRequestException);
+      await expect(service.getCandles(params)).rejects.toThrow(
+        BadRequestException
+      );
       expect(MockOkxApi.get).toHaveBeenCalled();
     });
   });
@@ -90,7 +96,7 @@ describe('MarketService', () => {
       expect(result).toBe(50000);
       expect(MockOkxApi.get).toHaveBeenCalledWith(
         '/api/v5/market/ticker',
-        expect.objectContaining({ params: { instId } }),
+        expect.objectContaining({ params: { instId } })
       );
       verify(MockConfigService.get('OKX_API_URL')).once();
     });
@@ -100,7 +106,9 @@ describe('MarketService', () => {
       const mockResponse = { code: '1', msg: 'Invalid instId', data: [] };
       MockOkxApi.get.mockResolvedValue({ data: mockResponse });
 
-      await expect(service.getCurrentPrice(instId)).rejects.toThrow(BadRequestException);
+      await expect(service.getCurrentPrice(instId)).rejects.toThrow(
+        BadRequestException
+      );
       expect(MockOkxApi.get).toHaveBeenCalled();
     });
   });

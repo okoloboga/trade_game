@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsNumber, IsPositive, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  Max,
+} from 'class-validator';
 
 export class TradeDto {
   @IsString()

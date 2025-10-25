@@ -35,7 +35,7 @@ export class TokensService {
     private readonly transactionRepository: Repository<Transaction>,
     private readonly marketService: MarketService,
     @InjectRedis() private readonly redis: Redis,
-    private readonly tonService: TonService,
+    private readonly tonService: TonService
   ) {}
 
   /**
@@ -65,26 +65,41 @@ export class TokensService {
     const newTokens = Math.min(tokensToAccrue, 10 - dailyTokens) * 100;
     if (newTokens > 0) {
       try {
-        await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
-          this.logger.log(`Before update: user ${user.id}, token_balance: ${user.token_balance}`);
-          await transactionalEntityManager.update(
-            User,
-            { id: user.id },
-            { token_balance: () => `token_balance + ${newTokens}` },
-          );
-          await this.redis.set(
-            dailyTokensKey,
-            (dailyTokens + newTokens).toString(),
-            'EX',
-            24 * 60 * 60,
-          );
-          const savedUser = await transactionalEntityManager.findOne(User, { where: { id: user.id } });
-          this.logger.log(`After save in transaction: user ${user.id}, token_balance: ${savedUser?.token_balance}`);
+        await this.userRepository.manager.transaction(
+          async transactionalEntityManager => {
+            this.logger.log(
+              `Before update: user ${user.id}, token_balance: ${user.token_balance}`
+            );
+            await transactionalEntityManager.update(
+              User,
+              { id: user.id },
+              { token_balance: () => `token_balance + ${newTokens}` }
+            );
+            await this.redis.set(
+              dailyTokensKey,
+              (dailyTokens + newTokens).toString(),
+              'EX',
+              24 * 60 * 60
+            );
+            const savedUser = await transactionalEntityManager.findOne(User, {
+              where: { id: user.id },
+            });
+            this.logger.log(
+              `After save in transaction: user ${user.id}, token_balance: ${savedUser?.token_balance}`
+            );
+          }
+        );
+        const updatedUser = await this.userRepository.findOne({
+          where: { id: user.id },
+          cache: false,
         });
-        const updatedUser = await this.userRepository.findOne({ where: { id: user.id }, cache: false });
-        this.logger.log(`Accrued ${newTokens} RUBLE tokens to user ${user.id}, new token_balance: ${updatedUser?.token_balance}`);
+        this.logger.log(
+          `Accrued ${newTokens} RUBLE tokens to user ${user.id}, new token_balance: ${updatedUser?.token_balance}`
+        );
       } catch (error) {
-        this.logger.error(`Failed to accrue ${newTokens} RUBLE tokens for user ${user.id}: ${(error as AxiosError).stack}`);
+        this.logger.error(
+          `Failed to accrue ${newTokens} RUBLE tokens for user ${user.id}: ${(error as AxiosError).stack}`
+        );
         throw new BadRequestException('Failed to accrue tokens');
       }
     }
@@ -106,7 +121,9 @@ export class TokensService {
       throw new BadRequestException('Amount must be a positive number');
     }
 
-    const user = await this.userRepository.findOne({ where: { ton_address: tonAddress } });
+    const user = await this.userRepository.findOne({
+      where: { ton_address: tonAddress },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -116,28 +133,40 @@ export class TokensService {
     }
 
     try {
-      const txHash = await this.tonService.sendTokens(tonAddress, amount.toString());
+      const txHash = await this.tonService.sendTokens(
+        tonAddress,
+        amount.toString()
+      );
       let transaction: Transaction;
-      await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
-        await transactionalEntityManager.update(
-          User,
-          { id: user.id },
-          { token_balance: () => `token_balance - ${amount}` },
-        );
-        transaction = this.transactionRepository.create({
-          user: { id: user.id },
-          type: 'ruble',
-          amount,
-          ton_tx_hash: txHash,
-          status: 'completed',
-        });
-        await transactionalEntityManager.save(Transaction, transaction);
+      await this.userRepository.manager.transaction(
+        async transactionalEntityManager => {
+          await transactionalEntityManager.update(
+            User,
+            { id: user.id },
+            { token_balance: () => `token_balance - ${amount}` }
+          );
+          transaction = this.transactionRepository.create({
+            user: { id: user.id },
+            type: 'ruble',
+            amount,
+            ton_tx_hash: txHash,
+            status: 'completed',
+          });
+          await transactionalEntityManager.save(Transaction, transaction);
+        }
+      );
+      const updatedUser = await this.userRepository.findOne({
+        where: { id: user.id },
+        cache: false,
       });
-      const updatedUser = await this.userRepository.findOne({ where: { id: user.id }, cache: false });
-      this.logger.log(`Withdrew ${amount} RUBLE tokens for user ${user.id}, new token_balance: ${updatedUser?.token_balance}, txHash: ${txHash}`);
+      this.logger.log(
+        `Withdrew ${amount} RUBLE tokens for user ${user.id}, new token_balance: ${updatedUser?.token_balance}, txHash: ${txHash}`
+      );
       return { user: updatedUser || user, txHash, transaction: transaction! };
     } catch (error) {
-      this.logger.error(`Error withdrawing ${amount} RUBLE for user ${tonAddress}: ${(error as AxiosError).stack}`);
+      this.logger.error(
+        `Error withdrawing ${amount} RUBLE for user ${tonAddress}: ${(error as AxiosError).stack}`
+      );
       throw new BadRequestException('Failed to process withdrawal');
     }
   }
@@ -163,9 +192,18 @@ export class TokensService {
       await this.redis.set(cacheKey, price, 'EX', 300);
       return price;
     } catch (error) {
-      this.logger.error(`Failed to fetch TON price: ${(error as AxiosError).stack}`);
-      const fallbackPrice = parseFloat((await this.redis.get('ton_price_usd_fallback')) || '5.0');
-      await this.redis.set('ton_price_usd_fallback', fallbackPrice.toString(), 'EX', 24 * 60 * 60);
+      this.logger.error(
+        `Failed to fetch TON price: ${(error as AxiosError).stack}`
+      );
+      const fallbackPrice = parseFloat(
+        (await this.redis.get('ton_price_usd_fallback')) || '5.0'
+      );
+      await this.redis.set(
+        'ton_price_usd_fallback',
+        fallbackPrice.toString(),
+        'EX',
+        24 * 60 * 60
+      );
       return fallbackPrice;
     }
   }

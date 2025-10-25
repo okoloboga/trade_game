@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { useAuthStore } from '@/stores/auth';
+import { useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { toNano } from 'ton';
 
 export const useWalletStore = defineStore('wallet', {
   state: () => {
@@ -92,6 +94,45 @@ export const useWalletStore = defineStore('wallet', {
         throw error;
       }
     },
+    async withdrawTon(amount) {
+      const { tonConnectUI } = useTonConnectUI();
+      const errorStore = useErrorStore();
+
+      this.isProcessing = true;
+      try {
+        const { boc, contractAddress } = await apiService.prepareWithdrawal({ amount });
+
+        if (!boc || !contractAddress) {
+          throw new Error('Failed to prepare withdrawal transaction.');
+        }
+
+        const transaction = {
+          validUntil: Math.floor(Date.now() / 1000) + 60, // 60 seconds
+          messages: [
+            {
+              address: contractAddress,
+              amount: toNano('0.05').toString(), // 0.05 TON for gas
+              payload: boc,
+            },
+          ],
+        };
+
+        await tonConnectUI.sendTransaction(transaction);
+
+        // Refresh balances after a short delay to allow the blockchain to update
+        setTimeout(() => {
+          this.fetchBalances();
+        }, 5000);
+
+      } catch (error) {
+        console.error('[walletStore] Failed to withdraw TON:', error);
+        errorStore.setError(error.message || 'Failed to process withdrawal');
+        throw error;
+      } finally {
+        this.isProcessing = false;
+      }
+    },
+
     async withdrawTokens(amount) {
       const authStore = useAuthStore();
       if (!authStore.isConnected || !authStore.user?.ton_address) {

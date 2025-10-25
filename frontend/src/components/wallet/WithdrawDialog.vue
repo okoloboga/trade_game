@@ -15,7 +15,7 @@
           :rules="withdrawRules"
         />
         <v-alert type="info" variant="tonal" class="mt-2">
-          {{ $t('withdraw_info', { receive: (amount - 0.1).toFixed(3) }) }} (0.1 TON — {{ $t('fee') }})
+          {{ $t('withdraw_info_new') }}
         </v-alert>
       </v-card-text>
       <v-card-actions>
@@ -40,9 +40,7 @@ import { useWalletStore } from '@/stores/wallet';
 import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
-import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
-import apiService from '@/services/api';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -51,7 +49,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'withdraw-success']);
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
-const authStore = useAuthStore();
 const amount = ref(0.11);
 const isProcessing = ref(false);
 
@@ -71,29 +68,20 @@ const withdrawRules = computed(() => [
 const isValid = computed(() => validateAmount(amount.value, walletStore.balance, 0.11) === true);
 
 /**
- * Initiates a withdrawal transaction from the user's TON wallet.
+ * Initiates a decentralized withdrawal by preparing the transaction on the backend
+ * and sending it to the user's wallet for confirmation.
  */
 const withdraw = useDebounceFn(async () => {
-  if (!authStore.isConnected || !authStore.user?.ton_address) {
-    console.error('[WithdrawDialog] Wallet not connected:', authStore.user?.ton_address);
-    errorStore.setError(t('error.connect_wallet'));
-    return;
-  }
+  if (!isValid.value) return;
 
   isProcessing.value = true;
   try {
-    const response = await apiService.withdraw({
-      tonAddress: authStore.user.ton_address,
-      amount: amount.value,
-    });
-
-    walletStore.updateBalances(response.user);
-    // errorStore.setError(t('withdraw_success'), false);
+    await walletStore.withdrawTon(amount.value);
     emit('withdraw-success');
     closeDialog();
   } catch (error) {
+    // Error is already handled in the wallet store, no need to set it again
     console.error('[WithdrawDialog] Withdraw error:', error);
-    errorStore.setError(t('error.failed_to_initiate_withdraw'));
   } finally {
     isProcessing.value = false;
   }
