@@ -237,6 +237,23 @@ async function prepareWithdrawal(data) {
 }
 
 /**
+ * Processes a deposit transaction after it has been sent to the smart contract.
+ * @param {Object} data - The deposit data.
+ * @param {string} data.tonAddress - The TON address of the user.
+ * @param {number} data.amount - The deposit amount.
+ * @param {string} data.txHash - The transaction hash (BOC).
+ * @returns {Promise<Object>} The deposit response data.
+ */
+async function deposit(data) {
+  try {
+    const response = await api.post('/transactions/deposit', data);
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+/**
  * Initiates a token withdrawal transaction.
  * @param {Object} params - The token withdrawal parameters.
  * @param {string} params.tonAddress - The TON address of the user.
@@ -310,6 +327,7 @@ export default {
   getSummary,
   getTransactions,
   prepareWithdrawal,
+  deposit,
   withdrawTokens,
   buyTrade,
   sellTrade,

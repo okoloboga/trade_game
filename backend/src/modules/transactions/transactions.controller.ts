@@ -8,6 +8,7 @@ import {
 import { TransactionsService } from './transactions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PrepareWithdrawalDto } from './dto/prepare-withdrawal.dto';
+import { DepositDto } from './dto/deposit.dto';
 
 @Controller('transactions')
 @UseGuards(JwtAuthGuard)
@@ -21,5 +22,14 @@ export class TransactionsController {
   ) {
     const userId = req.user.id; // Assuming userId is on req.user from JwtAuthGuard
     return this.transactionsService.prepareWithdrawal(userId, dto);
+  }
+
+  @Post('deposit')
+  async processDeposit(
+    @Request() req,
+    @Body() dto: DepositDto,
+  ) {
+    const userId = req.user.id;
+    return this.transactionsService.processDeposit(userId, dto);
   }
 }

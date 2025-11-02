@@ -133,7 +133,7 @@ export class TokensService {
     }
 
     try {
-      const txHash = await this.tonService.sendTokens(
+      const txHash = await this.tonService.sendAwardJetton(
         tonAddress,
         amount.toString()
       );

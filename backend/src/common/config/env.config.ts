@@ -12,7 +12,9 @@ export const envConfig = ConfigModule.forRoot({
     REDIS_URL: Joi.string().required(),
     JWT_SECRET: Joi.string().required(),
     OKX_API_KEY: Joi.string().required(),
+    TON_API_KEY: Joi.string().required(),
     WALLET_CONTRACT_ADDRESS: Joi.string().required(),
+    OWNER_MNEMONIC: Joi.string().optional(), // Optional for AwardJetton sending
     CORS_ORIGIN: Joi.string().default('*'),
   }),
 });

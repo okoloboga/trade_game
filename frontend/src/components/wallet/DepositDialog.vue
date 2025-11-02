@@ -85,7 +85,7 @@ const isValid = computed(() => {
 });
 
 /**
- * Initiates a deposit transaction to the central TON wallet.
+ * Initiates a deposit transaction to the smart contract.
  */
 const deposit = useDebounceFn(async () => {
   if (!tonConnectUI.connected) {
@@ -102,22 +102,33 @@ const deposit = useDebounceFn(async () => {
     }
   }
 
-  const centralWallet = import.meta.env.VITE_TON_CENTRAL_WALLET;
-  if (!centralWallet) {
-    console.error('[DepositDialog] Central wallet address not configured');
-    errorStore.setError(t('error.no_central_wallet'));
+  const contractAddress = import.meta.env.VITE_WALLET_CONTRACT_ADDRESS;
+  if (!contractAddress) {
+    console.error('[DepositDialog] Wallet contract address not configured');
+    errorStore.setError(t('error.no_contract_address'));
     return;
   }
 
   isProcessing.value = true;
   try {
+    // Prepare Deposit message (opcode 0x01)
+    // Deposit message is just opcode 1 (uint32)
+    const depositOpcode = 1;
+    const depositBody = new Uint8Array(4);
+    const view = new DataView(depositBody.buffer);
+    view.setUint32(0, depositOpcode, true); // little-endian
+    
+    // Convert to base64
+    const depositBoc = btoa(String.fromCharCode(...depositBody));
+    
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
     const transaction = {
       validUntil: Math.floor(Date.now() / 1000) + 600,
       messages: [
         {
-          address: centralWallet,
+          address: contractAddress,
           amount: nanoAmount,
+          payload: depositBoc,
         },
       ],
     };
