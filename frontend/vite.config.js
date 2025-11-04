@@ -38,13 +38,14 @@ export default defineConfig({
       strict: false,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts'],
+      include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts', '@ton/core'],
     },
   },
   build: {
     sourcemap: true,
     minify: false,
     rollupOptions: {
+      external: ['@telegram-apps/analytics'],
       output: {
         manualChunks: {
           vuetify: ['vuetify'],

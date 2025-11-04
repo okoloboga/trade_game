@@ -3,7 +3,7 @@ import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { useAuthStore } from '@/stores/auth';
 import { useTonConnectUI } from '@townsquarelabs/ui-vue';
-import { toNano } from 'ton';
+import { toNano } from '@ton/core';
 
 export const useWalletStore = defineStore('wallet', {
   state: () => {
