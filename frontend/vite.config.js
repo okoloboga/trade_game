@@ -45,7 +45,7 @@ export default defineConfig({
     sourcemap: true,
     minify: false,
     rollupOptions: {
-      external: ['@telegram-apps/analytics'],
+      external: ['@telegram-apps/analytics', '@ton/crypto'],
       output: {
         manualChunks: {
           vuetify: ['vuetify'],
@@ -63,6 +63,8 @@ export default defineConfig({
       'vuetify/lib': 'vuetify',
       'vuetify/styles': 'vuetify/styles',
       buffer: 'buffer',
+      // Полифил для @ton/crypto - модуль для Node.js, не нужен в браузере
+      '@ton/crypto': path.resolve(__dirname, 'src/utils/ton-crypto-polyfill.js'),
     },
   },
   css: {
