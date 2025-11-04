@@ -20,20 +20,20 @@ message(0x05) EmergencyWithdraw {
   amount: Int as coins;
 }
 
-contract WalletContract with ownerAddr: Address, jettonMasterAddr: Address, withdrawFeeBps: Int {
-  owner: Address;
-  paused: Bool;
-  balances: map<Address, Int as coins>;
-  jettonMaster: Address;
-  withdrawFeeBps: Int;
+contract WalletContract {
+    owner: Address;
+    paused: Bool;
+    balances: map<Address, Int as coins>;
+    jettonMaster: Address;
+    withdrawFeeBps: Int;
 
-  init() {
-    self.owner = ownerAddr;
-    self.paused = false;
-    self.balances = map<Address, Int as coins> {};
-    self.jettonMaster = jettonMasterAddr;
-    self.withdrawFeeBps = withdrawFeeBps;
-  }
+    init(ownerAddr: Address, jettonMasterAddr: Address, withdrawFeeBps: Int) {
+        self.owner = ownerAddr;
+        self.paused = false;
+        self.balances = map<Address, Int as coins> {};
+        self.jettonMaster = jettonMasterAddr;
+        self.withdrawFeeBps = withdrawFeeBps;
+    }
 
   receive(msg: Deposit) {
     require(!self.paused, "paused");
