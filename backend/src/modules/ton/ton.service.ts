@@ -5,17 +5,17 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TonClient, Address, WalletContractV4, internal, toNano } from '@ton/ton';
+import { TonClient, Address, WalletContractV4, toNano } from '@ton/ton';
 import { mnemonicToWalletKey } from '@ton/crypto';
-import { WalletContract } from '../wrappers/WalletContract';
-import { storeAwardJetton } from '../wrappers/WalletContract';
+import { WalletContract } from '../../ton/wrappers/WalletContract';
+import { storeAwardJetton } from '../../ton/wrappers/WalletContract';
 import { beginCell } from '@ton/core';
 
 @Injectable()
 export class TonService implements OnModuleInit {
   private readonly logger = new Logger(TonService.name);
   private client: TonClient;
-  private walletContract: WalletContract;
+  private walletContract!: WalletContract;
   private ownerWallet?: WalletContractV4;
 
   constructor(private readonly configService: ConfigService) {
@@ -47,7 +47,7 @@ export class TonService implements OnModuleInit {
       );
     } catch (error) {
       this.logger.error(
-        `Failed to initialize WalletContract: ${error.message}`
+        `Failed to initialize WalletContract: ${(error as Error).message}`
       );
       throw new BadRequestException('Failed to initialize WalletContract');
     }
@@ -60,7 +60,7 @@ export class TonService implements OnModuleInit {
         this.ownerWallet = WalletContractV4.create({ publicKey: key.publicKey, workchain: 0 });
         this.logger.log(`Initialized owner wallet for AwardJetton: ${this.ownerWallet.address}`);
       } catch (error) {
-        this.logger.warn(`Failed to initialize owner wallet: ${error.message}`);
+        this.logger.warn(`Failed to initialize owner wallet: ${(error as Error).message}`);
         this.logger.warn('AwardJetton functionality will not be available');
       }
     } else {
@@ -94,7 +94,7 @@ export class TonService implements OnModuleInit {
       return balance;
     } catch (error) {
       this.logger.error(
-        `Failed to get balance for ${userAddress}: ${error.message}`
+        `Failed to get balance for ${userAddress}: ${(error as Error).message}`
       );
       throw new BadRequestException('Failed to get on-chain balance');
     }
@@ -128,7 +128,7 @@ export class TonService implements OnModuleInit {
       // Create AwardJetton message
       const messageBody = beginCell()
         .store(storeAwardJetton({ 
-          $type: 'AwardJetton', 
+          $$type: 'AwardJetton', 
           user: userAddr, 
           amount: amountInNano 
         }))
@@ -143,14 +143,20 @@ export class TonService implements OnModuleInit {
       
       const seqno = await walletContract.getSeqno();
       
-      // Send transaction - wallet will sign with secret key if available
-      // Note: The wallet contract needs to be opened with secret key support
-      // For now, we'll use the send method which should work with the wallet opened from client
-      await walletContract.send(internal({
-        to: this.walletContract.address,
-        value: toNano('0.05'), // Gas fee
-        body: messageBody,
-      }));
+      // Create sender with secret key for signing
+      const sender = walletContract.sender(key.secretKey);
+      
+      // Use WalletContract.send() to send AwardJetton message
+      // This requires a ContractProvider, which we can get from the wallet contract
+      const contractProvider = this.client.provider(this.walletContract.address);
+      
+      // Send AwardJetton message using WalletContract.send()
+      await this.walletContract.send(
+        contractProvider,
+        sender,
+        { value: toNano('0.05') },
+        { $$type: 'AwardJetton', user: userAddr, amount: amountInNano }
+      );
 
       // Wait for transaction to be processed
       let currentSeqno = await walletContract.getSeqno();
@@ -172,7 +178,7 @@ export class TonService implements OnModuleInit {
       return txHash;
     } catch (error) {
       this.logger.error(
-        `Failed to send AwardJetton to ${userAddress}: ${error.message}`
+        `Failed to send AwardJetton to ${userAddress}: ${(error as Error).message}`
       );
       throw new BadRequestException('Failed to send AwardJetton');
     }

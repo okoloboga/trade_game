@@ -17,7 +17,7 @@ export class TransactionsController {
 
   @Post('withdraw-prepare')
   async prepareWithdrawal(
-    @Request() req,
+    @Request() req: { user: { id: string } },
     @Body() dto: PrepareWithdrawalDto,
   ) {
     const userId = req.user.id; // Assuming userId is on req.user from JwtAuthGuard
@@ -26,7 +26,7 @@ export class TransactionsController {
 
   @Post('deposit')
   async processDeposit(
-    @Request() req,
+    @Request() req: { user: { id: string } },
     @Body() dto: DepositDto,
   ) {
     const userId = req.user.id;

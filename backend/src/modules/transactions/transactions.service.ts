@@ -44,7 +44,7 @@ export class TransactionsService {
     const amountInNano = toNano(dto.amount.toString());
 
     const body = beginCell()
-      .store(storeWithdraw({ $type: 'Withdraw', amount: amountInNano }))
+      .store(storeWithdraw({ $$type: 'Withdraw', amount: amountInNano }))
       .endCell();
 
     const boc = body.toBoc().toString('base64');
