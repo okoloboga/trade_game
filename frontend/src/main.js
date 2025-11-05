@@ -92,11 +92,18 @@ async function initializeApp() {
     try {
       const analyticsModule = await import('@telegram-apps/analytics');
       telegramAnalytics = analyticsModule.default || analyticsModule;
-      telegramAnalytics.init({
-        token: import.meta.env.VITE_ANALYTICS_TOKEN,
-        appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
-      });
-      telegramAnalytics.trackEvent('app_launched');
+      
+      // Проверяем, что методы существуют перед использованием
+      if (telegramAnalytics && typeof telegramAnalytics.init === 'function') {
+        telegramAnalytics.init({
+          token: import.meta.env.VITE_ANALYTICS_TOKEN,
+          appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
+        });
+      }
+      
+      if (telegramAnalytics && typeof telegramAnalytics.trackEvent === 'function') {
+        telegramAnalytics.trackEvent('app_launched');
+      }
     } catch (analyticsError) {
       console.warn('Telegram Analytics not available:', analyticsError);
     }
@@ -119,8 +126,10 @@ async function initializeApp() {
     const { useAuthStore } = await import('./stores/auth')
     const authStore = useAuthStore()
     authStore.logout()
-    // Track initialization error
-    telegramAnalytics.trackEvent('app_initialization_error', { error: error.message });
+    // Track initialization error - проверяем наличие метода
+    if (telegramAnalytics && typeof telegramAnalytics.trackEvent === 'function') {
+      telegramAnalytics.trackEvent('app_initialization_error', { error: error.message });
+    }
   } finally {
     const { useAppStore } = await import('./stores/app')
     const appStore = useAppStore()
