@@ -119,7 +119,7 @@ const deposit = useDebounceFn(async () => {
       .endCell();
     
     // Convert to BOC (Bag of Cells) base64 string
-    const depositBoc = depositBody.toBoc().toString('base64');
+    const depositBoc = depositBody.toBoc({ idx: false, crc32: true }).toString('base64');
     
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
     const transaction = {
