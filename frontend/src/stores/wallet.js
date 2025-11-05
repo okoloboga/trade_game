@@ -3,7 +3,12 @@ import apiService from '@/services/api';
 import { useErrorStore } from '@/stores/error';
 import { useAuthStore } from '@/stores/auth';
 import { useTonConnectUI } from '@townsquarelabs/ui-vue';
-import { toNano } from '@ton/core';
+
+// Простая функция для конвертации TON в nanoTON (не требует @ton/core)
+// Это позволяет избежать загрузки @ton/core до инициализации Buffer
+function toNano(amount) {
+  return BigInt(Math.floor(parseFloat(amount) * 1_000_000_000));
+}
 
 export const useWalletStore = defineStore('wallet', {
   state: () => {
