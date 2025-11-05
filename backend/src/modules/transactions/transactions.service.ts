@@ -47,7 +47,8 @@ export class TransactionsService {
       .store(storeWithdraw({ $$type: 'Withdraw', amount: amountInNano }))
       .endCell();
 
-    const boc = body.toBoc().toString('base64');
+    // Используем те же параметры, что и в Deposit для консистентности
+    const boc = body.toBoc({ idx: false, crc32: true }).toString('base64');
     const contractAddress = this.configService.get<string>('WALLET_CONTRACT_ADDRESS');
 
     return {

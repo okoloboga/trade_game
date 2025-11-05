@@ -11,6 +11,7 @@ import { User } from '../../entities/user.entity';
 import { TradeDto } from './dto/trade.dto';
 import { MarketService } from '../market/market.service';
 import { TokensService } from '../tokens/tokens.service';
+import { TonService } from '../ton/ton.service';
 
 @Injectable()
 export class TradesService {
@@ -23,7 +24,8 @@ export class TradesService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly marketService: MarketService,
-    private readonly tokensService: TokensService
+    private readonly tokensService: TokensService,
+    private readonly tonService: TonService
   ) {}
 
   /**
@@ -45,11 +47,16 @@ export class TradesService {
     const usdtPrice = Number(await this.getCurrentPrice(symbol));
     const tonAmount = amountNum / usdtPrice;
 
-    if (Number(user.balance || 0) < tonAmount) {
+    // Check balance from smart contract (on-chain)
+    const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
+    const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
+
+    if (onChainBalance < tonAmount) {
       throw new BadRequestException('Insufficient TON balance');
     }
 
-    user.balance = Number(user.balance || 0) - tonAmount;
+    // Update balance in database (for trading purposes, balance in contract remains unchanged)
+    user.balance = onChainBalance - tonAmount;
     user.usdt_balance = Number(user.usdt_balance || 0) + amountNum;
     if (user.usdt_balance > this.maxUsdtBalance) {
       throw new BadRequestException(
