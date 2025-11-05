@@ -80,10 +80,11 @@ export class TransactionsService {
       throw new BadRequestException('Transaction already processed');
     }
 
-    // Sync trading balance with on-chain balance after deposit
-    const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
-    const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
-    user.balance = onChainBalance; // Update trading balance in DB to match on-chain balance
+    // Add deposit amount to trading balance (transaction is sent, so we can trust it will be processed)
+    // Don't sync with on-chain balance immediately as it may not be updated yet
+    const currentTradingBalance = Number(user.balance || 0);
+    const newTradingBalance = currentTradingBalance + dto.amount;
+    user.balance = newTradingBalance;
 
     // Create transaction record
     const transaction = this.transactionRepository.create({
@@ -98,7 +99,7 @@ export class TransactionsService {
     await this.transactionRepository.save(transaction);
 
     this.logger.log(
-      `Processed deposit for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, updated trading balance: ${onChainBalance} TON`
+      `Processed deposit for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, updated trading balance: ${currentTradingBalance} -> ${newTradingBalance} TON`
     );
 
     return {
