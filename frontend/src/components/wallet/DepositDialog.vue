@@ -40,6 +40,7 @@ import { validateAmount } from '@/utils/validators';
 import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
 import { useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { beginCell } from '@ton/core';
 import apiService from '@/services/api';
 
 const { t } = useI18n();
@@ -111,15 +112,14 @@ const deposit = useDebounceFn(async () => {
 
   isProcessing.value = true;
   try {
-    // Prepare Deposit message (opcode 0x01)
-    // Deposit message is just opcode 1 (uint32)
-    const depositOpcode = 1;
-    const depositBody = new Uint8Array(4);
-    const view = new DataView(depositBody.buffer);
-    view.setUint32(0, depositOpcode, true); // little-endian
+    // Prepare Deposit message (opcode 0x01 = 1)
+    // Deposit message format: uint32 opcode (1) = 32 bits
+    const depositBody = beginCell()
+      .storeUint(1, 32) // opcode 1 for Deposit message
+      .endCell();
     
-    // Convert to base64
-    const depositBoc = btoa(String.fromCharCode(...depositBody));
+    // Convert to BOC (Bag of Cells) base64 string
+    const depositBoc = depositBody.toBoc().toString('base64');
     
     const nanoAmount = Math.floor(price.value * 1_000_000_000).toString();
     const transaction = {
