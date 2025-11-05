@@ -23,7 +23,7 @@ export const useTradingStore = defineStore('trading', {
       }
       try {
         const response = await apiService.getTradeHistory(period);
-        this.tradeHistory = response.trades;
+        this.tradeHistory = response.trades || [];
       } catch (error) {
         console.error('[tradingStore] Failed to fetch trade history:', error);
         useErrorStore().setError('Failed to fetch trade history');
@@ -70,7 +70,13 @@ export const useTradingStore = defineStore('trading', {
               amount,
               symbol,
             }));
-        this.tradeHistory.push(response.trade);
+        // Ensure tradeHistory is initialized as array
+        if (!this.tradeHistory) {
+          this.tradeHistory = [];
+        }
+        if (response.trade) {
+          this.tradeHistory.push(response.trade);
+        }
         walletStore.updateBalances(response.user);
         await walletStore.fetchBalances();
         useErrorStore().setError('Trade executed successfully', false);
