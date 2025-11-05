@@ -133,11 +133,16 @@ export class TransactionsService {
       throw new BadRequestException('Transaction already processed');
     }
 
-    // Sync trading balance with on-chain balance after withdrawal
-    // The on-chain balance has already been updated by the contract
-    const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
-    const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
-    user.balance = onChainBalance; // Sync trading balance with on-chain balance
+    // Subtract withdrawal amount from trading balance
+    // The contract will deduct the full amount (msg.amount) from the user's balance
+    // We subtract the withdrawal amount from trading balance, not the on-chain balance
+    // because on-chain balance may not be updated yet when this is called
+    const currentTradingBalance = Number(user.balance || 0);
+    if (currentTradingBalance < dto.amount) {
+      throw new BadRequestException('Insufficient trading balance');
+    }
+    const newTradingBalance = currentTradingBalance - dto.amount;
+    user.balance = newTradingBalance;
 
     // Create transaction record
     const transaction = this.transactionRepository.create({
@@ -152,7 +157,7 @@ export class TransactionsService {
     await this.transactionRepository.save(transaction);
 
     this.logger.log(
-      `Processed withdrawal for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, synced trading balance: ${onChainBalance} TON`
+      `Processed withdrawal for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, updated trading balance: ${currentTradingBalance} -> ${newTradingBalance} TON`
     );
 
     return {
