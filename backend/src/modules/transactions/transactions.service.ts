@@ -11,6 +11,7 @@ import { Transaction } from '../../entities/transaction.entity';
 import { TonService } from '../ton/ton.service';
 import { PrepareWithdrawalDto } from './dto/prepare-withdrawal.dto';
 import { DepositDto } from './dto/deposit.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 import { beginCell, toNano } from '@ton/core';
 import { storeWithdraw } from '../../ton/wrappers/WalletContract';
 import { ConfigService } from '@nestjs/config';
@@ -100,6 +101,58 @@ export class TransactionsService {
 
     this.logger.log(
       `Processed deposit for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, updated trading balance: ${currentTradingBalance} -> ${newTradingBalance} TON`
+    );
+
+    return {
+      user,
+      transaction,
+      status: 'completed',
+    };
+  }
+
+  async processWithdrawal(userId: string, dto: WithdrawDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify that the tonAddress matches the user's address
+    if (user.ton_address !== dto.tonAddress) {
+      throw new BadRequestException('TON address mismatch');
+    }
+
+    // Check if transaction with this hash already exists
+    const existingTransaction = await this.transactionRepository.findOne({
+      where: {
+        ton_tx_hash: dto.txHash,
+        user: { id: userId },
+      },
+    });
+
+    if (existingTransaction) {
+      throw new BadRequestException('Transaction already processed');
+    }
+
+    // Sync trading balance with on-chain balance after withdrawal
+    // The on-chain balance has already been updated by the contract
+    const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
+    const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
+    user.balance = onChainBalance; // Sync trading balance with on-chain balance
+
+    // Create transaction record
+    const transaction = this.transactionRepository.create({
+      user: { id: userId },
+      type: 'withdraw',
+      amount: dto.amount,
+      ton_tx_hash: dto.txHash,
+      status: 'completed', // Transactions are completed once sent to blockchain
+    });
+
+    await this.userRepository.save(user); // Save updated balance
+    await this.transactionRepository.save(transaction);
+
+    this.logger.log(
+      `Processed withdrawal for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, synced trading balance: ${onChainBalance} TON`
     );
 
     return {

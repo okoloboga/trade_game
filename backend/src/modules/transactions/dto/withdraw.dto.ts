@@ -8,4 +8,8 @@ export class WithdrawDto {
   @IsNumber()
   @Min(0.01)
   amount!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  txHash!: string;
 }

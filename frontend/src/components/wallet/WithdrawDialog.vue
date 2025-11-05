@@ -42,6 +42,7 @@ import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useI18n } from 'vue-i18n';
 import { useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { useAuthStore } from '@/stores/auth';
 import apiService from '@/services/api';
 
 const { t } = useI18n();
@@ -51,6 +52,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'withdraw-success']);
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
+const authStore = useAuthStore();
 const [tonConnectUI] = useTonConnectUI();
 const amount = ref(0.11);
 const isProcessing = ref(false);
@@ -110,13 +112,17 @@ const withdraw = useDebounceFn(async () => {
       ],
     };
 
-    await tonConnectUI.sendTransaction(transaction);
+    const result = await tonConnectUI.sendTransaction(transaction);
+    const txHash = result.boc;
 
-    // Refresh balances after a short delay to allow the blockchain to update
-    setTimeout(() => {
-      walletStore.fetchBalances();
-    }, 5000);
+    // Process withdrawal on backend to sync balance with on-chain balance
+    const response = await apiService.withdraw({
+      tonAddress: authStore.user.ton_address,
+      amount: amount.value,
+      txHash,
+    });
 
+    await walletStore.fetchBalances();
     emit('withdraw-success');
     closeDialog();
   } catch (error) {
