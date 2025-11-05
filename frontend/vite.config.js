@@ -57,9 +57,47 @@ export default {
   }
 }
 
+// Плагин для глобальной инжекции Buffer
+const bufferPolyfillPlugin = () => {
+  const bufferInjected = new Set()
+  return {
+    name: 'buffer-polyfill',
+    transform(code, id) {
+      // Инжектируем Buffer только в модули node_modules, которые используют Buffer
+      // Особенно важно для @ton модулей
+      const isNodeModule = id.includes('node_modules')
+      const isTonModule = id.includes('@ton')
+      const usesBuffer = code.includes('Buffer') && !code.includes('import { Buffer }')
+      
+      if (isNodeModule && (isTonModule || usesBuffer) && !bufferInjected.has(id)) {
+        bufferInjected.add(id)
+        return {
+          code: `
+import { Buffer } from 'buffer';
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer;
+  window.global = window.global || window;
+  window.global.Buffer = Buffer;
+}
+if (typeof globalThis !== 'undefined' && !globalThis.Buffer) {
+  globalThis.Buffer = Buffer;
+}
+if (typeof global !== 'undefined' && !global.Buffer) {
+  global.Buffer = Buffer;
+}
+${code}
+          `,
+          map: null,
+        }
+      }
+    },
+  }
+}
+
 export default defineConfig({
   base: '/',
   plugins: [
+    bufferPolyfillPlugin(), // Добавляем плагин для Buffer глобально (первым!)
     vue({
       reactivityTransform: true,
     }),
