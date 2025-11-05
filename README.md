@@ -4,7 +4,7 @@
 **Features**
 
 - **Trading:** Execute buy/sell trades for TON/USDT with real-time market prices.
-- **Wallet Management:** Deposit and withdraw TON, and withdraw RUBLE tokens to a TON wallet.
+- **Wallet Management:** Deposit and withdraw TON through a smart contract (WalletContract), and withdraw RUBLE tokens to a TON wallet.
 - **RUBLE Tokens:** Earn up to 10 RUBLE tokens daily based on trading volume (1 RUBLE per $10 traded).
 - **Trade History:** View trade history with details like type, amount, price, profit/loss, and date.
 - **Real-time Market Data:** Display current TON/USDT price via WebSocket (market.gateway.ts).
@@ -33,15 +33,24 @@
 - **JWT:** Authentication for secure API endpoints.
 - **Axios:** For fetching market data.
 - **WebSocket:** Real-time market updates via market.gateway.ts.
-- **TON SDK:** Blockchain interactions for token transfers.
+- **TON SDK:** Blockchain interactions for token transfers and smart contract integration.
+- **@ton/core:** TON blockchain utilities for building BOC (Bag of Cells) messages.
 
 ### Database
 
 - **PostgreSQL:** Stores users, trades, and transactions.
 - **Entities:**
-User: Stores ton_address, token_balance, balance (TON), usdt_balance.
-Trade: Stores trade details (type, amount, usdt_price, profit_loss, created_at).
-Transaction: Stores token transactions (type, amount, ton_tx_hash, status).
+  - **User:** Stores ton_address, token_balance, balance (TON - trading balance), usdt_balance.
+  - **Trade:** Stores trade details (type, amount, usdt_price, profit_loss, created_at).
+  - **Transaction:** Stores blockchain transactions (type: 'deposit' | 'withdraw' | 'ruble', amount, ton_tx_hash, status).
+
+### Blockchain
+
+- **Smart Contract (WalletContract):** TON smart contract written in Tact for managing user balances.
+  - **Deposit:** Users can deposit TON to the contract, increasing their on-chain balance.
+  - **Withdraw:** Users can withdraw TON from the contract with a configurable fee (withdrawFeeBps).
+  - **Balance Management:** On-chain balances stored in the contract, synchronized with database trading balances.
+  - **Contract Features:** Pause/unpause functionality, emergency withdraw (owner only), and jetton award support.
 
 ### Prerequisites
 
@@ -52,16 +61,41 @@ Transaction: Stores token transactions (type, amount, ton_tx_hash, status).
 - **Telegram Web App:** Access via Telegram bot
 - **TON Wallet:** For testing wallet interactions
 
-## Manual Testing:
+## Manual Testing
 
-Connect a TON wallet via TonConnect in the app.
-Execute a buy/sell trade in TradeButtons.vue:
-Verify that usdt_price is saved in the trades table.
-Check trade history in TradeHistory.vue for Price column.
+### Wallet Operations
 
+1. **Deposit TON via Smart Contract:**
+   - Connect a TON wallet via TonConnect in the app.
+   - Navigate to Wallet and click Deposit.
+   - Enter amount and confirm transaction.
+   - Verify transaction is sent to WalletContract.
+   - Check that trading balance in database is updated (added to current balance).
+   - Verify transaction record in transactions table with type: 'deposit'.
 
-Withdraw RUBLE tokens via WithdrawTokensDialog.vue:
-Verify transaction in the transactions table with type: 'ruble'.
+2. **Withdraw TON via Smart Contract:**
+   - Navigate to Wallet and click Withdraw.
+   - Enter amount (minimum 0.11 TON) and confirm transaction.
+   - Note: 0.05 TON is required for contract call (returned to wallet).
+   - Verify transaction is sent to WalletContract.
+   - Check that trading balance in database is updated (subtracted from current balance).
+   - Verify transaction record in transactions table with type: 'withdraw'.
+   - Confirm TON is received in wallet (amount minus contract fee).
+
+3. **Withdraw RUBLE Tokens:**
+   - Navigate to Wallet and click Withdraw RUBLE.
+   - Enter amount and confirm transaction.
+   - Verify transaction in the transactions table with type: 'ruble'.
+
+### Trading Operations
+
+1. **Execute Buy/Sell Trades:**
+   - Connect a TON wallet via TonConnect in the app.
+   - Navigate to Trading page.
+   - Execute a buy/sell trade in TradeButtons.vue.
+   - Verify that usdt_price is saved in the trades table.
+   - Check trade history in TradeHistory.vue for Price column.
+   - Confirm trading balances (TON and USDT) are updated correctly.
 
 
 ## Contributing
@@ -72,10 +106,26 @@ Commit changes (git commit -m "Add your feature").
 Push to the branch (git push origin feature/your-feature).
 Open a Pull Request.
 
+### Architecture Notes
+
+**Balance Management:**
+- **On-chain Balance:** Stored in WalletContract smart contract, represents actual TON in the contract.
+- **Trading Balance:** Stored in database (user.balance), used for trading operations.
+- **Synchronization:** 
+  - On deposit: Trading balance is increased by deposit amount (added to current balance).
+  - On withdrawal: Trading balance is decreased by withdrawal amount (subtracted from current balance).
+  - Initial sync: If trading balance is null/undefined, it syncs with on-chain balance on first fetch.
+
+**Smart Contract Integration:**
+- Deposit and withdrawal operations require blockchain transactions via TonConnect.
+- Transactions are prepared on the backend (BOC generation) and sent from the frontend.
+- Backend processes transactions after they are sent to sync balances with the contract state.
+
 ### Known Issues
 
-Dynamic Imports: auth.js and wallet.js have mixed static/dynamic imports, causing Vite warnings. Consider using fully dynamic imports for better chunk splitting.
-Source Maps: vite-plugin-vue-svg generates incorrect source maps, which may affect debugging. Check for updates or switch to vite-svg-loader.
+- **Dynamic Imports:** auth.js and wallet.js have mixed static/dynamic imports, causing Vite warnings. Consider using fully dynamic imports for better chunk splitting.
+- **Source Maps:** vite-plugin-vue-svg generates incorrect source maps, which may affect debugging. Check for updates or switch to vite-svg-loader.
+- **Buffer Polyfill:** Requires Buffer polyfill for browser environment (configured in vite.config.js).
 
 License
 MIT License. See LICENSE for details.
