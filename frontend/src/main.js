@@ -9,7 +9,11 @@ import { router } from './router'
 import WebApp from '@twa-dev/sdk'
 import { createI18n } from 'vue-i18n'
 import { Buffer } from 'buffer';
-import telegramAnalytics from '@telegram-apps/analytics'
+// Telegram Analytics - optional dependency
+let telegramAnalytics = {
+  init: () => {},
+  trackEvent: () => {}
+};
 
 // Import translations
 import en from './locales/en.json'
@@ -84,13 +88,18 @@ app.mount('#app')
  */
 async function initializeApp() {
   try {
-    // Initialize Telegram Analytics
-    telegramAnalytics.init({
-      token: import.meta.env.VITE_ANALYTICS_TOKEN,
-      appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
-    });
-    // Track app launch event
-    telegramAnalytics.trackEvent('app_launched');
+    // Initialize Telegram Analytics (optional)
+    try {
+      const analyticsModule = await import('@telegram-apps/analytics');
+      telegramAnalytics = analyticsModule.default || analyticsModule;
+      telegramAnalytics.init({
+        token: import.meta.env.VITE_ANALYTICS_TOKEN,
+        appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
+      });
+      telegramAnalytics.trackEvent('app_launched');
+    } catch (analyticsError) {
+      console.warn('Telegram Analytics not available:', analyticsError);
+    }
 
     const { useAppStore } = await import('./stores/app')
     const { useAuthStore } = await import('./stores/auth')
