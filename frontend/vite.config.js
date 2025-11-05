@@ -70,9 +70,7 @@ export default defineConfig({
     tonCryptoPolyfillPlugin(), // Добавляем плагин для полифила @ton/crypto
   ],
   define: {
-    global: {
-      Buffer: Buffer,
-    },
+    global: 'globalThis',
   },
   server: {
     proxy: {
@@ -91,10 +89,13 @@ export default defineConfig({
       strict: false,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts', '@ton/core'],
+      include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts', '@ton/core', 'buffer'],
       esbuildOptions: {
         alias: {
           '@ton/crypto': path.resolve(__dirname, 'src/utils/ton-crypto-polyfill.js'),
+        },
+        define: {
+          'global': 'globalThis',
         },
       },
     },

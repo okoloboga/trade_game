@@ -1,3 +1,18 @@
+// Инициализация Buffer глобально ДО ВСЕХ импортов
+import { Buffer } from 'buffer';
+if (typeof window !== 'undefined') {
+  window.Buffer = Buffer;
+  window.global = window.global || window;
+  window.global.Buffer = Buffer;
+}
+// Определяем Buffer глобально для Node.js-модулей
+if (typeof globalThis !== 'undefined') {
+  globalThis.Buffer = Buffer;
+}
+if (typeof global !== 'undefined') {
+  global.Buffer = Buffer;
+}
+
 import { createApp } from 'vue'
 import App from './App.vue'
 import { createVuetify } from 'vuetify'
@@ -8,7 +23,6 @@ import { createPinia } from 'pinia'
 import { router } from './router'
 import WebApp from '@twa-dev/sdk'
 import { createI18n } from 'vue-i18n'
-import { Buffer } from 'buffer';
 // Telegram Analytics - optional dependency
 let telegramAnalytics = {
   init: () => {},
