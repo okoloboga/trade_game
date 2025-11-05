@@ -41,6 +41,8 @@ import { useErrorStore } from '@/stores/error';
 import { useDebounceFn } from '@vueuse/core';
 import { validateAmount } from '@/utils/validators';
 import { useI18n } from 'vue-i18n';
+import { useTonConnectUI } from '@townsquarelabs/ui-vue';
+import apiService from '@/services/api';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -49,6 +51,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'withdraw-success']);
 const walletStore = useWalletStore();
 const errorStore = useErrorStore();
+const [tonConnectUI] = useTonConnectUI();
 const amount = ref(0.11);
 const isProcessing = ref(false);
 
@@ -68,20 +71,57 @@ const withdrawRules = computed(() => [
 const isValid = computed(() => validateAmount(amount.value, walletStore.balance, 0.11) === true);
 
 /**
- * Initiates a decentralized withdrawal by preparing the transaction on the backend
- * and sending it to the user's wallet for confirmation.
+ * Initiates a withdrawal transaction to the smart contract.
  */
 const withdraw = useDebounceFn(async () => {
+  if (!tonConnectUI.connected) {
+    errorStore.setError(t('error.connect_wallet'));
+    try {
+      await tonConnectUI.openModal();
+      if (!tonConnectUI.connected) {
+        throw new Error('Wallet not connected after modal');
+      }
+    } catch (connectError) {
+      console.error('[WithdrawDialog] Modal open failed:', connectError);
+      errorStore.setError(t('error.failed_to_connect_wallet'));
+      return;
+    }
+  }
+
   if (!isValid.value) return;
 
   isProcessing.value = true;
   try {
-    await walletStore.withdrawTon(amount.value);
+    // Prepare withdrawal transaction on backend
+    const { boc, contractAddress } = await apiService.prepareWithdrawal({ amount: amount.value });
+
+    if (!boc || !contractAddress) {
+      throw new Error('Failed to prepare withdrawal transaction.');
+    }
+
+    const transaction = {
+      validUntil: Math.floor(Date.now() / 1000) + 60, // 60 seconds
+      messages: [
+        {
+          address: contractAddress,
+          amount: Math.floor(0.05 * 1_000_000_000).toString(), // 0.05 TON for gas
+          payload: boc,
+        },
+      ],
+    };
+
+    await tonConnectUI.sendTransaction(transaction);
+
+    // Refresh balances after a short delay to allow the blockchain to update
+    setTimeout(() => {
+      walletStore.fetchBalances();
+    }, 5000);
+
     emit('withdraw-success');
     closeDialog();
   } catch (error) {
-    // Error is already handled in the wallet store, no need to set it again
     console.error('[WithdrawDialog] Withdraw error:', error);
+    errorStore.setError(t('error.failed_to_initiate_withdraw') || 'Failed to process withdrawal');
   } finally {
     isProcessing.value = false;
   }
