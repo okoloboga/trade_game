@@ -40,8 +40,6 @@ import { validateAmount } from '@/utils/validators';
 import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
 import { useTonConnectUI } from '@townsquarelabs/ui-vue';
-import { Buffer } from 'buffer';
-import { beginCell } from '@ton/core';
 import apiService from '@/services/api';
 
 const { t } = useI18n();
@@ -113,6 +111,9 @@ const deposit = useDebounceFn(async () => {
 
   isProcessing.value = true;
   try {
+    // Динамический импорт @ton/core только когда нужно, чтобы Buffer уже был доступен
+    const { beginCell } = await import('@ton/core');
+    
     // Prepare Deposit message (opcode 0x01 = 1)
     // Deposit message format: uint32 opcode (1) = 32 bits
     const depositBody = beginCell()
