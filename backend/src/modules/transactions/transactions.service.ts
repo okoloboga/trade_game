@@ -80,9 +80,12 @@ export class TransactionsService {
       throw new BadRequestException('Transaction already processed');
     }
 
+    // Sync trading balance with on-chain balance after deposit
+    const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
+    const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
+    user.balance = onChainBalance; // Update trading balance in DB to match on-chain balance
+
     // Create transaction record
-    // Note: Balance is now stored on-chain in the smart contract,
-    // so we only need to record the transaction in the database
     const transaction = this.transactionRepository.create({
       user: { id: userId },
       type: 'deposit',
@@ -91,10 +94,11 @@ export class TransactionsService {
       status: 'completed', // Transactions are completed once sent to blockchain
     });
 
+    await this.userRepository.save(user); // Save updated balance
     await this.transactionRepository.save(transaction);
 
     this.logger.log(
-      `Processed deposit for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}`
+      `Processed deposit for user ${userId}: ${dto.amount} TON, txHash: ${dto.txHash}, updated trading balance: ${onChainBalance} TON`
     );
 
     return {

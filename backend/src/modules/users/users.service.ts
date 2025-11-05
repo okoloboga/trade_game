@@ -15,9 +15,11 @@ export class UsersService {
   ) {}
 
   /**
-   * Retrieves the balance of a user, fetching the main balance from the on-chain contract.
+   * Retrieves the balance of a user.
+   * For TON balance: uses trading balance from DB (user.balance) which is virtual for trading.
+   * On-chain balance is only used for deposits/withdrawals.
    * @param tonAddress - The TON address of the user.
-   * @returns {Promise<{ balance: number, usdt_balance: number, token_balance: number }>} User's balances (on-chain TON, off-chain USDT and tokens).
+   * @returns {Promise<{ balance: number, usdt_balance: number, token_balance: number }>} User's balances (trading TON from DB, off-chain USDT and tokens).
    * @throws {NotFoundException} If the user is not found.
    */
   async getBalance(tonAddress: string) {
@@ -28,17 +30,30 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // Fetch on-chain balance from the smart contract
+    // Fetch on-chain balance from the smart contract for reference
     const onChainBalanceNano = await this.tonService.getBalance(tonAddress);
     const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
 
+    // Use trading balance from DB (virtual balance for trading)
+    // If DB balance is null or less than on-chain balance, sync with on-chain balance
+    let tradingBalance = Number(user.balance || 0);
+    if (tradingBalance === 0 || tradingBalance < onChainBalance) {
+      // Sync trading balance with on-chain balance if it's out of sync
+      tradingBalance = onChainBalance;
+      user.balance = tradingBalance;
+      await this.userRepository.save(user);
+      this.logger.log(
+        `Synced trading balance for ton_address ${tonAddress}: ${tradingBalance} TON (from on-chain: ${onChainBalance})`
+      );
+    }
+
     const balances = {
-      balance: onChainBalance,
+      balance: tradingBalance,
       usdt_balance: Number(user.usdt_balance),
       token_balance: Number(user.token_balance),
     };
     this.logger.log(
-      `Fetched balances for ton_address ${tonAddress}: on-chain balance=${balances.balance}, usdt_balance=${balances.usdt_balance}, token_balance=${balances.token_balance}`,
+      `Fetched balances for ton_address ${tonAddress}: trading balance=${balances.balance} (on-chain=${onChainBalance}), usdt_balance=${balances.usdt_balance}, token_balance=${balances.token_balance}`,
     );
     return balances;
   }

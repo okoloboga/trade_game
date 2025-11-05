@@ -47,16 +47,25 @@ export class TradesService {
     const usdtPrice = Number(await this.getCurrentPrice(symbol));
     const tonAmount = amountNum / usdtPrice;
 
-    // Check balance from smart contract (on-chain)
-    const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
-    const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
+    // Get trading balance from DB (virtual balance for trading)
+    let tradingBalance = Number(user.balance || 0);
+    
+    // If trading balance is 0 or out of sync, sync with on-chain balance
+    if (tradingBalance === 0) {
+      const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
+      tradingBalance = Number(onChainBalanceNano) / 1e9;
+      user.balance = tradingBalance;
+      this.logger.log(
+        `Synced trading balance for user ${user.ton_address}: ${tradingBalance} TON`
+      );
+    }
 
-    if (onChainBalance < tonAmount) {
+    if (tradingBalance < tonAmount) {
       throw new BadRequestException('Insufficient TON balance');
     }
 
-    // Update balance in database (for trading purposes, balance in contract remains unchanged)
-    user.balance = onChainBalance - tonAmount;
+    // Update trading balance in database (virtual balance for trading)
+    user.balance = tradingBalance - tonAmount;
     user.usdt_balance = Number(user.usdt_balance || 0) + amountNum;
     if (user.usdt_balance > this.maxUsdtBalance) {
       throw new BadRequestException(
@@ -102,8 +111,10 @@ export class TradesService {
     const usdtPrice = Number(await this.getCurrentPrice(symbol));
     const tonAmount = amountNum / usdtPrice;
 
+    // Update trading balances (virtual balances for trading)
     user.usdt_balance = Number(user.usdt_balance || 0) - amountNum;
-    user.balance = Number(user.balance || 0) + tonAmount;
+    const tradingBalance = Number(user.balance || 0);
+    user.balance = tradingBalance + tonAmount;
     if (user.usdt_balance > this.maxUsdtBalance) {
       throw new BadRequestException(
         `USDT balance cannot exceed ${this.maxUsdtBalance} USD`
