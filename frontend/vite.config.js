@@ -5,6 +5,58 @@ import svgLoader from 'vite-plugin-vue-svg'
 import { resolve } from 'path'
 import path from 'path'
 
+// Плагин для создания виртуального модуля @ton/crypto
+const tonCryptoPolyfillPlugin = () => {
+  return {
+    name: 'ton-crypto-polyfill',
+    resolveId(id) {
+      if (id === '@ton/crypto') {
+        return '\0@ton/crypto'
+      }
+    },
+    load(id) {
+      if (id === '\0@ton/crypto') {
+        return `
+export const mnemonicToWalletKey = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const mnemonicToSeed = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const keyPairFromSeed = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const keyPairFromSecretKey = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const sign = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const verifySignature = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const encrypt = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export const decrypt = () => {
+  throw new Error('@ton/crypto is not available in browser environment');
+};
+export default {
+  mnemonicToWalletKey,
+  mnemonicToSeed,
+  keyPairFromSeed,
+  keyPairFromSecretKey,
+  sign,
+  verifySignature,
+  encrypt,
+  decrypt,
+};
+        `
+      }
+    },
+  }
+}
+
 export default defineConfig({
   base: '/',
   plugins: [
@@ -15,6 +67,7 @@ export default defineConfig({
       autoImport: true,
     }),
     svgLoader(),
+    tonCryptoPolyfillPlugin(), // Добавляем плагин для полифила @ton/crypto
   ],
   define: {
     global: {
@@ -50,7 +103,7 @@ export default defineConfig({
     sourcemap: true,
     minify: false,
     rollupOptions: {
-      external: ['@telegram-apps/analytics', '@ton/crypto'],
+      external: ['@telegram-apps/analytics'],
       output: {
         manualChunks: {
           vuetify: ['vuetify'],
