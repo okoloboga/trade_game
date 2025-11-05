@@ -39,6 +39,11 @@ export default defineConfig({
     },
     optimizeDeps: {
       include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts', '@ton/core'],
+      esbuildOptions: {
+        alias: {
+          '@ton/crypto': path.resolve(__dirname, 'src/utils/ton-crypto-polyfill.js'),
+        },
+      },
     },
   },
   build: {

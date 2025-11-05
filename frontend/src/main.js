@@ -92,11 +92,11 @@ async function initializeApp() {
     try {
       const analyticsModule = await import('@telegram-apps/analytics');
       telegramAnalytics = analyticsModule.default || analyticsModule;
-      telegramAnalytics.init({
-        token: import.meta.env.VITE_ANALYTICS_TOKEN,
-        appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
-      });
-      telegramAnalytics.trackEvent('app_launched');
+    telegramAnalytics.init({
+      token: import.meta.env.VITE_ANALYTICS_TOKEN,
+      appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
+    });
+    telegramAnalytics.trackEvent('app_launched');
     } catch (analyticsError) {
       console.warn('Telegram Analytics not available:', analyticsError);
     }
