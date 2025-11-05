@@ -35,10 +35,10 @@ export class UsersService {
     const onChainBalance = Number(onChainBalanceNano) / 1e9; // Convert from nanoTON to TON
 
     // Use trading balance from DB (virtual balance for trading)
-    // If DB balance is null or less than on-chain balance, sync with on-chain balance
+    // Sync only if trading balance is null/undefined (not initialized) - not if it's 0 or less than on-chain (that's normal after trading)
     let tradingBalance = Number(user.balance || 0);
-    if (tradingBalance === 0 || tradingBalance < onChainBalance) {
-      // Sync trading balance with on-chain balance if it's out of sync
+    if (user.balance === null || user.balance === undefined) {
+      // Sync trading balance with on-chain balance only on first initialization
       tradingBalance = onChainBalance;
       user.balance = tradingBalance;
       await this.userRepository.save(user);

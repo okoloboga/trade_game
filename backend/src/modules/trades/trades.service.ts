@@ -50,8 +50,8 @@ export class TradesService {
     // Get trading balance from DB (virtual balance for trading)
     let tradingBalance = Number(user.balance || 0);
     
-    // If trading balance is 0 or out of sync, sync with on-chain balance
-    if (tradingBalance === 0) {
+    // Sync only if trading balance is null/undefined (not initialized), not if it's 0 (can be 0 after trading)
+    if (user.balance === null || user.balance === undefined) {
       const onChainBalanceNano = await this.tonService.getBalance(user.ton_address);
       tradingBalance = Number(onChainBalanceNano) / 1e9;
       user.balance = tradingBalance;
