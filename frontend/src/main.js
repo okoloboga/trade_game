@@ -1,18 +1,3 @@
-// Инициализация Buffer глобально ДО ВСЕХ импортов
-import { Buffer } from 'buffer';
-if (typeof window !== 'undefined') {
-  window.Buffer = Buffer;
-  window.global = window.global || window;
-  window.global.Buffer = Buffer;
-}
-// Определяем Buffer глобально для Node.js-модулей
-if (typeof globalThis !== 'undefined') {
-  globalThis.Buffer = Buffer;
-}
-if (typeof global !== 'undefined') {
-  global.Buffer = Buffer;
-}
-
 import { createApp } from 'vue'
 import App from './App.vue'
 import { createVuetify } from 'vuetify'
@@ -23,11 +8,8 @@ import { createPinia } from 'pinia'
 import { router } from './router'
 import WebApp from '@twa-dev/sdk'
 import { createI18n } from 'vue-i18n'
-// Telegram Analytics - optional dependency
-let telegramAnalytics = {
-  init: () => {},
-  trackEvent: () => {}
-};
+import { Buffer } from 'buffer';
+import telegramAnalytics from '@telegram-apps/analytics'
 
 // Import translations
 import en from './locales/en.json'
@@ -102,18 +84,13 @@ app.mount('#app')
  */
 async function initializeApp() {
   try {
-    // Initialize Telegram Analytics (optional)
-    try {
-      const analyticsModule = await import('@telegram-apps/analytics');
-      telegramAnalytics = analyticsModule.default || analyticsModule;
+    // Initialize Telegram Analytics
     telegramAnalytics.init({
       token: import.meta.env.VITE_ANALYTICS_TOKEN,
       appName: import.meta.env.VITE_ANALYTICS_APP_NAME,
     });
+    // Track app launch event
     telegramAnalytics.trackEvent('app_launched');
-    } catch (analyticsError) {
-      console.warn('Telegram Analytics not available:', analyticsError);
-    }
 
     const { useAppStore } = await import('./stores/app')
     const { useAuthStore } = await import('./stores/auth')

@@ -92,7 +92,7 @@ export default defineConfig({
       strict: false,
     },
     optimizeDeps: {
-      include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts', '@ton/core', 'buffer'],
+      include: ['vue', 'vue-router', 'pinia', 'axios', '@twa-dev/sdk', 'vuetify', 'lightweight-charts', 'buffer'],
       esbuildOptions: {
         alias: {
           '@ton/crypto': path.resolve(__dirname, 'src/utils/ton-crypto-polyfill.js'),
@@ -104,7 +104,6 @@ export default defineConfig({
     sourcemap: true,
     minify: false,
     rollupOptions: {
-      external: ['@telegram-apps/analytics'],
       output: {
         manualChunks: {
           vuetify: ['vuetify'],
