@@ -63,6 +63,16 @@ const bufferPolyfillPlugin = () => {
   return {
     name: 'buffer-polyfill',
     transform(code, id) {
+      // Исключаем сам модуль buffer из обработки
+      if (id.includes('node_modules/buffer/') || id.includes('node_modules/buffer/index')) {
+        return null
+      }
+      
+      // Пропускаем, если Buffer уже импортирован или объявлен в коде
+      if (code.includes('import { Buffer }') || code.includes('import Buffer') || code.includes('export.*Buffer') || code.includes('const Buffer') || code.includes('var Buffer') || code.includes('let Buffer')) {
+        return null
+      }
+      
       // Инжектируем Buffer только в модули node_modules, которые используют Buffer
       // Особенно важно для @ton модулей
       const isNodeModule = id.includes('node_modules')
