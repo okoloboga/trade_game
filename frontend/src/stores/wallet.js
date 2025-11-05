@@ -100,7 +100,7 @@ export const useWalletStore = defineStore('wallet', {
       }
     },
     async withdrawTon(amount) {
-      const { tonConnectUI } = useTonConnectUI();
+      const [tonConnectUI] = useTonConnectUI();
       const errorStore = useErrorStore();
 
       this.isProcessing = true;
