@@ -40,6 +40,7 @@ import { validateAmount } from '@/utils/validators';
 import { useAuthStore } from '@/stores/auth';
 import { useI18n } from 'vue-i18n';
 import { useTonConnectUI } from '@townsquarelabs/ui-vue';
+import { Buffer } from 'buffer';
 import { beginCell } from '@ton/core';
 import apiService from '@/services/api';
 
