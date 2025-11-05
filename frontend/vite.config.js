@@ -62,14 +62,29 @@ const bufferPolyfillPlugin = () => {
   const bufferInjected = new Set()
   return {
     name: 'buffer-polyfill',
+    resolveId(id) {
+      // Убеждаемся, что buffer правильно резолвится
+      if (id === 'buffer') {
+        return null // Позволяем Vite использовать resolve.alias
+      }
+    },
     transform(code, id) {
       // Исключаем сам модуль buffer из обработки
       if (id.includes('node_modules/buffer/') || id.includes('node_modules/buffer/index')) {
         return null
       }
       
+      // Обрабатываем CommonJS require('buffer') и преобразуем в ES модуль
+      let modified = false
+      if (code.includes("require('buffer')") || code.includes('require("buffer")')) {
+        // Заменяем require('buffer') на Buffer через import
+        code = code.replace(/require\(['"]buffer['"]\)/g, "Buffer")
+        code = `import { Buffer } from 'buffer';\n${code}`
+        modified = true
+      }
+      
       // Пропускаем, если Buffer уже импортирован или объявлен в коде
-      if (code.includes('import { Buffer }') || code.includes('import Buffer') || code.includes('export.*Buffer') || code.includes('const Buffer') || code.includes('var Buffer') || code.includes('let Buffer')) {
+      if (!modified && (code.includes('import { Buffer }') || code.includes('import Buffer') || code.includes('export.*Buffer') || code.includes('const Buffer') || code.includes('var Buffer') || code.includes('let Buffer'))) {
         return null
       }
       
@@ -79,10 +94,29 @@ const bufferPolyfillPlugin = () => {
       const isTonModule = id.includes('@ton')
       const usesBuffer = code.includes('Buffer') && !code.includes('import { Buffer }')
       
-      if (isNodeModule && (isTonModule || usesBuffer) && !bufferInjected.has(id)) {
+      if (isNodeModule && (isTonModule || usesBuffer || modified) && !bufferInjected.has(id)) {
         bufferInjected.add(id)
-        return {
-          code: `
+        // Если код уже был модифицирован (require заменен), добавляем только глобальную инициализацию
+        if (modified) {
+          return {
+            code: `${code}
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer;
+  window.global = window.global || window;
+  window.global.Buffer = Buffer;
+}
+if (typeof globalThis !== 'undefined' && !globalThis.Buffer) {
+  globalThis.Buffer = Buffer;
+}
+if (typeof global !== 'undefined' && !global.Buffer) {
+  global.Buffer = Buffer;
+}
+            `,
+            map: null,
+          }
+        } else {
+          return {
+            code: `
 import { Buffer } from 'buffer';
 if (typeof window !== 'undefined' && !window.Buffer) {
   window.Buffer = Buffer;
@@ -96,7 +130,16 @@ if (typeof global !== 'undefined' && !global.Buffer) {
   global.Buffer = Buffer;
 }
 ${code}
-          `,
+            `,
+            map: null,
+          }
+        }
+      }
+      
+      // Если код был модифицирован, возвращаем его
+      if (modified) {
+        return {
+          code,
           map: null,
         }
       }
